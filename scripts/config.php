@@ -188,9 +188,6 @@ if(isset($_GET['sendtest']) && $_GET['sendtest'] == "true") {
   $db = new SQLite3($home."/BirdNET-Pi/scripts/birds.db", SQLITE3_OPEN_READONLY);
   $db->busyTimeout(1000);
 
-  $cf = explode("\n",$_GET['apprise_config']);
-  $cf = "'".implode("' '", $cf)."'";
-
   $statement0 = $db->prepare('SELECT * FROM detections WHERE Date == DATE(\'now\', \'localtime\') ORDER BY TIME DESC LIMIT 1');
   $result0 = $statement0->execute();
   while($todaytable=$result0->fetchArray(SQLITE3_ASSOC))
@@ -259,11 +256,15 @@ if(isset($_GET['sendtest']) && $_GET['sendtest'] == "true") {
   $body = str_replace("\$flickrimage", $exampleimage, $body);
   $body = str_replace("\$reason", 'Test message', $body);
 
-  $temp = tmpfile();
-  $tpath = stream_get_meta_data($temp)['uri'];
-  fwrite($temp, $body);
-  echo "<pre class=\"bash\">".shell_exec($home."/BirdNET-Pi/birdnet/bin/apprise -vv --plugin-path ".$home."/.apprise/plugins "." -t '".escapeshellcmd($title)."' ".$attach." ".$cf." <".$tpath)."</pre>";
-  fclose($temp);
+  $temp_conf = tmpfile();
+  $cpath = stream_get_meta_data($temp_conf)['uri'];
+  fwrite($temp_conf, $_GET['apprise_config']);
+  $temp_body = tmpfile();
+  $bpath = stream_get_meta_data($temp_body)['uri'];
+  fwrite($temp_body, $body);
+  echo "<pre class=\"bash\">".shell_exec($home."/BirdNET-Pi/birdnet/bin/apprise -vv --plugin-path ".$home."/.apprise/plugins "." -t '".escapeshellcmd($title)."' ".$attach." --config ".$cpath." <".$bpath)."</pre>";
+  fclose($temp_body);
+  fclose($temp_conf);
 
   die();
 }
