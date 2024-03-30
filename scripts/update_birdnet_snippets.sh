@@ -176,6 +176,11 @@ if [ -L /usr/local/bin/birdnet_analysis.sh ];then
   rm -f /usr/local/bin/birdnet_analysis.sh
 fi
 
+if ! grep -E '^SystemMaxUse=' /etc/systemd/journald.conf &>/dev/null;then
+  echo "SystemMaxUse=100M" >> /etc/systemd/journald.conf
+  systemctl restart systemd-journald
+fi
+
 # update snippets above
 
 systemctl daemon-reload
