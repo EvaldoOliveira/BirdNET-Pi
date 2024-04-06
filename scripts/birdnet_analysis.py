@@ -5,8 +5,10 @@ import re
 import signal
 import sys
 import threading
-from queue import Queue
+from dataclasses import dataclass, field
+from queue import Queue, PriorityQueue
 from subprocess import CalledProcessError
+from typing import Any
 
 import inotify.adapters
 from inotify.constants import IN_CLOSE_WRITE
@@ -27,6 +29,12 @@ def sig_handler(sig_num, curr_stack_frame):
     shutdown = True
 
 
+@dataclass(order=True)
+class PrioritizedItem:
+    priority: int
+    item: Any = field(compare=False)
+
+
 def main():
     load_global_model()
     conf = get_settings()
@@ -35,9 +43,12 @@ def main():
 
     backlog = get_wav_files()
 
+    notify_queue = PriorityQueue()
+    notify_thread = threading.Thread(target=handle_notify_queue, args=(notify_queue, ))
+    notify_thread.start()
     report_queue = Queue()
-    thread = threading.Thread(target=handle_reporting_queue, args=(report_queue, ))
-    thread.start()
+    reporting_thread = threading.Thread(target=handle_reporting_queue, args=(report_queue, notify_queue))
+    reporting_thread.start()
 
     log.info('backlog is %d', len(backlog))
     for file_name in backlog:
@@ -74,8 +85,10 @@ def main():
         empty_count = 0
 
     # we're all done
+    notify_queue.put(PrioritizedItem(0, None))
     report_queue.put(None)
-    thread.join()
+    reporting_thread.join()
+    notify_thread.join()
     report_queue.join()
 
 
@@ -90,6 +103,7 @@ def process_file(file_name, report_queue):
         file = ParseFileName(file_name)
         detections = run_analysis(file)
         # we join() to make sure te reporting queue does not get behind
+        # we only join report_queue, because we do not care if the external report_queue gets behind
         if not report_queue.empty():
             log.warning('reporting queue not yet empty')
         report_queue.join()
@@ -99,7 +113,7 @@ def process_file(file_name, report_queue):
         log.exception(f'Unexpected error: {stderr}', exc_info=e)
 
 
-def handle_reporting_queue(queue):
+def handle_reporting_queue(queue, notify_queue):
     while True:
         msg = queue.get()
         # check for signal that we are done
@@ -114,9 +128,8 @@ def handle_reporting_queue(queue):
                 log.info('%s;%s', summary(file, detection), os.path.basename(detection.file_name_extr))
                 write_to_file(file, detection)
                 write_to_db(file, detection)
-            apprise(file, detections)
-            bird_weather(file, detections)
             heartbeat()
+            notify_queue.put(PrioritizedItem(10, (file, detections)))
             os.remove(file.file_name)
         except BaseException as e:
             stderr = e.stderr.decode('utf-8') if isinstance(e, CalledProcessError) else ""
@@ -127,6 +140,29 @@ def handle_reporting_queue(queue):
     # mark the 'None' signal as processed
     queue.task_done()
     log.info('handle_reporting_queue done')
+
+
+def handle_notify_queue(queue):
+    while True:
+        msg = queue.get().item
+        # check for signal that we are done
+        if msg is None:
+            break
+
+        if queue.qsize() > 200:
+            # drop detection, we are too far behind
+            log.warning(f'dropping detection from notify_queue {queue.qsize()=}')
+            continue
+
+        file, detections = msg
+        try:
+            apprise(file, detections)
+            bird_weather(file, detections)
+        except BaseException as e:
+            stderr = e.stderr.decode('utf-8') if isinstance(e, CalledProcessError) else ""
+            log.exception(f'Unexpected error: {stderr}', exc_info=e)
+
+    log.info('handle_notify_queue done')
 
 
 def setup_logging():
