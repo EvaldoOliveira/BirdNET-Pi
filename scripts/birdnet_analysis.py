@@ -85,7 +85,6 @@ def main():
         empty_count = 0
 
     # we're all done
-    notify_queue.put(PrioritizedItem(0, None))
     report_queue.put(None)
     reporting_thread.join()
     notify_thread.join()
@@ -137,6 +136,7 @@ def handle_reporting_queue(queue, notify_queue):
 
         queue.task_done()
 
+    notify_queue.put(PrioritizedItem(0, None))
     # mark the 'None' signal as processed
     queue.task_done()
     log.info('handle_reporting_queue done')
