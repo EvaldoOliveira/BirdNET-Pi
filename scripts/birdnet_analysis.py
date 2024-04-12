@@ -43,11 +43,14 @@ def main():
 
     backlog = get_wav_files()
 
-    notify_queue = PriorityQueue()
-    notify_thread = threading.Thread(target=handle_notify_queue, args=(notify_queue, ))
-    notify_thread.start()
+    notify_queue1 = PriorityQueue()
+    notify_thread1 = threading.Thread(target=handle_notify_queue, args=(notify_queue1, apprise))
+    notify_thread1.start()
+    notify_queue2 = PriorityQueue()
+    notify_thread2 = threading.Thread(target=handle_notify_queue, args=(notify_queue2, bird_weather))
+    notify_thread2.start()
     report_queue = Queue()
-    reporting_thread = threading.Thread(target=handle_reporting_queue, args=(report_queue, notify_queue))
+    reporting_thread = threading.Thread(target=handle_reporting_queue, args=(report_queue, notify_queue1, notify_queue2))
     reporting_thread.start()
 
     log.info('backlog is %d', len(backlog))
@@ -87,7 +90,8 @@ def main():
     # we're all done
     report_queue.put(None)
     reporting_thread.join()
-    notify_thread.join()
+    notify_thread1.join()
+    notify_thread2.join()
     report_queue.join()
 
 
@@ -112,7 +116,7 @@ def process_file(file_name, report_queue):
         log.exception(f'Unexpected error: {stderr}', exc_info=e)
 
 
-def handle_reporting_queue(queue, notify_queue):
+def handle_reporting_queue(queue, notify_queue1, notify_queue2):
     while True:
         msg = queue.get()
         # check for signal that we are done
@@ -128,7 +132,9 @@ def handle_reporting_queue(queue, notify_queue):
                 write_to_file(file, detection)
                 write_to_db(file, detection)
             heartbeat()
-            notify_queue.put(PrioritizedItem(10, (file, detections)))
+            if detections:
+                notify_queue1.put(PrioritizedItem(10, (file, detections)))
+                notify_queue2.put(PrioritizedItem(10, (file, detections)))
             os.remove(file.file_name)
         except BaseException as e:
             stderr = e.stderr.decode('utf-8') if isinstance(e, CalledProcessError) else ""
@@ -136,13 +142,14 @@ def handle_reporting_queue(queue, notify_queue):
 
         queue.task_done()
 
-    notify_queue.put(PrioritizedItem(0, None))
+    notify_queue1.put(PrioritizedItem(0, None))
+    notify_queue2.put(PrioritizedItem(0, None))
     # mark the 'None' signal as processed
     queue.task_done()
     log.info('handle_reporting_queue done')
 
 
-def handle_notify_queue(queue):
+def handle_notify_queue(queue, fn):
     while True:
         msg = queue.get().item
         # check for signal that we are done
@@ -156,8 +163,7 @@ def handle_notify_queue(queue):
 
         file, detections = msg
         try:
-            apprise(file, detections)
-            bird_weather(file, detections)
+            fn(file, detections)
         except BaseException as e:
             stderr = e.stderr.decode('utf-8') if isinstance(e, CalledProcessError) else ""
             log.exception(f'Unexpected error: {stderr}', exc_info=e)
