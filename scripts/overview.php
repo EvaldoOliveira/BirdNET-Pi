@@ -6,6 +6,16 @@ ini_set('user_agent', 'PHP_Flickr/1.0');
 session_set_cookie_params(7200);
 session_start();
 require_once 'scripts/common.php';
+define('__ROOT__', dirname(dirname(__FILE__)));
+
+if (!isset($langArray)) {
+  if (!isset($_GET['langID']))
+    $lang = 'nl';
+  else
+    $lang = $_GET['langID'];
+  require_once(__ROOT__.'/homepage/locale/'. $lang . '.php');
+}
+
 $home = get_home();
 $config = get_config();
 
@@ -141,7 +151,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true" && isse
     if($todaycount['COUNT(*)'] > 0) {
       echo "<h3>Your system is currently processing a backlog of audio. This can take several hours before normal functionality of your BirdNET-Pi resumes.</h3>";
     } else {
-      echo "<h3>No Detections For Today.</h3>";
+      echo "<h3>".$langArray['no_detections_for_today']."</h3>";
     }
   }
   die();
@@ -172,25 +182,25 @@ $totalspeciestally = $result6->fetchArray(SQLITE3_ASSOC);
 ?>
 <table>
   <tr>
-    <th>Total</th>
+    <th><?php echo $langArray['total']; ?></th>
     <td><?php echo $totalcount['COUNT(*)'];?></td>
   </tr>
   <tr>
-    <th>Today</th>
+    <th><?php echo $langArray['today']; ?></th>
     <td><form action="" method="GET"><button type="submit" name="view" value="Todays Detections"><?php echo $todaycount['COUNT(*)'];?></button></td>
     </form>
   </tr>
   <tr>
-    <th>Last Hour</th>
+    <th><?php echo $langArray['last_hour']; ?></th>
     <td><?php echo $hourcount['COUNT(*)'];?></td>
   </tr>
   <tr>
-    <th>Species Detected Today</th>
+    <th><?php echo $langArray['species_detected_today']; ?></th>
     <td><form action="" method="GET"><input type="hidden" name="view" value="Recordings"><button type="submit" name="date" value="<?php echo date('Y-m-d');?>"><?php echo $speciestally['COUNT(DISTINCT(Com_Name))'];?></button></td>
     </form>
   </tr>
   <tr>
-    <th>Total Number of Species</th>
+    <th><?php echo $langArray['total_number_of_species']; ?></th>
     <td><form action="" method="GET"><button type="submit" name="view" value="Species Stats"><?php echo $totalspeciestally['COUNT(DISTINCT(Com_Name))'];?></button></td>
     </form>
   </tr>
@@ -275,10 +285,10 @@ if (file_exists('./Charts/'.$chart)) {
 
 <div id="most_recent_detection"></div>
 <br>
-<h3>5 Most Recent Detections</h3>
+<h3><?php echo $langArray['five_most_recent']; ?></h3>
 <div style="padding-bottom:10px;" id="detections_table"><h3>Loading...</h3></div>
 
-<h3>Currently Analyzing</h3>
+<h3><?php echo $langArray['currently_analyzing']; ?></h3>
 <?php
 $refresh = $config['RECORDING_LENGTH'];
 $time = time();

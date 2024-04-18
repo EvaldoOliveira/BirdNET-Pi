@@ -11,6 +11,15 @@ session_start();
 error_reporting(E_ERROR);
 ini_set('display_errors',1);
 require_once 'scripts/common.php';
+define('__ROOT__', dirname(dirname(__FILE__)));
+
+if (!isset($langArray)) {
+  if (!isset($_GET['langID']))
+    $lang = 'nl';
+  else
+    $lang = $_GET['langID'];
+  require_once(__ROOT__.'/homepage/locale/'. $lang . '.php');
+}
 $home = get_home();
 $config = get_config();
 $site_name = get_sitename();
@@ -278,7 +287,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
 
   <?php 
   if($iterations == 0) {
-    echo "<h3>No Detections For Today.</h3>";
+    echo "<h3>".$langArray['no_detections_for_today']."</h3>";
   }
   
   // don't show the button if there's no more detections to be displayed, we're at the end of the list
@@ -295,11 +304,11 @@ if(isset($_GET['today_stats'])) {
   ?>
   <table>
       <tr>
-  <th>Total</th>
-  <th>Today</th>
-  <th>Last Hour</th>
-  <th>Unique Species Total</th>
-  <th>Unique Species Today</th>
+  <th><?php echo $langArray['total']; ?></th>
+  <th><?php echo $langArray['today']; ?></th>
+  <th><?php echo $langArray['last_hour']; ?></th>
+  <th><?php echo $langArray['unique_species_total']; ?></th>
+  <th><?php echo $langArray['unique_species_today']; ?></th>
       </tr>
       <tr>
       <td><?php echo $totalcount['COUNT(*)'];?></td>
@@ -399,14 +408,14 @@ if (get_included_files()[0] === __FILE__) {
     showDialog();
   }
   </script>  
-    <h3>Number of Detections</h3>
+    <h3><?php echo $langArray['number_of_detections']; ?></h3>
     <div id="todaystats" class="overview"><form action="views.php" method="GET"><table>
       <tr>
-  <th>Total</th>
-  <th>Today</th>
-  <th>Last Hour</th>
-  <th>Unique Species Total</th>
-  <th>Unique Species Today</th>
+  <th><?php echo $langArray['total']; ?></th>
+  <th><?php echo $langArray['today']; ?></th>
+  <th><?php echo $langArray['last_hour']; ?></th>
+  <th><?php echo $langArray['unique_species_total']; ?></th>
+  <th><?php echo $langArray['unique_species_today']; ?></th>
       </tr>
       <tr>
       <td><?php echo $totalcount['COUNT(*)'];?></td>
@@ -418,7 +427,7 @@ if (get_included_files()[0] === __FILE__) {
     </table></form></div>
 
 
-    <h3>Today's Detections <?php if($kiosk == false) { ?>— <input autocomplete="off" size="11" type="text" placeholder="Search..." id="searchterm" name="searchterm"><?php } ?></h3>
+    <h3><?php echo $langArray['todays_detections']; ?> <?php if($kiosk == false) { ?>— <input autocomplete="off" size="11" type="text" placeholder="<?php echo $langArray['search_']; ?>" id="searchterm" name="searchterm"><?php } ?></h3>
 
     <div style="padding-bottom:10px" id="detections_table"><h3>Loading...</h3></div>
 

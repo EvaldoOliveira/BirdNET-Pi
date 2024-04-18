@@ -7,6 +7,13 @@ $_POST  = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
 session_start();
 
 require_once 'scripts/common.php';
+if (!isset($_GET['langID']))
+  $lang = 'nl';
+else
+  $lang = $_GET['langID'];
+//global $langArray;
+require_once('locale/'. $lang . '.php');
+
 $user = get_user();
 $home = get_home();
 $config = get_config();
@@ -57,15 +64,15 @@ elseif ($config["LONGITUDE"] == "0.000") {
 <body>
 <form action="views.php" method="GET" id="views">
 <div class="topnav" id="myTopnav">
-  <button type="submit" name="view" value="Overview" form="views">Overview</button>
-  <button type="submit" name="view" value="Todays Detections" form="views">Today's Detections</button>
-  <button type="submit" name="view" value="Spectrogram" form="views">Spectrogram</button>
-  <button type="submit" name="view" value="Species Stats" form="views">Best Recordings</button>
-  <button type="submit" name="view" value="Streamlit" form="views">Species Stats</button>
-  <button type="submit" name="view" value="Daily Charts" form="views">Daily Charts</button>
-  <button type="submit" name="view" value="Recordings" form="views">Recordings</button>
-  <button type="submit" name="view" value="View Log" form="views">View Log</button>
-  <button type="submit" name="view" value="Tools" form="views">Tools<?php if(isset($_SESSION['behind']) && intval($_SESSION['behind']) >= 50 && ($config['SILENCE_UPDATE_INDICATOR'] != 1)){ $updatediv = ' <div class="updatenumber">'.$_SESSION["behind"].'</div>'; } else { $updatediv = ""; } echo $updatediv; ?></button>
+  <button type="submit" name="view" value="Overview" form="views"><?php echo $langArray['overview']; ?></button>
+  <button type="submit" name="view" value="Todays Detections" form="views"><?php echo $langArray['todays_detections']; ?></button>
+  <button type="submit" name="view" value="Spectrogram" form="views"><?php echo $langArray['spectrogram']; ?></button>
+  <button type="submit" name="view" value="Species Stats" form="views"><?php echo $langArray['best_recordings']; ?></button>
+  <button type="submit" name="view" value="Streamlit" form="views"><?php echo $langArray['species_stats']; ?></button>
+  <button type="submit" name="view" value="Daily Charts" form="views"><?php echo $langArray['daily_charts']; ?></button>
+  <button type="submit" name="view" value="Recordings" form="views"><?php echo $langArray['recordings']; ?></button>
+  <button type="submit" name="view" value="View Log" form="views"><?php echo $langArray['view_log']; ?></button>
+  <button type="submit" name="view" value="Tools" form="views"><?php echo $langArray['tools']; ?><?php if(isset($_SESSION['behind']) && intval($_SESSION['behind']) >= 50 && ($config['SILENCE_UPDATE_INDICATOR'] != 1)){ $updatediv = ' <div class="updatenumber">'.$_SESSION["behind"].'</div>'; } else { $updatediv = ""; } echo $updatediv; ?></button>
   <button type="button" href="javascript:void(0);" class="icon" onclick="myFunction()"><img src="images/menu.png"></button>
 </div>
 </form>
@@ -131,15 +138,15 @@ if(isset($_GET['view'])){
     $url = $_SERVER['SERVER_NAME']."/scripts/adminer.php";
     echo "<div class=\"centered\">
       <form action=\"views.php\" method=\"GET\" id=\"views\">
-      <button type=\"submit\" name=\"view\" value=\"Settings\" form=\"views\">Settings</button>
-      <button type=\"submit\" name=\"view\" value=\"System Info\" form=\"views\">System Info</button>
-      <button type=\"submit\" name=\"view\" value=\"System Controls\" form=\"views\">System Controls".$updatediv."</button>
-      <button type=\"submit\" name=\"view\" value=\"Services\" form=\"views\">Services</button>
-      <button type=\"submit\" name=\"view\" value=\"File\" form=\"views\">File Manager</button>
-      <a href=\"scripts/adminer.php\" target=\"_blank\"><button type=\"submit\" form=\"\">Database Maintenance</button></a>
-      <button type=\"submit\" name=\"view\" value=\"Webterm\" form=\"views\">Web Terminal</button>
-      <button type=\"submit\" name=\"view\" value=\"Included\" form=\"views\">Custom Species List</button>
-      <button type=\"submit\" name=\"view\" value=\"Excluded\" form=\"views\">Excluded Species List</button>
+      <button type=\"submit\" name=\"view\" value=\"Settings\" form=\"views\">".$langArray['settings']."</button>
+      <button type=\"submit\" name=\"view\" value=\"System Info\" form=\"views\">".$langArray['system_info']."</button>
+      <button type=\"submit\" name=\"view\" value=\"System Controls\" form=\"views\">".$langArray['system_controls'].$updatediv."</button>
+      <button type=\"submit\" name=\"view\" value=\"Services\" form=\"views\">".$langArray['services']."</button>
+      <button type=\"submit\" name=\"view\" value=\"File\" form=\"views\">".$langArray['file_manager']."</button>
+      <a href=\"scripts/adminer.php\" target=\"_blank\"><button type=\"submit\" form=\"\">".$langArray['database_maintenance']."</button></a>
+      <button type=\"submit\" name=\"view\" value=\"Webterm\" form=\"views\">".$langArray['web_terminal']."</button>
+      <button type=\"submit\" name=\"view\" value=\"Included\" form=\"views\">".$langArray['custom_species_list']."</button>
+      <button type=\"submit\" name=\"view\" value=\"Excluded\" form=\"views\">".$langArray['excluded_species_list']."</button>
       </form>
       </div>";
   }
