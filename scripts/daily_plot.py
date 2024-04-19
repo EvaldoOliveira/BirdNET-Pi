@@ -13,7 +13,7 @@ import seaborn as sns
 from matplotlib import rcParams
 from matplotlib.colors import LogNorm
 
-from utils.helpers import DB_PATH
+from utils.helpers import DB_PATH, get_locale
 
 
 def get_data(now=None):
@@ -71,6 +71,8 @@ def create_plot(df_plt_today, now, is_top=None):
     # reorder confmax to detection frequency order
     confmax = confmax.reindex(freq_order)
 
+    lang = get_locale()
+
     # norm values for color palette
     norm = plt.Normalize(confmax.values.min(), confmax.values.max())
     if is_top or is_top is None:
@@ -78,15 +80,15 @@ def create_plot(df_plt_today, now, is_top=None):
         pal = "Greens"
         colors = plt.cm.Greens(norm(confmax)).tolist()
         if is_top:
-            plot_type = "Top"
+            plot_type = lang['top']
         else:
-            plot_type = 'All'
+            plot_type = lang['all']
         name = "Combo"
     else:
         # Set Palette for graphics
         pal = "Reds"
         colors = plt.cm.Reds(norm(confmax)).tolist()
-        plot_type = "Bottom"
+        plot_type = lang['bottom']
         name = "Combo2"
 
     # Generate frequency plot
@@ -100,7 +102,7 @@ def create_plot(df_plt_today, now, is_top=None):
     yticklabels = ['\n'.join(textwrap.wrap(ticklabel.get_text(), 16)) for ticklabel in plot.get_yticklabels()]
     plot.set_yticklabels(yticklabels, fontsize=10)
     plot.set(ylabel=None)
-    plot.set(xlabel="Detections")
+    plot.set(xlabel=lang['detections'])
 
     # Generate crosstab matrix for heatmap plot
     heat = pd.crosstab(df_plt_selection_today['Com_Name'], df_plt_selection_today['Hour of Day'])
@@ -131,10 +133,10 @@ def create_plot(df_plt_today, now, is_top=None):
         spine.set_visible(True)
 
     plot.set(ylabel=None)
-    plot.set(xlabel="Hour of Day")
+    plot.set(xlabel=lang['hour_of_day'])
     # Set combined plot layout and titles
     y = 1 - 8 / (height * 100)
-    plt.suptitle(f"{plot_type} {readings} Last Updated: {now.strftime('%Y-%m-%d %H:%M')}", y=y)
+    plt.suptitle(f"{plot_type} {readings} {lang['last_updated']}: {now.strftime('%Y-%m-%d %H:%M')}", y=y)
     f.tight_layout()
     top = 1 - 40 / (height * 100)
     f.subplots_adjust(left=0.125, right=0.9, top=top, wspace=0)

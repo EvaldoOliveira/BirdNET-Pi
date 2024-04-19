@@ -1,10 +1,11 @@
-from configparser import ConfigParser
 import datetime
 import glob
+import importlib
 import os
-import stat
 import re
+import stat
 import subprocess
+from configparser import ConfigParser
 from itertools import chain
 
 from tzlocal import get_localzone
@@ -117,3 +118,13 @@ def get_wav_files():
     open_recs = get_open_files_in_dir(rec_dir)
     files = [file for file in files if file not in open_recs]
     return files
+
+
+def get_locale():
+    lang = get_settings().get('DATABASE_LANG')
+    try:
+        if lang == 'nl':
+            from .localization.nl import lang
+    except ImportError:
+        from .localization.en import lang
+    return lang
