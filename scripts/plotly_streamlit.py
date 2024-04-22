@@ -12,7 +12,7 @@ from sqlite3 import Connection
 import plotly.express as px
 from sklearn.preprocessing import normalize
 from suntime import Sun
-from utils.helpers import get_settings
+from utils.helpers import get_settings, get_locale
 
 profile = False
 if profile:
@@ -25,7 +25,7 @@ if profile:
         profiler = Profiler()
         profiler.start()
 
-
+language = get_locale()
 pio.templates.default = "plotly_white"
 
 userDir = os.path.expanduser('~')
@@ -68,10 +68,10 @@ df2['DateTime'] = pd.to_datetime(df2['Date'] + " " + df2['Time'])
 df2 = df2.set_index('DateTime')
 
 if len(df2) == 0:
-    st.info('No data yet. Please come back later.')
+    st.info(language['no_data_'])
     exit(0)
 
-daily = st.sidebar.checkbox('Single Day View', help='Select if you want single day view, unselect for multi-day views')
+daily = st.sidebar.checkbox('Single Day View', help=language['single_day_view_help'])
 
 if daily:
     Start_Date = pd.to_datetime(df2.index.min()).date()

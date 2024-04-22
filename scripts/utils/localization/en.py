@@ -5,4 +5,13 @@ lang = {
     "hour_of_day": "Hour of Day",
     "last_updated": "Last Updated",
     "top": "Top",
+    "available_recordings": "Available recordings",
+    "which_bird_": "Which bird would you like to explore for the dates {1} to {2}",
+    "select_number": "Select Number of Birds to Show",
+    "select_resolution_": "Select resolution for single day - larger times run faster",
+    "select_date_": "Select date for single day view",
+    "select_start_and_end": "Select start and end date, if same date get a clockplot for a single day",
+    "no_data_": "No data yet. Please come back later.",
+    "single_day_view": "Single Day View",
+    "single_day_view_help": "Select if you want single day view, unselect for multi-day views",
 }
