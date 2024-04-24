@@ -71,12 +71,12 @@ if len(df2) == 0:
     st.info(language['no_data_'])
     exit(0)
 
-daily = st.sidebar.checkbox('Single Day View', help=language['single_day_view_help'])
+daily = st.sidebar.checkbox(language['single_day_view'], help=language['single_day_view_help'])
 
 if daily:
     Start_Date = pd.to_datetime(df2.index.min()).date()
     End_Date = pd.to_datetime(df2.index.max()).date()
-    end_date = st.sidebar.date_input('Date to View',
+    end_date = st.sidebar.date_input(language['date_to_view'],
                                      min_value=Start_Date,
                                      max_value=End_Date,
                                      value=(End_Date),
@@ -85,7 +85,7 @@ if daily:
 else:
     Start_Date = pd.to_datetime(df2.index.min()).date()
     End_Date = pd.to_datetime(df2.index.max()).date()
-    start_date, end_date = st.sidebar.slider('Date Range',
+    start_date, end_date = st.sidebar.slider(language['date_range'],
                                              min_value=Start_Date-timedelta(days=1),
                                              max_value=End_Date,
                                              value=(Start_Date, End_Date),
@@ -243,10 +243,10 @@ if daily is False:
                 specs=[[{"type": "xy", "rowspan": 3}, {"type": "polar", "rowspan": 2}],
                        [{"rowspan": 1}, {"rowspan": 1}],
                        [None, {"type": "xy", "rowspan": 1}]],
-                subplot_titles=('<b>Top ' + str(top_N) + ' Species in Date Range ' + str(start_date) + ' to ' + str(
-                    end_date) + '<br>for ' + str(resample_sel) + ' sampling interval.' + '</b>',
-                                'Total Detect:' + str('{:,}'.format(df_counts))
-                )
+                subplot_titles=('<b>' + language['top_species_in_'].format(top=top_N, start=start_date, stop=end_date) +
+                                '<br>' + language['for__sampling_interval'].format(resample_sel) + '</b>',
+                                language['total_count'].format(df_counts)
+                                )
             )
             fig.layout.annotations[1].update(x=0.7, y=0.25, font_size=15)
 
@@ -349,11 +349,14 @@ if daily is False:
                 fig.add_trace(go.Bar(x=daily.columns[:-1], y=daily.loc[specie][:-1], marker_color='seagreen'), row=3, col=1)
                 st.plotly_chart(fig, use_container_width=True)  # , config=config)
                 df_counts = int(hourly[hourly.index == specie]['All'].iloc[0])
-                st.subheader('Total Detect:' + str('{:,}'.format(df_counts))
-                             + '   Confidence Max:' +
-                             str('{:.2f}%'.format(max(df2[df2['Com_Name'] == specie]['Confidence']) * 100))
-                             + '   ' + '   Median:' +
-                             str('{:.2f}%'.format(np.median(df2[df2['Com_Name'] == specie]['Confidence']) * 100)))
+                st.subheader(language['total_detect_'].format(count=df_counts,
+                                                              conf=max(df2[df2['Com_Name'] == specie]['Confidence']) * 100,
+                                                              med=np.median(df2[df2['Com_Name'] == specie]['Confidence']) * 100))
+                    # 'Total Detect:' + str('{:,}'.format(df_counts))
+                    #          + '   Confidence Max:' +
+                    #          str('{:.2f}%'.format(max(df2[df2['Com_Name'] == specie]['Confidence']) * 100))
+                    #          + '   ' + '   Median:' +
+                    #          str('{:.2f}%'.format(np.median(df2[df2['Com_Name'] == specie]['Confidence']) * 100)))
 
             recordings = df2[df2['Com_Name'] == specie]['File_Name']
 
@@ -424,8 +427,8 @@ else:
     fig = make_subplots(
         rows=1, cols=2,
         specs=[[{"type": "xy", "rowspan": 1}, {"type": "xy", "rowspan": 1}]],
-        subplot_titles=('<b>Top ' + str(top_N) + ' Species For ' + str(start_date) + '</b>',
-                        '<b>Daily ' + str(start_date) + ' Detections on ' + resample_sel + ' interval</b>'),
+        subplot_titles=('<b>' + language['top_species_for_'].format(top=top_N, start=start_date) + '</b>',
+                        '<b>' + language['daily_detections_on_'].format(start=start_date, resample_sel=resample_sel) + '</b>'),
         shared_yaxes='all',
         horizontal_spacing=0
     )
