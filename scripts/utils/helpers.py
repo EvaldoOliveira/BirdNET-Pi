@@ -121,9 +121,11 @@ def get_wav_files():
 
 
 def get_locale():
-    lang = get_settings().get('DATABASE_LANG')
+    language = get_settings().get('DATABASE_LANG')
     try:
-        if lang == 'nl':
+        if language == 'en':
+            from .localization.en import lang
+        if language == 'nl':
             from .localization.nl import lang
     except ImportError:
         from .localization.en import lang
