@@ -369,7 +369,7 @@ if daily is False:
                     st.image(userDir + '/BirdSongs/Extracted/By_Date/' + date_dir + '/' + specie_dir + '/' + recording + '.png')
                     st.audio(userDir + '/BirdSongs/Extracted/By_Date/' + date_dir + '/' + specie_dir + '/' + recording)
                 except Exception:
-                    st.title('RECORDING NOT AVAILABLE :(')
+                    st.title(language['RECORDING_NOT_AVAILABLE_'])
 
     else:
 
