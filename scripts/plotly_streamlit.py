@@ -80,7 +80,7 @@ if daily:
                                      min_value=Start_Date,
                                      max_value=End_Date,
                                      value=(End_Date),
-                                     help='Select date for single day view')
+                                     help=language['select_date_'])
     start_date = end_date
 else:
     Start_Date = pd.to_datetime(df2.index.min()).date()
@@ -89,7 +89,7 @@ else:
                                              min_value=Start_Date-timedelta(days=1),
                                              max_value=End_Date,
                                              value=(Start_Date, End_Date),
-                                             help='Select start and end date, if same date get a clockplot for a single day')
+                                             help=language['select_start_and_end_'])
 
 
 @st.cache_data()
@@ -112,7 +112,7 @@ st.write('<style>div.st-bf{flex-direction:column;} div.st-ag{font-weight:bold;pa
 if start_date == end_date:
     resample_sel = st.sidebar.radio(
         "Resample Resolution",
-        ('Raw', '15 minutes', 'Hourly'), index=1, help='Select resolution for single day - larger times run faster')
+        ('Raw', '15 minutes', 'Hourly'), index=1, help=language['select_resolution_'])
 
     resample_times = {'Raw': 'Raw',
                       '1 minute': '1min',
@@ -124,7 +124,7 @@ if start_date == end_date:
 else:
     resample_sel = st.sidebar.radio(
         "Resample Resolution",
-        ('Raw', '15 minutes', 'Hourly', 'DAILY'), index=1, help='Select resolution for species - DAILY provides time series')
+        ('Raw', '15 minutes', 'Hourly', 'DAILY'), index=1, help=language['select_resolution_daily_'])
 
     resample_times = {'Raw': 'Raw',
                       '1 minute': '1min',
@@ -161,7 +161,7 @@ species = list(hourly.sort_values("All", ascending=False).index)
 
 if len(Specie_Count) > 1:
     top_N = st.sidebar.slider(
-        'Select Number of Birds to Show',
+        language['select_number'],
         min_value=1,
         max_value=len(Specie_Count),
         value=min(10, len(Specie_Count))
@@ -196,9 +196,9 @@ def sunrise_sunset_scatter(date_range):
         sun_rise_time = float(sun_rise.hour) + float(sun_rise.minute) / 60.0
         sun_dusk_time = float(sun_dusk.hour) + float(sun_dusk.minute) / 60.0
 
-        temp_time = str(sun_rise)[-14:-9] + " Sunrise"
+        temp_time = str(sun_rise)[-14:-9] + f" {language['sunrise']}"
         sunrise_text_list.append(temp_time)
-        temp_time = str(sun_dusk)[-14:-9] + " Sunset"
+        temp_time = str(sun_dusk)[-14:-9] + f" {language['sunset']}"
         sunset_text_list.append(temp_time)
         sunrise_list.append(sun_rise_time)
         sunset_list.append(sun_dusk_time)
@@ -232,11 +232,9 @@ def hms_to_str(t):
 if daily is False:
 
     if resample_time != '1D':
-        specie = st.selectbox(
-            'Which bird would you like to explore for the dates '
-            + str(start_date) + ' to ' + str(end_date) + '?',
-            species,
-            index=0)
+        specie = st.selectbox(language['which_bird_'].format(start_date, end_date),
+                              species,
+                              index=0)
 
         if specie == 'All':
             df_counts = int(hourly[hourly.index == specie]['All'].iloc[0])
@@ -361,7 +359,7 @@ if daily is False:
 
             with col2:
                 try:
-                    recording = st.selectbox('Available recordings', recordings.sort_index(ascending=False))
+                    recording = st.selectbox(language['available_recordings'], recordings.sort_index(ascending=False))
                     date_specie = df2.loc[df2['File_Name'] == recording, ['Date', 'Com_Name']]
                     date_dir = date_specie['Date'].values[0]
                     specie_dir = date_specie['Com_Name'].values[0].replace(" ", "_")
@@ -372,8 +370,7 @@ if daily is False:
 
     else:
 
-        specie = st.selectbox('Which bird would you like to explore for the dates '
-                              + str(start_date) + ' to ' + str(end_date) + '?',
+        specie = st.selectbox(language['which_bird_'].format(start_date, end_date),
                               species[1:],
                               index=0)
 
@@ -393,7 +390,7 @@ if daily is False:
         fig_z = day_hour_freq.values.transpose()
 
         color_pals = px.colors.named_colorscales()
-        selected_pal = st.sidebar.selectbox('Select Color Pallet for Daily Detections', color_pals)
+        selected_pal = st.sidebar.selectbox(language['select_color_'], color_pals)
 
         heatmap = go.Heatmap(
             x=fig_x,
