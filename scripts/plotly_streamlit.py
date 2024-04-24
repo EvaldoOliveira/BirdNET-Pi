@@ -375,7 +375,7 @@ if daily is False:
                               index=0)
 
         df_counts = int(hourly[hourly.index == specie]['All'])
-        fig = st.container()
+        # fig = st.container()
         fig = make_subplots(rows=1, cols=1)
 
         df4 = df2['Com_Name'][df2['Com_Name'] == specie].resample('15min').count()
