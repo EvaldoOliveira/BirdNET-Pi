@@ -486,3 +486,4 @@ Xiphocolaptes albicollis_Arapaçu-de-garganta-branca
 Xiphorhynchus fuscus_Arapaçu-rajado
 Zenaida auriculata_Avoante
 Zonotrichia capensis_Tico-tico
+Cathartes aura_Urubu-de-cabeça-vermelha
