@@ -705,7 +705,7 @@ Bubo lacteus_Beufo-leitoso
 Bubo nipalensis_Spot-bellied Eagle-Owl
 Bubo scandiacus_Coruja-das-neves
 Bubo sumatranus_Bufo-malaio
-Bucanetes githagineus_Trombeteiro
+Bucanetes githagineus_Trombeteiro (pt-pt)
 Buccanodon duchaillui_Yellow-spotted barbet
 Bucco capensis_Rapazinho-de-colar
 Bucco macrodactylus_Rapazinho-de-boné-vermelho
@@ -1317,7 +1317,7 @@ Cisticola woosnami_Trilling cisticola
 Cistothorus apolinari_Apolinar's wren
 Cistothorus palustris_Marsh wren
 Cistothorus platensis_Corruíra-do-campo
-Cistothorus stellaris_Corruíra-do-campo
+Cistothorus stellaris_Corruíra-do-campo (pt-pt)
 Clamator coromandus_Chestnut-winged cuckoo
 Clamator glandarius_Cuco-rabilongo
 Clamator jacobinus_Cuco-jacobino
@@ -1915,7 +1915,7 @@ Eleothreptus anomalus_Curiango-do-banhado
 Eleutherodactylus planirostris_Greenhouse Frog
 Elliotomyia chionogaster_Beija-flor-verde-e-branco
 Elminia albonotata_White-tailed crested flycatcher
-Elminia longicauda_Azulinho
+Elminia longicauda_Azulinho (pt-pt)
 Elseyornis melanops_Beatuíra-de-fronte-preta
 Emarginata sinuata_Sickle-winged chat
 Emberiza aureola_Escrevedeira-de-barriga-amarela
@@ -2218,7 +2218,7 @@ Galerida theklae_Cotovia-escura
 Gallicrex cinerea_Gealo-d'água
 Gallinago andina_Puna snipe
 Gallinago delicata_Narceja-de-wilson
-Gallinago gallinago_Narceja
+Gallinago gallinago_Narceja (pt-pt)
 Gallinago hardwickii_Latham's snipe
 Gallinago imperialis_Imperial snipe
 Gallinago jamesoni_Jameson's snipe
@@ -2227,7 +2227,7 @@ Gallinago media_Narceja-real
 Gallinago megala_Narceja-de-swinhoe
 Gallinago nobilis_Noble snipe
 Gallinago stenura_Narceja-siberiana
-Gallinula chloropus_Galinha-d'água
+Gallinula chloropus_Galinha-d'água (pt-pt)
 Gallinula tenebrosa_Galinha-d'água-sombria
 Gallirallus australis_Weeka
 Gallirallus philippensis_Frango-d'água-filipino
@@ -4300,7 +4300,7 @@ Picus vaillantii_Peto-mourisco
 Picus viridis_Peto-real
 Picus vittatus_Laced woodpecker
 Picus xanthopygaeus_Streak-throated woodpecker
-Pinicola enucleator_Bico-duro
+Pinicola enucleator_Bico-duro (pt-pt)
 Pionites leucogaster_Marianinha-de-cabeça-amarela
 Pionites melanocephalus_Marianinha-de-cabeça-preta
 Pionus chalcopterus_Bronze-winged parrot
@@ -4370,7 +4370,7 @@ Platysmurus leucopterus_Malayan black magpie
 Platysteira blissetti_Red-cheeked wattle-eye
 Platysteira castanea_Peapa-moscas-de-olheiras-castanho
 Platysteira concreta_Yellow-bellied wattle-eye
-Platysteira cyanea_Papa-moscas-de-olheiras
+Platysteira cyanea_Papa-moscas-de-olheiras (pt-pt)
 Platysteira peltata_Black-throated wattle-eye
 Plectorhyncha lanceolata_Striped honeyeater
 Plectrophenax hyperboreus_Mckay's bunting
@@ -5105,7 +5105,7 @@ Sericornis papuensis_Papuan Scrubwren
 Sericossypha albocristata_White-capped tanager
 Serilophus lunatus_Silver-breasted broadbill
 Serinus alario_Black-headed canary
-Serinus canaria_Canário-da-terra
+Serinus canaria_Canário-da-terra (pt-pt)
 Serinus canicollis_Cape canary
 Serinus flavivertex_Yellow-crowned canary
 Serinus pusillus_Milheirinha-de-testa-vermelha
@@ -5334,7 +5334,7 @@ Streptopelia turtur_Rola-brava
 Streptopelia vinacea_Rola-de-colar-da-guiné
 Streptoprocne biscutata_Taperuçu-de-coleira-falha
 Streptoprocne rutila_Chestnut-collared swift
-Strix aluco_Coruja-do-mato
+Strix aluco_Coruja-do-mato (pt-pt)
 Strix chacoensis_Chaco owl
 Strix fulvescens_Fulvous owl
 Strix hadorami_Coruja-da-palestina
@@ -5432,7 +5432,7 @@ Tachornis phoenicobia_Antillean palm swift
 Tachornis squamata_Andorinhão-do-buriti
 Tachuris rubrigastra_Papa-piri
 Tachybaptus novaehollandiae_Mergulhão-australasiático
-Tachybaptus ruficollis_Mergulhão-pequeno
+Tachybaptus ruficollis_Mergulhão-pequeno (pt-pt)
 Tachycineta albilinea_Mangrove swallow
 Tachycineta bicolor_Andorinha-das-árvores
 Tachycineta euchrysea_Golden swallow
