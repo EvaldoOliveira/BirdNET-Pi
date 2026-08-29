@@ -62,6 +62,7 @@ Camptostoma obsoletum_Risadinha
 Caracara plancus_Carcará
 Cariama cristata_Seriema
 Carpornis cucullata_Corocoxó
+Cathartes aura_Urubu-de-cabeça-vermelha
 Celeus flavescens_Pica-pau-de-cabeça-amarela
 Certhiaxis cinnamomeus_Curutié
 Chaetura cinereiventris_Andorinhão-de-sobre-cinzento
@@ -486,4 +487,3 @@ Xiphocolaptes albicollis_Arapaçu-de-garganta-branca
 Xiphorhynchus fuscus_Arapaçu-rajado
 Zenaida auriculata_Avoante
 Zonotrichia capensis_Tico-tico
-Cathartes aura_Urubu-de-cabeça-vermelha
