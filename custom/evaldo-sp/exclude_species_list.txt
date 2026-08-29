@@ -1973,7 +1973,7 @@ Empidonax traillii_Maria-fibui
 Empidonax virescens_Papa-mosquitos
 Empidonax wrightii_Gray flycatcher
 Empidonomus aurantioatrocristatus_Peitica-de-chapéu-preto
-Engine_Engine
+Engine_Motor
 Enicognathus ferrugineus_Austral parakeet
 Enicognathus leptorhynchus_Slender-billed parakeet
 Enicurus leschenaulti_White-crowned forktail
@@ -1982,7 +1982,7 @@ Enicurus schistaceus_Slaty-backed forktail
 Entomodestes coracinus_Black solitaire
 Entomodestes leucotis_White-eared solitaire
 Entomyzon cyanotis_Blue-faced honeyeater
-Environmental_Environmental
+Environmental_Ambiente
 Eolophus roseicapilla_Ceacatua-galah
 Eophona migratoria_Yellow-billed grosbeak
 Eophona personata_Japanese grosbeak
@@ -2145,7 +2145,7 @@ Ficedula superciliaris_Ultramarine flycatcher
 Ficedula tricolor_Slaty-blue flycatcher
 Ficedula westermanni_Papa-moscas-pedrês-pequeno
 Ficedula zanthopygia_Yellow-rumped flycatcher
-Fireworks_Fireworks
+Fireworks_Fogos de artifício
 Florisuga mellivora_Beija-flor-azul-de-rabo-branco
 Fluvicola pica_Lavadeira-do-norte
 Formicarius analis_Pinto-do-mato-de-cara-preta
@@ -2408,7 +2408,7 @@ Gryllus rubens_Southeastern Field Cricket
 Guaruba guarouba_Ararajuba
 Gubernatrix cristata_Cardeal-amarelo
 Gubernetes yetapa_Tesoura-do-brejo
-Gun_Gun
+Gun_Tiro
 Guttera pucherani_Eastern crested guineafowl
 Gygis alba_Grazina
 Gymnasio nudipes_Puerto rican owl
@@ -2599,9 +2599,9 @@ Horornis fortipes_Brownish-flanked bush warbler
 Horornis ruficapilla_Fiji bush warbler
 Horornis seebohmi_Philippine bush warbler
 Horornis vulcanius_Sunda Bush Warbler
-Human non-vocal_Human non-vocal
-Human vocal_Human vocal
-Human whistle_Human whistle
+Human non-vocal_Humano não vocal
+Human vocal_Voz humana
+Human whistle_Assobio humano
 Hydrobates castro_Roquinho
 Hydrobates leucorhous_Painho-de-cauda-furcada
 Hydrobates monorhis_Painho-de-swinhoe
@@ -3634,7 +3634,7 @@ Ninox theomacha_Papuan boobook
 Nisaetus cirrhatus_Changeable hawk-eagle
 Nisaetus nanus_Wallace's hawk-eagle
 Nisaetus nipalensis_Mountain hawk-eagle
-Noise_Noise
+Noise_Ruído
 Nonnula brunnea_Brown nunlet
 Nonnula frontalis_Gray-cheeked nunlet
 Nonnula rubecula_Macuru
@@ -4503,7 +4503,7 @@ Porphyrio porphyrio_Camão
 Porzana carolina_Sora
 Porzana porzana_Franga-d'água-malhada
 Porzana spiloptera_Sanã-cinza
-Power tools_Power tools
+Power tools_Ferramentas elétricas
 Premnoplex brunnescens_Spotted barbtail
 Premnornis guttuliger_Rusty-winged barbtail
 Primolius auricollis_Maracanã-de-colar
@@ -5159,7 +5159,7 @@ Sipia berlepschi_Stub-tailed antbird
 Sipia laemosticta_Dull-mantled antbird
 Sipia nigricauda_Esmeraldas antbird
 Sipia palliata_Magdalena antbird
-Siren_Siren
+Siren_Sirene
 Sirystes albocinereus_Gritador-de-sobre-branco
 Sirystes albogriseus_Choco sirystes
 Sitta canadensis_Trepadeira-azul-do-canadá
