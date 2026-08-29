@@ -861,7 +861,7 @@ Calidris himantopus_Maçarico-pernilongo
 Calidris maritima_Pilrito-escuro
 Calidris mauri_Maçarico-do-alasca
 Calidris melanotos_Maçarico-de-colete
-Calidris minuta_Maçarico-pequeno
+Calidris minuta_Pilrito-pequeno (pt-pt)
 Calidris minutilla_Maçariquinho
 Calidris ptilocnemis_Rock sandpiper
 Calidris pugnax_Combatente
@@ -3606,7 +3606,7 @@ Mirafra affinis_Jerdon's Bushlark
 Mirafra africana_Ceotovia-de-nuca-vermelha
 Mirafra apiata_Ceotovia-batedora
 Mirafra assamica_Bengal Bushlark
-Mirafra cantillans_Singing Bushlark
+Mirafra cantillans_Singing Bushlark (en-en)
 Mirafra cheniana_Melodious lark
 Mirafra erythrocephala_Plocealauda erythrocephala
 Mirafra erythroptera_Indian Bushlark
@@ -5416,7 +5416,7 @@ Scleroptila shelleyi_Shelley's francolin
 Sclerurus albigularis_Vira-folha-de-garganta-cinza
 Sclerurus caudacutus_Vira-folha-pardo
 Sclerurus guatemalensis_Scaly-throated leaftosser
-Sclerurus mexicanus_Vira-folha-de-peito-vermelho
+Sclerurus mexicanus_Vira-folha-de-peito-vermelho (pt-pt)
 Sclerurus obscurior_Vira-folha-de-peito-vermelho
 Sclerurus rufigularis_Vira-folha-de-bico-curto
 Sclerurus scansor_Vira-folha
@@ -5511,7 +5511,7 @@ Serpophaga nigricans_João-pobre
 Serpophaga subcristata_Alegrinho
 Setopagis parvula_Bacurau-chintã
 Setophaga adelaidae_Adelaide's warbler
-Setophaga americana_Mariquita-azul
+Setophaga americana_Mariquita-azul (pt-pt)
 Setophaga caerulescens_Mariquita-azul-de-garganta-preta
 Setophaga castanea_Mariquita-de-peito-castanho
 Setophaga cerulea_Mariquita-azul
