@@ -1,0 +1,19 @@
+name: Epic
+description: A group of user stories with one goal
+title: "EP-nn: <short title>"
+labels: ["type:epic"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+    validations:
+      required: true
+  - type: textarea
+    id: stories
+    attributes:
+      label: Stories
+      description: Task list of issues (- [ ] #nn) — progress is tracked here
+      placeholder: |
+        - [ ] #12
+        - [ ] #13

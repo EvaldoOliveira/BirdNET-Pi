@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Upstream BirdNET-Pi (Nachtzuster)
+    url: https://github.com/Nachtzuster/BirdNET-Pi/issues
+    about: Problems in the original project belong upstream

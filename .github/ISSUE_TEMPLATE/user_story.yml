@@ -1,0 +1,43 @@
+name: User story
+description: A user story (an "idea" is a user story) — enters the backlog in state Idea
+title: "US-nn: <short title>"
+labels: ["type:story"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: Story
+      description: As a <persona>, I want <capability> so that <benefit>
+      placeholder: As an Operator, I want … so that …
+    validations:
+      required: true
+  - type: dropdown
+    id: persona
+    attributes:
+      label: Persona
+      options: [Operator, BR Observer, Listener, Contributor, Claude]
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Given / When / Then — required before the story can be Ready
+      placeholder: |
+        - Given …, when …, then …
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Data layer touched
+      description: guidelines.md §2b — native product data/code, station (user) data, or both
+      options: [native, user, both, none]
+  - type: dropdown
+    id: size
+    attributes:
+      label: Size
+      options: [S, M, L, "L — must be split"]
+  - type: textarea
+    id: notes
+    attributes:
+      label: Origin, value, dependencies, notes
+      description: Who asked, when; why it matters; blockers; upstream PR candidate?
