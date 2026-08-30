@@ -1,0 +1,9 @@
+# Allow-list (owner rule 2026-08-30): under custom/ ONLY the station layer
+# custom/evaldo-sp/ is versioned and pushed to GitHub. Everything else here
+# (docs/ with PDF/PPTX and build tooling, local/ with third-party reference
+# clones and wheels, anything added later) stays on this machine and must
+# never be exposed on the internet. Un-ignore a new station layer explicitly.
+*
+!.gitignore
+!evaldo-sp/
+!evaldo-sp/**
