@@ -210,6 +210,9 @@ FREQSHIFT_LO=3000
 ## FREQSHIFT_RECONNECT_DELAY
 FREQSHIFT_RECONNECT_DELAY=4000
 
+## SPECTROGRAM_HEIGHT is the height of the live spectrogram in percent of the page height (vh)
+SPECTROGRAM_HEIGHT=80
+
 ## If the tool is sox, you have to define the pitch shift (amount of 100ths of semintone)
 ## FREQSHIFT_PITCH
 FREQSHIFT_PITCH=-1500

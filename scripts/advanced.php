@@ -132,6 +132,18 @@ if(isset($_GET['submit'])) {
     }
   }
 
+  if(isset($_GET["spectrogram_height"]) && is_numeric($_GET['spectrogram_height'])) {
+    $spectrogram_height = $_GET["spectrogram_height"];
+    if(strcmp($spectrogram_height,($config['SPECTROGRAM_HEIGHT'] ?? '')) !== 0) {
+      if(preg_match("/^SPECTROGRAM_HEIGHT=/m", $contents)) {
+        $contents = preg_replace("/SPECTROGRAM_HEIGHT=.*/", "SPECTROGRAM_HEIGHT=$spectrogram_height", $contents);
+      } else {
+        // Config written before this setting existed - append the new key
+        $contents .= "\n## SPECTROGRAM_HEIGHT is the height of the live spectrogram in percent of the page height (vh)\nSPECTROGRAM_HEIGHT=$spectrogram_height\n";
+      }
+    }
+  }
+
   if(isset($_GET["full_disk"])) {
     $full_disk = $_GET["full_disk"];
     if(strcmp($full_disk,$config['FULL_DISK']) !== 0) {
@@ -550,6 +562,10 @@ foreach($formats as $format){
         <p style="margin-left: 40px">
         <label for="freqshift_reconnect_delay">Livestream reconnection delay (in ms): </label>
         <input name="freqshift_reconnect_delay" type="number" style="width:5em;" min="1000" max="10000" step="100" value="<?php print($newconfig['FREQSHIFT_RECONNECT_DELAY']);?>" required/>
+        </p>
+        <p style="margin-left: 40px">
+        <label for="spectrogram_height">Live spectrogram height (% of the page): </label>
+        <input name="spectrogram_height" type="number" style="width:5em;" min="20" max="100" step="1" value="<?php print(is_numeric($newconfig['SPECTROGRAM_HEIGHT'] ?? null) ? $newconfig['SPECTROGRAM_HEIGHT'] : 80);?>" required/>
         </p>
 
         <p style="margin-left: 40px">
