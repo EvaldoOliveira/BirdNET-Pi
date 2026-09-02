@@ -1,7 +1,11 @@
 import glob
+import hashlib
+import re
 import json
 import logging
 import os
+import shutil
+import uuid
 import sqlite3
 import subprocess
 import tempfile
@@ -14,7 +18,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from .helpers import get_settings, get_font, DB_PATH
 from .classes import Detection, ParseFileName
-from .notifications import sendAppriseNotifications
+from .notifications import sendAppriseNotifications, get_notification_tier
 
 log = logging.getLogger(__name__)
 
@@ -166,6 +170,67 @@ def apprise(file: ParseFileName, detections: [Detection]):
                 log.exception('Error during Apprise:', exc_info=e)
 
             species_apprised_this_run.append(detection.species)
+
+
+def sound_repo(file: ParseFileName, detections: [Detection]):
+    # US-38: beside the BirdWeather upload, write every detection to the
+    # owner's central sound repository (SOUND_REPO_PATH, empty = off) as the
+    # extracted clip plus a sidecar JSON in a training-ready layout:
+    # <repo>/<station>/<yyyy-mm-dd>/<Sci_name>/<clip> . Failures are logged,
+    # never raised - this must not block the reporting queue.
+    conf = get_settings()
+    repo = conf.get('SOUND_REPO_PATH')
+    if not repo:
+        return
+    for detection in detections:
+        try:
+            _sound_repo_write(conf, repo, detection)
+        except BaseException as e:
+            log.exception('Error during sound repo write:', exc_info=e)
+
+
+def _sound_repo_write(conf, repo, detection):
+    if not os.path.isdir(repo):
+        raise RuntimeError(f'sound repo root missing (mount down?): {repo}')
+    clip = detection.file_name_extr
+    station = (conf.get('SITE_NAME') or 'station').replace(' ', '_')
+    sci_dir = detection.scientific_name.replace(' ', '_')
+    dest_dir = os.path.join(repo, station, str(detection.date), sci_dir)
+    os.makedirs(dest_dir, exist_ok=True)
+    # HH:MM:SS -> HHhMMmSSs in the repo copy: readable, and legal on SMB/Windows
+    # (a colon is forbidden there and gets mangled by CIFS name mapping)
+    dest_name = re.sub(r'(\d{2}):(\d{2}):(\d{2})', r'\1h\2m\3s', os.path.basename(clip))
+    dest = os.path.join(dest_dir, dest_name)
+    shutil.copy2(clip, dest)
+    sha = hashlib.sha256()
+    with open(clip, 'rb') as f:
+        for chunk in iter(lambda: f.read(65536), b''):
+            sha.update(chunk)
+    meta = {
+        'id': str(uuid.uuid4()),
+        'station': conf.get('SITE_NAME'),
+        'latitude': conf.get('LATITUDE'),
+        'longitude': conf.get('LONGITUDE'),
+        'date': str(detection.date),
+        'time': str(detection.time),
+        'timestamp': detection.iso8601,
+        'week': detection.week,
+        'scientific_name': detection.scientific_name,
+        'common_name': detection.common_name,
+        'confidence': detection.confidence,
+        'model': conf.get('MODEL'),
+        'sensitivity': conf.get('SENSITIVITY'),
+        'overlap': conf.get('OVERLAP'),
+        'cutoff': conf.get('CONFIDENCE'),
+        'audio_format': conf.get('AUDIOFMT'),
+        'extraction_length': conf.get('EXTRACTION_LENGTH'),
+        'notification_tier': get_notification_tier(detection.scientific_name),
+        'file': dest_name,
+        'sha256': sha.hexdigest(),
+    }
+    with open(dest + '.json', 'w') as f:
+        f.write(json.dumps(meta))
+    log.info('sound repo: stored %s', os.path.basename(clip))
 
 
 def bird_weather(file: ParseFileName, detections: [Detection]):
