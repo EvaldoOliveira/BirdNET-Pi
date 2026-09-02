@@ -42,9 +42,17 @@ $base           = realpath($base_symlink);
 $confirm_file   = __DIR__ . '/confirmed_species_list.txt';
 $exclude_file   = __DIR__ . '/exclude_species_list.txt';
 $whitelist_file = __DIR__ . '/whitelist_species_list.txt';
+$tiers_file     = __DIR__ . '/notification_tiers.txt';
 
-foreach ([$confirm_file, $exclude_file, $whitelist_file] as $file) {
+foreach ([$confirm_file, $exclude_file, $whitelist_file, $tiers_file] as $file) {
     if (!file_exists($file)) touch($file);
+}
+
+/* Notification tiers: 'Sci_Name=tier' per non-normal species (muted/rare) */
+$species_tiers = [];
+foreach (file_exists($tiers_file) ? file($tiers_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [] as $l) {
+    [$t_sci, $t_tier] = array_pad(explode('=', trim($l), 2), 2, '');
+    if ($t_sci !== '' && $t_tier !== '') $species_tiers[$t_sci] = strtolower($t_tier);
 }
 
 $confirmed_species   = file_exists($confirm_file)   ? file($confirm_file,   FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
@@ -83,6 +91,19 @@ function collect_species_targets(SQLite3 $db, string $species, string $home, $ba
     }
   }
   return ['count'=>$count, 'files'=>array_keys($files), 'dirs'=>array_values(array_unique($dirs)), 'sci'=>$sci];
+}
+
+/* ---------- set notification tier (Muted/Normal/Rare) ---------- */
+if (isset($_GET['settier'], $_GET['species'], $_GET['tier'])) {
+  $species = htmlspecialchars_decode($_GET['species'], ENT_QUOTES);
+  $tier    = strtolower($_GET['tier']);
+  if (!in_array($tier, ['normal', 'muted', 'rare'], true)) { header('Content-Type: text/plain'); echo 'Invalid tier'; exit; }
+  $lines = file_exists($tiers_file) ? file($tiers_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
+  $lines = array_values(array_filter($lines, fn($l) => explode('=', trim($l), 2)[0] !== $species));
+  if ($tier !== 'normal') $lines[] = $species . '=' . $tier;
+  sort($lines, SORT_STRING);
+  file_put_contents($tiers_file, implode("\n", $lines) . (empty($lines) ? "" : "\n"));
+  header('Content-Type: text/plain'); echo 'OK'; exit;
 }
 
 /* ---------- toggle exclude/whitelist/confirmed ---------- */
@@ -184,6 +205,7 @@ $result = $db->query($sql);
         <th onclick="sortTable(7)">Confirmed</th>
         <th onclick="sortTable(8)">Excluded</th>
         <th onclick="sortTable(9)">Whitelisted</th>
+        <th onclick="sortTable(10)">Notification</th>
         <th>Delete</th>
       </tr>
     </thead>
@@ -223,6 +245,14 @@ $result = $db->query($sql);
     ? "<img style='cursor:pointer;max-width:12px;max-height:12px' src='images/check.svg' onclick=\"toggleSpecies('whitelist','{$identifier_js}','del')\">"
     : "<span class='circle-icon' onclick=\"toggleSpecies('whitelist','{$identifier_js}','add')\"></span>";
 
+  $species_tier = $species_tiers[$identifier_sci] ?? 'normal';
+  $tier_cell = "<select onchange=\"setTier('{$identifier_sci_js}', this.value)\">";
+  foreach (['normal' => 'Normal', 'muted' => 'Muted', 'rare' => 'Rare'] as $t_val => $t_label) {
+    $t_sel = $species_tier === $t_val ? " selected" : "";
+    $tier_cell .= "<option value='{$t_val}'{$t_sel}>{$t_label}</option>";
+  }
+  $tier_cell .= "</select>";
+
   $sciname_raw = $row['Sci_Name'];
     $info_url = get_info_url($sciname_raw);
     if (!empty($info_url)) {
@@ -243,6 +273,7 @@ $result = $db->query($sql);
      . "<td data-sort='".($is_confirmed?0:1)."'>".$confirm_cell."</td>"
      . "<td data-sort='".($is_excluded?0:1)."'>".$excl_cell."</td>"
      . "<td data-sort='".($is_whitelisted?0:1)."'>".$white_cell."</td>"
+     . "<td data-sort='{$species_tier}'>".$tier_cell."</td>"
      . "<td><img style='cursor:pointer;max-width:20px' src='images/delete.svg' onclick=\"deleteSpecies('".addslashes($row['Sci_Name'])." + ".addslashes($row['Com_Name'])."')\"></td>"
      . "</tr>";
 } ?>
@@ -330,6 +361,9 @@ window.addEventListener('scroll', function() {
 });
 
 /* ---------- toggles / delete ---------- */
+function setTier(species, tier) {
+  get(scriptsBase + 'species_tools.php?settier=1&species=' + encodeURIComponent(species) + '&tier=' + encodeURIComponent(tier));
+}
 function toggleSpecies(list, species, action) {
   get(scriptsBase + 'species_tools.php?toggle=' + list + '&species=' + encodeURIComponent(species) + '&action=' + action)
     .then(t => { if (t.trim() === 'OK') location.reload(); });

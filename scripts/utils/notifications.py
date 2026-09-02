@@ -11,6 +11,7 @@ from .helpers import get_settings
 userDir = os.path.expanduser('~')
 APPRISE_CONFIG = userDir + '/BirdNET-Pi/apprise.txt'
 APPRISE_BODY = userDir + '/BirdNET-Pi/body.txt'
+NOTIFICATION_TIERS = userDir + '/BirdNET-Pi/notification_tiers.txt'
 
 apobj = None
 images = {}
@@ -44,7 +45,21 @@ def notify(body, title, attached=""):
         )
 
 
-def sendAppriseNotifications(sci_name, com_name, confidence, confidencepct, path, date, time_of_day, week, latitude, longitude, cutoff, sens, overlap):
+def get_notification_tier(sci_name):
+    # Species tiers set on the Species Management page: one 'Sci_Name=tier' line
+    # per non-normal species (muted/rare); a species not listed is normal.
+    try:
+        with open(NOTIFICATION_TIERS) as f:
+            for line in f:
+                name, _, tier = line.strip().partition('=')
+                if name == sci_name:
+                    return tier.lower() or 'normal'
+    except OSError:
+        pass
+    return 'normal'
+
+
+def sendAppriseNotifications(sci_name, com_name, confidence, confidencepct, path, date, time_of_day, week, latitude, longitude, cutoff, sens, overlap, file_path=""):
     def render_template(template, reason=""):
         ret = template.replace("$sciname", sci_name) \
             .replace("$comname", com_name) \
@@ -65,7 +80,16 @@ def sendAppriseNotifications(sci_name, com_name, confidence, confidencepct, path
             .replace("$reason", reason)
         return ret
 
-    if not should_notify(com_name):
+    tier = get_notification_tier(sci_name)
+    if tier == 'muted':
+        return
+
+    if tier == 'rare':
+        # Rare species notify on every detection, with the audio clip attached,
+        # bypassing the name filters and the per-species rate limit.
+        if not (os.path.exists(APPRISE_CONFIG) and os.path.getsize(APPRISE_CONFIG) > 0):
+            return
+    elif not should_notify(com_name):
         return
 
     settings_dict = get_settings()
@@ -90,6 +114,15 @@ def sendAppriseNotifications(sci_name, com_name, confidence, confidencepct, path
             except Exception as e:
                 print("IMAGE API ERROR:", e)
         image_url = images.get(com_name, "")
+
+    if tier == 'rare':
+        reason = "rare species"
+        notify_body = render_template(body, reason)
+        notify_title = render_template(title, reason)
+        attachment = file_path if file_path and os.path.isfile(file_path) else image_url
+        notify(notify_body, notify_title, attachment)
+        species_last_notified[com_name] = int(time.time())
+        return
 
     if settings_dict.get('APPRISE_NOTIFY_EACH_DETECTION') == "1":
         reason = "detection"
