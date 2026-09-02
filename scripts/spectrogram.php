@@ -12,6 +12,12 @@ if(!empty($config['FREQSHIFT_RECONNECT_DELAY']) && is_numeric($config['FREQSHIFT
     $FREQSHIFT_RECONNECT_DELAY = 4000;
 }
 
+if(!empty($config['SPECTROGRAM_HEIGHT']) && is_numeric($config['SPECTROGRAM_HEIGHT'])){
+    $SPECTROGRAM_HEIGHT = ($config['SPECTROGRAM_HEIGHT']);
+}else{
+    $SPECTROGRAM_HEIGHT = 80;
+}
+
 if(isset($_GET['ajax_csv'])) {
   $RECS_DIR = $config["RECS_DIR"];
   $STREAM_DATA_DIR = $RECS_DIR . "/StreamData/";
@@ -20,7 +26,11 @@ if(isset($_GET['ajax_csv'])) {
     $look_in_directory = $STREAM_DATA_DIR;
     $files = glob($look_in_directory . "*.wav.json");
     if (count($files) !== 0) {
-      $newest_file = $files[0];
+      // glob() returns full paths (unlike the scandir branch below) and sorts
+      // alphabetically, i.e. chronologically for these date-prefixed names:
+      // take the newest and reduce it to a basename like the RTSP branch does,
+      // since $look_in_directory is prepended again when the file is read.
+      $newest_file = basename(end($files));
     }
   }
   else {
@@ -393,16 +403,16 @@ html, body {
   height: 100%;
 }
 
-/* 80vh: the live graph takes 80% of the pane height, leaving room for the
-   topnav and the controls bar above it — nothing overflows below. */
+/* SPECTROGRAM_HEIGHT (birdnet.conf, in vh): the live graph takes that share of
+   the pane height, leaving room for the topnav and the controls bar above it. */
 canvas {
   display: block;
-  height: 80vh;
+  height: <?php echo $SPECTROGRAM_HEIGHT; ?>vh;
   width: 100%;
 }
 
 #spectrogramimage {
-  height: 80vh;
+  height: <?php echo $SPECTROGRAM_HEIGHT; ?>vh;
 }
 
 h1 {
