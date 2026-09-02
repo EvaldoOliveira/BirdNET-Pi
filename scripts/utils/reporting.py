@@ -22,6 +22,8 @@ from .notifications import sendAppriseNotifications, get_notification_tier
 
 log = logging.getLogger(__name__)
 
+_sound_repo_format_warned = False
+
 
 def extract(in_file, out_file, start, stop):
     result = subprocess.run(['sox', '-V1', f'{in_file}', f'{out_file}', 'trim', f'={start}', f'={stop}'],
@@ -95,6 +97,7 @@ def write_to_db(file: ParseFileName, detection: Detection):
     conf = get_settings()
     # Connect to SQLite Database
     for attempt_number in range(3):
+        con = None
         try:
             con = sqlite3.connect(DB_PATH)
             cur = con.cursor()
@@ -107,11 +110,16 @@ def write_to_db(file: ParseFileName, detection: Detection):
             # Overlap, File_Name))
 
             con.commit()
-            con.close()
             break
         except BaseException as e:
             log.warning("Database busy: %s", e)
             sleep(2)
+        finally:
+            if con is not None:
+                con.close()
+    else:
+        log.error("Giving up writing detection to db: %s %s %s",
+                  detection.date, detection.time, os.path.basename(detection.file_name_extr))
 
 
 def summary(file: ParseFileName, detection: Detection):
@@ -190,9 +198,15 @@ def sound_repo(file: ParseFileName, detections: [Detection]):
 
 
 def _sound_repo_write(conf, repo, detection):
+    global _sound_repo_format_warned
     if not os.path.isdir(repo):
         raise RuntimeError(f'sound repo root missing (mount down?): {repo}')
     clip = detection.file_name_extr
+    if not clip.endswith('.flac'):
+        if not _sound_repo_format_warned:
+            log.warning('sound repo requires AUDIOFMT=flac; skipping non-FLAC clips (this is logged once)')
+            _sound_repo_format_warned = True
+        return
     station = (conf.get('SITE_NAME') or 'station').replace(' ', '_')
     sci_dir = detection.scientific_name.replace(' ', '_')
     dest_dir = os.path.join(repo, station, str(detection.date), sci_dir)

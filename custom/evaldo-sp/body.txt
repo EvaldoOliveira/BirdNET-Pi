@@ -1,1 +1,8 @@
-A $comname ($sciname)  was just detected with a confidence of $confidence ($reason)
+A Normal $comname ($sciname) detected with $confidencepct% confidence
+($reason)
+Link to the detection: $listenurl
+Minimum Confidence: $cutoff
+Sigmoid Sensitivity: $sens
+Overlap: $overlap
+$image
+$audio

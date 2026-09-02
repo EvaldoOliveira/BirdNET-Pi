@@ -16,6 +16,8 @@ if (file_exists($home."/BirdNET-Pi/apprise.txt")) {
 } else {
   $apprise_config = "";
 }
+$apprise_config_rare = file_exists($home."/BirdNET-Pi/apprise-rare.txt") ? file_get_contents($home."/BirdNET-Pi/apprise-rare.txt") : "";
+$apprise_notification_body_rare = file_exists($home."/BirdNET-Pi/body-rare.txt") ? file_get_contents($home."/BirdNET-Pi/body-rare.txt") : "";
 
 if (file_exists($home."/BirdNET-Pi/body.txt")) {
   $apprise_notification_body = file_get_contents($home."/BirdNET-Pi/body.txt");
@@ -62,8 +64,11 @@ if(isset($_GET["latitude"])){
   $site_name = str_replace('\'', "", $site_name);
   $birdweather_id = $_GET["birdweather_id"];
   $apprise_input = $_GET['apprise_input'];
+  if(isset($_GET['apprise_input_rare'])) { $apprise_input_rare = $_GET['apprise_input_rare']; }
   $apprise_notification_title = $_GET['apprise_notification_title'];
   $apprise_notification_body = htmlspecialchars_decode($_GET['apprise_notification_body'], ENT_QUOTES);
+  if(isset($_GET['apprise_notification_title_rare'])) { $apprise_notification_title_rare = $_GET['apprise_notification_title_rare']; }
+  if(isset($_GET['apprise_notification_body_rare'])) { $apprise_notification_body_rare = htmlspecialchars_decode($_GET['apprise_notification_body_rare'], ENT_QUOTES); }
   $minimum_time_limit = $_GET['minimum_time_limit'];
   $image_provider = $_GET["image_provider"];
   $flickr_api_key = $_GET['flickr_api_key'];
@@ -79,8 +84,8 @@ if(isset($_GET["latitude"])){
   } else {
     $data_model_version = 1;
   }
-  $only_notify_species_names = htmlspecialchars_decode($_GET['only_notify_species_names'], ENT_QUOTES);
-  $only_notify_species_names_2 = htmlspecialchars_decode($_GET['only_notify_species_names_2'], ENT_QUOTES);
+  if(isset($_GET['only_notify_species_names'])) { $only_notify_species_names = htmlspecialchars_decode($_GET['only_notify_species_names'], ENT_QUOTES); }
+  if(isset($_GET['only_notify_species_names_2'])) { $only_notify_species_names_2 = htmlspecialchars_decode($_GET['only_notify_species_names_2'], ENT_QUOTES); }
 
   if(isset($_GET['notification_default_tier'])) {
     $notification_default_tier = strtolower($_GET['notification_default_tier']);
@@ -150,6 +155,14 @@ if(isset($_GET["latitude"])){
   $contents = preg_replace("/LONGITUDE=.*/", "LONGITUDE=$longitude", $contents);
   $contents = preg_replace("/BIRDWEATHER_ID=.*/", "BIRDWEATHER_ID=$birdweather_id", $contents);
   $contents = preg_replace("/APPRISE_NOTIFICATION_TITLE=.*/", "APPRISE_NOTIFICATION_TITLE=\"$apprise_notification_title\"", $contents);
+  if(isset($apprise_notification_title_rare)) {
+    if(preg_match("/^APPRISE_NOTIFICATION_TITLE_RARE=/m", $contents)) {
+      $contents = preg_replace("/APPRISE_NOTIFICATION_TITLE_RARE=.*/", "APPRISE_NOTIFICATION_TITLE_RARE=\"$apprise_notification_title_rare\"", $contents);
+    } else {
+      // Config written before this setting existed - append the new key
+      $contents .= "\nAPPRISE_NOTIFICATION_TITLE_RARE=\"$apprise_notification_title_rare\"\n";
+    }
+  }
   $contents = preg_replace("/APPRISE_NOTIFY_EACH_DETECTION=.*/", "APPRISE_NOTIFY_EACH_DETECTION=$apprise_notify_each_detection", $contents);
   $contents = preg_replace("/APPRISE_NOTIFY_NEW_SPECIES=.*/", "APPRISE_NOTIFY_NEW_SPECIES=$apprise_notify_new_species", $contents);
   $contents = preg_replace("/APPRISE_NOTIFY_NEW_SPECIES_EACH_DAY=.*/", "APPRISE_NOTIFY_NEW_SPECIES_EACH_DAY=$apprise_notify_new_species_each_day", $contents);
@@ -166,8 +179,8 @@ if(isset($_GET["latitude"])){
   $contents = preg_replace("/MODEL=.*/", "MODEL=$model", $contents);
   $contents = preg_replace("/SF_THRESH=.*/", "SF_THRESH=$sf_thresh", $contents);
   $contents = preg_replace("/DATA_MODEL_VERSION=.*/", "DATA_MODEL_VERSION=$data_model_version", $contents);
-  $contents = preg_replace("/APPRISE_ONLY_NOTIFY_SPECIES_NAMES=.*/", "APPRISE_ONLY_NOTIFY_SPECIES_NAMES=\"$only_notify_species_names\"", $contents);
-  $contents = preg_replace("/APPRISE_ONLY_NOTIFY_SPECIES_NAMES_2=.*/", "APPRISE_ONLY_NOTIFY_SPECIES_NAMES_2=\"$only_notify_species_names_2\"", $contents);
+  if(isset($only_notify_species_names)) { $contents = preg_replace("/APPRISE_ONLY_NOTIFY_SPECIES_NAMES=.*/", "APPRISE_ONLY_NOTIFY_SPECIES_NAMES=\"$only_notify_species_names\"", $contents); }
+  if(isset($only_notify_species_names_2)) { $contents = preg_replace("/APPRISE_ONLY_NOTIFY_SPECIES_NAMES_2=.*/", "APPRISE_ONLY_NOTIFY_SPECIES_NAMES_2=\"$only_notify_species_names_2\"", $contents); }
   if(isset($notification_default_tier)) {
     if(preg_match("/^NOTIFICATION_DEFAULT_TIER=/m", $contents)) {
       $contents = preg_replace("/NOTIFICATION_DEFAULT_TIER=.*/", "NOTIFICATION_DEFAULT_TIER=$notification_default_tier", $contents);
@@ -196,9 +209,18 @@ if(isset($_GET["latitude"])){
     fwrite($appriseconfig, $apprise_input);
     $apprise_config = $apprise_input;
   }
+  if(isset($apprise_input_rare)){
+    $appriseconfigrare = fopen($home."/BirdNET-Pi/apprise-rare.txt", "w");
+    fwrite($appriseconfigrare, $apprise_input_rare);
+    $apprise_config_rare = $apprise_input_rare;
+  }
   if(isset($apprise_notification_body)){
     $apprisebody = fopen($home."/BirdNET-Pi/body.txt", "w");
     fwrite($apprisebody, $apprise_notification_body);
+  }
+  if(isset($apprise_notification_body_rare)){
+    $apprisebodyrare = fopen($home."/BirdNET-Pi/body-rare.txt", "w");
+    fwrite($apprisebodyrare, $apprise_notification_body_rare);
   }
   if ($model != $config['MODEL'] || $language != $config['DATABASE_LANG']){
     if(strlen($language) == 2){
@@ -256,18 +278,22 @@ $config = get_config($force_reload=true);
     }
   });
 }, false);
-function sendTestNotification(e) {
-  document.getElementById("testsuccessmsg").innerHTML = "";
+function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
+  which = which || "apprise_input";
+  msgspan = msgspan || "testsuccessmsg";
+  document.getElementById(msgspan).innerHTML = "";
   e.classList.add("disabled");
 
-  var apprise_notification_title = document.getElementsByName("apprise_notification_title")[0].value;
-  var apprise_notification_body = encodeURIComponent(document.getElementsByName("apprise_notification_body")[0].value);
-  var apprise_config = encodeURIComponent(document.getElementsByName("apprise_input")[0].value);
+  var apprise_notification_title = (titlefield && document.getElementsByName(titlefield)[0].value)
+    || document.getElementsByName("apprise_notification_title")[0].value;
+  var apprise_notification_body = encodeURIComponent((bodyfield && document.getElementsByName(bodyfield)[0].value)
+    || document.getElementsByName("apprise_notification_body")[0].value);
+  var apprise_config = encodeURIComponent(document.getElementsByName(which)[0].value);
 
   var xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
-            document.getElementById("testsuccessmsg").innerHTML = this.responseText+" Test sent! Make sure to <b>Update Settings</b> below."
+            document.getElementById(msgspan).innerHTML = this.responseText+" Test sent! Make sure to <b>Update Settings</b> below."
             e.classList.remove("disabled");
         }
     }
@@ -444,7 +470,7 @@ function runProcess() {
         <dt>NOTE - by using your BirdWeather Token - you are consenting to sharing your soundscapes and detections with BirdWeather</dt></p>
       </td></tr></table><br>
       <table class="settingstable" style="width:100%"><tr><td>
-      <h2>BirdDB Brasil</h2>
+      <h2>BirdDB-Br</h2>
       <?php $srl = $config['SOUND_REPO_LINK'] ?? ''; ?>
       <label>Central sound repository: </label>
       <?php if($srl != '') { echo "<a href='" . htmlspecialchars($srl, ENT_QUOTES) . "' target='_blank'>" . htmlspecialchars($srl) . "</a>"; } else { echo "<i>not configured on this station</i>"; } ?><br>
@@ -460,32 +486,39 @@ function runProcess() {
           Keep that file private (permissions 600): it grants access with your account. It never
           leaves the station, renews itself automatically, and must never be shared or committed
           to any repository.</li>
+        <li>Contributions must be FLAC: set <code>AUDIOFMT=flac</code> in your station's
+          <code>birdnet.conf</code> (Advanced Settings), otherwise deposits are rejected
+          on ingestion.</li>
         <li>Every deposit is validated on ingestion: a real FLAC clip (30 s max) with its metadata
           sidecar and a matching sha256 — anything else is deleted and reported.</li>
       </ol>
-      <p>BirdDB Brasil is a community sound repository: every detection of this station
+      <p>BirdDB-Br is a community sound repository: every detection of this station
         (the audio clip plus its metadata sidecar — station name, GPS coordinates, date/time,
         species, confidence and model parameters) is contributed to the central repository
         linked above.<br><br>
         <dt>By running this station you contribute your recordings voluntarily, in the spirit of
-        community collections such as xeno-canto — with one important difference: contributed
-        sounds are NOT publicly available. They are used exclusively to build and train
-        bird-identification models for the BirdDB Brasil project.</dt><br>
-        You keep the rights over your recordings; each contribution is attributed to the Google
-        account that uploaded it, and the repository maintainer validates every deposit
-        (integrity, format, metadata) before it enters the base. Recordings containing
-        intelligible human speech must not be contributed; contributors can request removal of
-        their material at any time.</p>
+        community collections — with one important difference: contributed sounds are
+        <b>NOT publicly available</b>.<br>
+        They are used exclusively to build and train bird-identification models for the
+        BirdDB-Br project.</dt><br><br>
+        <b>Contributor terms (summary):</b> you declare you are the rightful producer of the
+        recordings your station contributes and that they contain no third-party copyrighted
+        material.<br>
+        You keep all rights over your recordings; by contributing you grant the BirdDB-Br
+        project a <b>non-exclusive, perpetual, worldwide, royalty-free licence</b> to store,
+        process and use the recordings and their metadata to build, train, evaluate and
+        distribute bird-identification models and derived works, including commercially.
+        Each contribution is attributed to the Google account that uploaded it, and the
+        repository maintainer validates every deposit (integrity, format, metadata) before it
+        enters the base. Recordings containing intelligible human speech must not be
+        contributed. You may request removal of your material from the repository at any time;
+        removal applies to the stored recordings and future use.<br>
+        Models already trained are not reversible.</p>
       </td></tr></table><br>
       <table class="settingstable" style="width:100%"><tr><td>
-      <h2>Notifications</h2>
+      <h2>Notifications - Global</h2>
       <p><a target="_blank" href="https://github.com/caronc/apprise/wiki">Apprise Notifications</a> can be setup and enabled for 90+ notification services. Each service should be on its own line.</p>
-      <label for="apprise_input">Apprise Notifications Configuration: </label><br>
-      <textarea placeholder="mailto://{user}:{password}@gmail.com
-tgram://{bot_token}/{chat_id}
-twitter://{ConsumerKey}/{ConsumerSecret}/{AccessToken}/{AccessSecret}
-https://discordapp.com/api/webhooks/{WebhookID}/{WebhookToken}
-..." style="vertical-align: top" class="testbtn" name="apprise_input" rows="5" type="text" ><?php print($apprise_config);?></textarea>
+      <p>Use the following variables to customize your notification title and body:</p>
       <dl>
       <dt>$sciname</dt>
       <dd>Scientific Name</dd>
@@ -519,12 +552,15 @@ https://discordapp.com/api/webhooks/{WebhookID}/{WebhookToken}
       <dd>An image of the detected species from a photo source, see below.</dd>
       <dt>$reason</dt>
       <dd>The reason a notification was sent</dd>
+      <dt>$audio</dt>
+      <dd>Attach the detection's audio clip to the notification — identical on every
+        tier: no tag, no clip. The tag itself is removed from the text.</dd>
+      <dt>$token1 &hellip; $token20</dt>
+      <dd>Secret values from the station's private token store (<code>apprise-tokens.txt</code>, refreshed from the station secrets on every service start).<br>
+        Usable ONLY inside the Apprise Configuration boxes (e.g. <code>tgram://$token1/$token2</code>)<br>
+        Never in the notification title or body. Secrets never appear on this page.</dd>
       </dl>
       <p>Use the variables defined above to customize your notification title and body.</p>
-      <label for="apprise_notification_title">Notification Title: </label>
-      <input name="apprise_notification_title" style="width: 100%" type="text" value="<?php print($config['APPRISE_NOTIFICATION_TITLE']);?>" /><br>
-      <label for="apprise_notification_body">Notification Body: </label>
-      <textarea class="testbtn" name="apprise_notification_body" rows="5" type="text" ><?php print($apprise_notification_body);?></textarea>
       <input type="checkbox" name="apprise_notify_new_species" <?php if($config['APPRISE_NOTIFY_NEW_SPECIES'] == 1 && filesize($home."/BirdNET-Pi/apprise.txt") != 0) { echo "checked"; };?> >
       <label for="apprise_notify_new_species">Notify each new infrequent species detection (<5 visits per week)</label><br>
       <input type="checkbox" name="apprise_notify_new_species_each_day" <?php if($config['APPRISE_NOTIFY_NEW_SPECIES_EACH_DAY'] == 1 && filesize($home."/BirdNET-Pi/apprise.txt") != 0) { echo "checked"; };?> >
@@ -535,6 +571,8 @@ https://discordapp.com/api/webhooks/{WebhookID}/{WebhookToken}
       <label for="apprise_weekly_report">Send <a href="views.php?view=Weekly%20Report"> weekly report</a></label><br>
 
       <hr>
+      <label for="minimum_time_limit">Minimum time between notifications of the same species (sec):</label>
+      <input type="number" id="minimum_time_limit" name="minimum_time_limit" value="<?php echo $config['APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES'];?>" style="width:6em;" min="0"><br>
       <label for="notification_default_tier">Default notification tier for species not listed in Species Management:</label>
       <select name="notification_default_tier" id="notification_default_tier" style="width:12em;">
         <?php $ndt = strtolower($config['NOTIFICATION_DEFAULT_TIER'] ?? 'normal');
@@ -543,17 +581,45 @@ https://discordapp.com/api/webhooks/{WebhookID}/{WebhookToken}
           echo "<option value='{$t_val}'{$t_sel}>{$t_label}</option>";
         } ?>
       </select><br>
-      <label for="minimum_time_limit">Minimum time between notifications of the same species (sec):</label>
-      <input type="number" id="minimum_time_limit" name="minimum_time_limit" value="<?php echo $config['APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES'];?>" style="width:6em;" min="0"><br>
-      <label for="only_notify_species_names">Exclude these species (comma separated common names):</label>
-      <input type="text" id="only_notify_species_names" placeholder="Mourning Dove,American Crow" name="only_notify_species_names" value="<?php echo $config['APPRISE_ONLY_NOTIFY_SPECIES_NAMES'];?>" size=96><br>
-      <label for="only_notify_species_names_2">ONLY notify for these species (comma separated common names):</label>
-      <input type="text" id="only_notify_species_names_2" placeholder="Northern Cardinal,Carolina Chickadee,Eastern Bluebird" name="only_notify_species_names_2" value="<?php echo $config['APPRISE_ONLY_NOTIFY_SPECIES_NAMES_2'];?>" size=96><br>
+      <label>Per-species notification policy: </label>
+      <a href="views.php?view=Species%20Management"><b>edit the species list in Species Management</b></a>:<br>
+      &nbsp;&nbsp;Set a species to <b>Muted</b> to silence it;<br>
+      &nbsp;&nbsp;To notify ONLY selected species, set the default tier above to <b>None (muted)</b> and mark the wanted species Normal or Rare.
+      <?php if(($config['APPRISE_ONLY_NOTIFY_SPECIES_NAMES'] ?? '') != '' || ($config['APPRISE_ONLY_NOTIFY_SPECIES_NAMES_2'] ?? '') != '') {
+        echo "<br><i>Note: legacy comma-separated name filters are present in birdnet.conf and still apply to Normal-tier notifications.</i>";
+      } ?><br>
+      </td></tr></table><br>
+      <table class="settingstable" style="width:100%"><tr><td>
+      <h2>Notifications - Normal</h2>
+      <label for="apprise_notification_title">NORMAL Notification Title: </label>
+      <input name="apprise_notification_title" style="width: 100%" type="text" value="<?php print($config['APPRISE_NOTIFICATION_TITLE']);?>" /><br><br>
+      <label for="apprise_notification_body">NORMAL Notification Body: </label>
+      <textarea class="testbtn" name="apprise_notification_body" rows="9" style="width:100%; margin-top:0" type="text" ><?php print($apprise_notification_body);?></textarea><br><br>
+      <label for="apprise_input">Apprise Notifications Configuration: </label>
+      <textarea placeholder="tgram://$token1/$token2   ($token1..$token20 placeholders resolve from the station's private apprise-tokens.txt - secrets never appear here)
+mailto://{user}:{password}@gmail.com
+twitter://{ConsumerKey}/{ConsumerSecret}/{AccessToken}/{AccessSecret}
+https://discordapp.com/api/webhooks/{WebhookID}/{WebhookToken}
+..." style="vertical-align: top; width:100%; margin-top:0" class="testbtn" name="apprise_input" rows="3" type="text" ><?php print($apprise_config);?></textarea><br>
 
       <br>
 
       <button type="button" class="testbtn" onclick="sendTestNotification(this)">Send Test Notification</button><br>
       <span id="testsuccessmsg"></span>
+      </td></tr></table><br>
+      <table class="settingstable" style="width:100%"><tr><td>
+      <h2>Notifications - Rare</h2>
+      <label for="apprise_notification_title_rare">RARE Notification Title: </label>
+      <input name="apprise_notification_title_rare" style="width: 100%" type="text" placeholder="empty = use the Normal title" value="<?php print($config['APPRISE_NOTIFICATION_TITLE_RARE'] ?? '');?>" /><br><br>
+      <label for="apprise_notification_body_rare">RARE Notification Body: </label>
+      <textarea class="testbtn" name="apprise_notification_body_rare" rows="9" style="width:100%; margin-top:0" type="text" placeholder="empty = use the Normal body"><?php print($apprise_notification_body_rare);?></textarea><br><br>
+      <label for="apprise_input_rare">Apprise Configuration for Rare species: </label>
+      <textarea placeholder="tgram://$token1/$token3   ($token1..$token20 placeholders resolve from the station's private apprise-tokens.txt)
+mailto://{user}:{password}@gmail.com
+..." style="vertical-align: top; width:100%; margin-top:0" class="testbtn" name="apprise_input_rare" rows="3" type="text" ><?php print($apprise_config_rare);?></textarea><br>
+      &nbsp;&nbsp;Empty Rare Apprise/title/body fall back to the Normal ones.<br><br>
+      <button type="button" class="testbtn" onclick="sendTestNotification(this, 'apprise_input_rare', 'testsuccessmsgrare', 'apprise_notification_title_rare', 'apprise_notification_body_rare')">Send Test Notification (Rare)</button><br>
+      <span id="testsuccessmsgrare"></span>
       </td></tr></table><br>
       <table class="settingstable"><tr><td>
       <h2>Bird Photo Source</h2>
