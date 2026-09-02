@@ -313,6 +313,36 @@ function toggleFreqshift(state) {
   }
 }
 
+function drawFrequencyAxis() {
+  // Left-edge frequency scale. Mirrors the drawing math in process(): FFT bin
+  // i is plotted at y = H - i*h with h = H/LEN + 0.9, and bin i corresponds to
+  // i * (sampleRate/2) / LEN Hz — so the labels sit exactly on their bins.
+  var old = document.getElementById('freqaxis');
+  if (old) { old.remove(); }
+  const CVS = document.body.querySelector('canvas');
+  const rect = CVS.getBoundingClientRect();
+  const LEN = ANALYSER.frequencyBinCount;
+  const h = (CVS.height / LEN + 0.9);
+  const nyquist = ACTX.sampleRate / 2;
+  const scaleY = rect.height / CVS.height;
+  const axis = document.createElement('div');
+  axis.id = 'freqaxis';
+  axis.style.cssText = 'position:absolute;pointer-events:none;z-index:5;'
+    + 'left:' + (rect.left + window.scrollX) + 'px;'
+    + 'top:' + (rect.top + window.scrollY) + 'px;'
+    + 'width:60px;height:' + rect.height + 'px;font:10px sans-serif;color:#fff;';
+  for (let f = 2000; f < nyquist; f += 2000) {
+    const y = (CVS.height - (f / nyquist) * LEN * h) * scaleY;
+    if (y < 10 || y > rect.height - 6) continue;
+    const tick = document.createElement('span');
+    tick.style.cssText = 'position:absolute;left:2px;top:' + (y - 6) + 'px;'
+      + 'text-shadow:0 0 3px #000,0 0 3px #000,0 0 3px #000;';
+    tick.textContent = '\u2014 ' + (f / 1000) + ' kHz';
+    axis.appendChild(tick);
+  }
+  document.body.appendChild(axis);
+}
+
 function initialize() {
   document.body.querySelector('h1').remove();
   const CVS = document.body.querySelector('canvas');
@@ -326,6 +356,7 @@ function initialize() {
   ANALYSER = ACTX.createAnalyser();
 
   ANALYSER.fftSize = 2048;  
+  drawFrequencyAxis();
   
   try{
     process();
