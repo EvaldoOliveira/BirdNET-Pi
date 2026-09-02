@@ -307,8 +307,10 @@ function initialize() {
   document.body.querySelector('h1').remove();
   const CVS = document.body.querySelector('canvas');
   CTX = CVS.getContext('2d');
-  const W = CVS.width = window.innerWidth;
-  const H = CVS.height = window.innerHeight;
+  // Match the drawing buffer to the CSS-laid-out size so the spectrogram is
+  // neither stretched nor taller than the visible area.
+  const W = CVS.width = CVS.clientWidth;
+  const H = CVS.height = CVS.clientHeight;
 
   ACTX = new AudioContext();
   ANALYSER = ACTX.createAnalyser();
@@ -391,10 +393,16 @@ html, body {
   height: 100%;
 }
 
+/* 80vh: the live graph takes 80% of the pane height, leaving room for the
+   topnav and the controls bar above it — nothing overflows below. */
 canvas {
   display: block;
-  height: 85%;
+  height: 80vh;
   width: 100%;
+}
+
+#spectrogramimage {
+  height: 80vh;
 }
 
 h1 {
@@ -406,7 +414,7 @@ h1 {
 }
 </style>
 
-<img id="spectrogramimage" style="width:100%;height:100%;display:none" src="spectrogram.png?nocache=<?php echo $time;?>">
+<img id="spectrogramimage" style="width:100%;display:none" src="spectrogram.png?nocache=<?php echo $time;?>">
 
 <div class="centered">
 	<?php
