@@ -72,10 +72,14 @@ commit_hash=$(sudo_with_user git -C $HOME/BirdNET-Pi rev-parse HEAD)
 sudo_with_user git -C $HOME/BirdNET-Pi reset --hard
 
 # Fetches latest changes
-sudo_with_user git -C $HOME/BirdNET-Pi fetch $remote $branch
+sudo_with_user git -C $HOME/BirdNET-Pi fetch $remote $branch || { echo "Error: fetch of '$remote $branch' failed"; exit 1; }
 
-# Switches git to specified branch
-sudo_with_user git -C $HOME/BirdNET-Pi switch -C $branch --track $remote/$branch
+# Switches git to specified branch (or checks out a tag/commit detached)
+if sudo_with_user git -C $HOME/BirdNET-Pi show-ref --verify --quiet refs/remotes/$remote/$branch; then
+  sudo_with_user git -C $HOME/BirdNET-Pi switch -C $branch --track $remote/$branch || { echo "Error: switch to '$remote/$branch' failed"; exit 1; }
+else
+  sudo_with_user git -C $HOME/BirdNET-Pi -c advice.detachedHead=false checkout $branch || { echo "Error: checkout of '$branch' failed"; exit 1; }
+fi
 
 # Prints out changes
 sudo_with_user git --no-pager -C $HOME/BirdNET-Pi diff --stat $commit_hash HEAD

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Restarts ALL services and removes ALL unprocessed audio
 
+source /etc/birdnet/birdnet.conf
 
 services=(birdnet_recording.service
 custom_recording.service

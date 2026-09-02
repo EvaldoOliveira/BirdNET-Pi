@@ -78,6 +78,26 @@ if ! grep -E '^DATA_MODEL_VERSION=' /etc/birdnet/birdnet.conf &>/dev/null;then
     echo "DATA_MODEL_VERSION=1" >> /etc/birdnet/birdnet.conf
 fi
 
+if ! grep -E '^SPECTROGRAM_HEIGHT=' /etc/birdnet/birdnet.conf &>/dev/null;then
+    echo "SPECTROGRAM_HEIGHT=80" >> /etc/birdnet/birdnet.conf
+fi
+
+if ! grep -E '^APPRISE_NOTIFICATION_TITLE_RARE=' /etc/birdnet/birdnet.conf &>/dev/null;then
+  echo 'APPRISE_NOTIFICATION_TITLE_RARE=""' >> /etc/birdnet/birdnet.conf
+fi
+
+if ! grep -E '^NOTIFICATION_DEFAULT_TIER=' /etc/birdnet/birdnet.conf &>/dev/null;then
+    echo "NOTIFICATION_DEFAULT_TIER=normal" >> /etc/birdnet/birdnet.conf
+fi
+
+if ! grep -E '^SOUND_REPO_PATH=' /etc/birdnet/birdnet.conf &>/dev/null;then
+    echo 'SOUND_REPO_PATH=""' >> /etc/birdnet/birdnet.conf
+fi
+
+if ! grep -E '^SOUND_REPO_LINK=' /etc/birdnet/birdnet.conf &>/dev/null;then
+    echo 'SOUND_REPO_LINK=""' >> /etc/birdnet/birdnet.conf
+fi
+
 if ! grep -E '^BIRDNET_USER=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "## BIRDNET_USER is for scripts to easily find where BirdNET-Pi is installed" >> /etc/birdnet/birdnet.conf
   echo "## DO NOT EDIT!" >> /etc/birdnet/birdnet.conf
@@ -159,7 +179,7 @@ version=$($HOME/BirdNET-Pi/birdnet/bin/python3 -c "import pyarrow; print(pyarrow
 
 PY_VERSION=$($HOME/BirdNET-Pi/birdnet/bin/python3 -c "import sys; print(f'{sys.version_info[0]}{sys.version_info[1]}')")
 tf_version=$($HOME/BirdNET-Pi/birdnet/bin/python3 -c "import tflite_runtime; print(tflite_runtime.__version__)")
-if [ "$PY_VERSION" == 39 ] && [ "$tf_version" != "2.11.0" ] || [ "$PY_VERSION" != 39 ] && [ "$tf_version" != "2.17.1" ]; then
+if { [ "$PY_VERSION" == 39 ] && [ "$tf_version" != "2.11.0" ]; } || { [ "$PY_VERSION" != 39 ] && [ "$tf_version" != "2.17.1" ]; }; then
   get_tf_whl
   # include our numpy dependants so pip can figure out which numpy version to install
   sudo_with_user $HOME/BirdNET-Pi/birdnet/bin/pip3 install $HOME/BirdNET-Pi/$WHL pandas librosa matplotlib
@@ -247,7 +267,12 @@ fi
 
 # Clean state and update cron if all scripts are not installed
 if [ "$(grep -o "#birdnet" /etc/crontab | wc -l)" -lt 6 ]; then
-  sudo sed -i '/birdnet/,+1d' /etc/crontab
+  sudo sed -i -e '/^#birdnet$/d' \
+    -e '\|/usr/local/bin/disk_check.sh|d' \
+    -e '\|/usr/local/bin/disk_species_clean.sh|d' \
+    -e '\|/usr/local/bin/cleanup.sh|d' \
+    -e '\|/usr/local/bin/weekly_report.sh|d' \
+    -e '\|/usr/local/bin/update_birdnet.sh|d' /etc/crontab
   sed "s/\$USER/$USER/g" "$HOME"/BirdNET-Pi/templates/cleanup.cron >> /etc/crontab
   sed "s/\$USER/$USER/g" "$HOME"/BirdNET-Pi/templates/weekly_report.cron >> /etc/crontab
   sed "s/\$USER/$USER/g" "$HOME"/BirdNET-Pi/templates/automatic_update.cron >> /etc/crontab

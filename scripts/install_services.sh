@@ -31,7 +31,7 @@ set_hostname() {
 }
 
 update_etc_hosts() {
-  sed -ie s/'$(hostname).local'/"$(hostname).local ${BIRDNETPI_URL//https:\/\/} ${WEBTERMINAL_URL//https:\/\/} ${BIRDNETLOG_URL//https:\/\/}"/g /etc/hosts
+  sed -i -e "s/$(hostname).local/$(hostname).local ${BIRDNETPI_URL//https:\/\/} ${WEBTERMINAL_URL//https:\/\/} ${BIRDNETLOG_URL//https:\/\/}/g" /etc/hosts
 }
 
 install_scripts() {
@@ -154,8 +154,8 @@ install_Caddyfile() {
   if [ -f /etc/caddy/Caddyfile ];then
     cp /etc/caddy/Caddyfile{,.original}
   fi
-  if ! [ -z ${CADDY_PWD} ];then
-  HASHWORD=$(caddy hash-password --plaintext ${CADDY_PWD})
+  if ! [ -z "${CADDY_PWD}" ];then
+  HASHWORD=$(caddy hash-password --plaintext "${CADDY_PWD}")
   cat << EOF > /etc/caddy/Caddyfile
 http:// ${BIRDNETPI_URL} {
   root * ${EXTRACTED}
@@ -166,7 +166,11 @@ http:// ${BIRDNETPI_URL} {
   handle /Charts/* {
     file_server browse
   }
-  basicauth /views.php?view=File* {
+  @fileview {
+    path /views.php
+    query view=File*
+  }
+  basicauth @fileview {
     birdnet ${HASHWORD}
   }
   basicauth /Processed* {
@@ -349,9 +353,10 @@ config_icecast() {
     cp /etc/icecast2/icecast.xml{,.prebirdnetpi}
   fi
   sed -i 's/>admin</>birdnet</g' /etc/icecast2/icecast.xml
+  ICE_PWD_ESC=$(printf '%s' "${ICE_PWD}" | sed -e 's/[\/&\\]/\\&/g')
   passwords=("source-" "relay-" "admin-" "master-" "")
   for i in "${passwords[@]}";do
-  sed -i "s/<${i}password>.*<\/${i}password>/<${i}password>${ICE_PWD}<\/${i}password>/g" /etc/icecast2/icecast.xml
+  sed -i "s/<${i}password>.*<\/${i}password>/<${i}password>${ICE_PWD_ESC}<\/${i}password>/g" /etc/icecast2/icecast.xml
   done
   sed -i 's|<!-- <bind-address>.*|<bind-address>127.0.0.1</bind-address>|;s|<!-- <shoutcast-mount>.*|<shoutcast-mount>/stream</shoutcast-mount>|' /etc/icecast2/icecast.xml
 

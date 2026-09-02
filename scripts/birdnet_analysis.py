@@ -40,44 +40,46 @@ def main():
     thread = threading.Thread(target=handle_reporting_queue, args=(report_queue, ))
     thread.start()
 
-    log.info('backlog is %d', len(backlog))
-    for file_name in backlog:
-        process_file(file_name, report_queue)
-        if shutdown:
-            break
-    log.info('backlog done')
-
-    empty_count = 0
-    for event in i.event_gen():
-        if shutdown:
-            break
-
-        if event is None:
-            if empty_count > (conf.getint('RECORDING_LENGTH') * 2 + 30):
-                log.error('no more notifications: restarting...')
+    try:
+        log.info('backlog is %d', len(backlog))
+        for file_name in backlog:
+            process_file(file_name, report_queue)
+            if shutdown:
                 break
-            empty_count += 1
-            continue
+        log.info('backlog done')
 
-        (_, type_names, path, file_name) = event
-        if re.search('.wav$', file_name) is None:
-            continue
-        log.debug("PATH=[%s] FILENAME=[%s] EVENT_TYPES=%s", path, file_name, type_names)
-
-        file_path = os.path.join(path, file_name)
-        if file_path in backlog:
-            # if we're very lucky, the first event could be for the file in the backlog that finished
-            # while running get_wav_files()
-            backlog = []
-            continue
-
-        process_file(file_path, report_queue)
         empty_count = 0
+        for event in i.event_gen():
+            if shutdown:
+                break
 
-    # we're all done
-    report_queue.put(None)
-    thread.join()
-    report_queue.join()
+            if event is None:
+                if empty_count > (conf.getint('RECORDING_LENGTH') * 2 + 30):
+                    log.error('no more notifications: restarting...')
+                    break
+                empty_count += 1
+                continue
+
+            (_, type_names, path, file_name) = event
+            if re.search('.wav$', file_name) is None:
+                continue
+            log.debug("PATH=[%s] FILENAME=[%s] EVENT_TYPES=%s", path, file_name, type_names)
+
+            file_path = os.path.join(path, file_name)
+            if file_path in backlog:
+                # if we're very lucky, the first event could be for the file in the backlog that finished
+                # while running get_wav_files()
+                backlog = []
+                continue
+
+            process_file(file_path, report_queue)
+            empty_count = 0
+    finally:
+        # we're all done - always post the shutdown sentinel so the reporting
+        # thread exits even when main() dies on an uncaught exception
+        report_queue.put(None)
+        thread.join()
+        report_queue.join()
 
 
 def process_file(file_name, report_queue):

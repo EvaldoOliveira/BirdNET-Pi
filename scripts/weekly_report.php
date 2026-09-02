@@ -118,7 +118,7 @@ if(isset($_GET['ascii'])) {
 	{
 		if($stats["is_first_seen"]) {
 			$newspeciescount++;
-			echo $com_name." - ".$scount."<br>";
+			echo $com_name." - ".$stats["count"]."<br>";
 		}
 	}
 	if($newspeciescount == 0) {
@@ -186,7 +186,7 @@ echo "<h1>Week ".date('W', $enddate)." Report</h1>".date('F jS, Y',$startdate)."
 	{
 		if($stats["is_first_seen"]) {
 			$newspeciescount++;
-			echo "<tr><td>".$com_name."<br><small style=\"font-size:small\">".$scount."</small><br></td></tr>";
+			echo "<tr><td>".$com_name."<br><small style=\"font-size:small\">".$stats["count"]."</small><br></td></tr>";
 		}
 	}
 	if($newspeciescount == 0) {

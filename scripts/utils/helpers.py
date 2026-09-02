@@ -37,7 +37,7 @@ class PHPConfigParser(ConfigParser):
         if raw:
             return value
         else:
-            return value.strip('"')
+            return value.strip('"') if value is not None else value
 
 
 def _load_settings(settings_path='/etc/birdnet/birdnet.conf', force_reload=False):

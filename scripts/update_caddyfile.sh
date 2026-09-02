@@ -6,8 +6,8 @@ set -x
 if [ -f /etc/caddy/Caddyfile ];then
   cp /etc/caddy/Caddyfile{,.original}
 fi
-if ! [ -z ${CADDY_PWD} ];then
-HASHWORD=$(caddy hash-password --plaintext ${CADDY_PWD})
+if ! [ -z "${CADDY_PWD}" ];then
+HASHWORD=$(caddy hash-password --plaintext "${CADDY_PWD}")
 cat << EOF > /etc/caddy/Caddyfile
 http:// ${BIRDNETPI_URL} {
   root * ${EXTRACTED}
@@ -18,7 +18,11 @@ http:// ${BIRDNETPI_URL} {
   handle /Charts/* {
     file_server browse
   }
-  basicauth /views.php?view=File* {
+  @fileview {
+    path /views.php
+    query view=File*
+  }
+  basicauth @fileview {
     birdnet ${HASHWORD}
   }
   basicauth /Processed* {

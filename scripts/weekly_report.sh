@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source /etc/birdnet/birdnet.conf
-if [ ${APPRISE_WEEKLY_REPORT} == 1 ];then
+if [ "${APPRISE_WEEKLY_REPORT:-0}" == 1 ];then
 	NOTIFICATION=$(curl 'localhost/views.php?view=Weekly%20Report&ascii=true')
 	NOTIFICATION=${NOTIFICATION#*#}
 	firstLine=`echo "${NOTIFICATION}" | head -1`
