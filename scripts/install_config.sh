@@ -107,6 +107,14 @@ APPRISE_NOTIFY_NEW_SPECIES_EACH_DAY=0
 APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES=0
 APPRISE_ONLY_NOTIFY_SPECIES_NAMES=""
 APPRISE_ONLY_NOTIFY_SPECIES_NAMES_2=""
+## SOUND_REPO_PATH is the local root of the central sound repository (empty = off):
+## every detection is stored there as clip + sidecar JSON, beside the BirdWeather upload
+SOUND_REPO_PATH=""
+## SOUND_REPO_LINK is the shareable URL of the central sound repository (informational)
+SOUND_REPO_LINK=""
+
+## NOTIFICATION_DEFAULT_TIER is the tier (muted|normal|rare) for species without an entry in notification_tiers.txt
+NOTIFICATION_DEFAULT_TIER=normal
 
 #----------------------  Image Provider Configuration ------------------------#
 ## WIKIPEDIA or FLICKR (Flickr requires API key)

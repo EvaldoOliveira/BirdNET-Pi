@@ -82,6 +82,12 @@ if(isset($_GET["latitude"])){
   $only_notify_species_names = htmlspecialchars_decode($_GET['only_notify_species_names'], ENT_QUOTES);
   $only_notify_species_names_2 = htmlspecialchars_decode($_GET['only_notify_species_names_2'], ENT_QUOTES);
 
+  if(isset($_GET['notification_default_tier'])) {
+    $notification_default_tier = strtolower($_GET['notification_default_tier']);
+    if(!in_array($notification_default_tier, ['muted', 'normal', 'rare'], true)) {
+      $notification_default_tier = 'normal';
+    }
+  }
   if(isset($_GET['apprise_notify_each_detection'])) {
     $apprise_notify_each_detection = 1;
   } else {
@@ -162,6 +168,14 @@ if(isset($_GET["latitude"])){
   $contents = preg_replace("/DATA_MODEL_VERSION=.*/", "DATA_MODEL_VERSION=$data_model_version", $contents);
   $contents = preg_replace("/APPRISE_ONLY_NOTIFY_SPECIES_NAMES=.*/", "APPRISE_ONLY_NOTIFY_SPECIES_NAMES=\"$only_notify_species_names\"", $contents);
   $contents = preg_replace("/APPRISE_ONLY_NOTIFY_SPECIES_NAMES_2=.*/", "APPRISE_ONLY_NOTIFY_SPECIES_NAMES_2=\"$only_notify_species_names_2\"", $contents);
+  if(isset($notification_default_tier)) {
+    if(preg_match("/^NOTIFICATION_DEFAULT_TIER=/m", $contents)) {
+      $contents = preg_replace("/NOTIFICATION_DEFAULT_TIER=.*/", "NOTIFICATION_DEFAULT_TIER=$notification_default_tier", $contents);
+    } else {
+      // Config written before this setting existed - append the new key
+      $contents .= "\nNOTIFICATION_DEFAULT_TIER=$notification_default_tier\n";
+    }
+  }
 
   if($site_name != $config["SITE_NAME"] || $color_scheme != $config["COLOR_SCHEME"]) {
     echo "<script>setTimeout(
@@ -430,6 +444,40 @@ function runProcess() {
         <dt>NOTE - by using your BirdWeather Token - you are consenting to sharing your soundscapes and detections with BirdWeather</dt></p>
       </td></tr></table><br>
       <table class="settingstable" style="width:100%"><tr><td>
+      <h2>BirdDB Brasil</h2>
+      <?php $srl = $config['SOUND_REPO_LINK'] ?? ''; ?>
+      <label>Central sound repository: </label>
+      <?php if($srl != '') { echo "<a href='" . htmlspecialchars($srl, ENT_QUOTES) . "' target='_blank'>" . htmlspecialchars($srl) . "</a>"; } else { echo "<i>not configured on this station</i>"; } ?><br>
+      <p><b>How to contribute from your own station (one-time setup):</b></p>
+      <ol>
+        <li>Run <code>rclone config</code> on your station and create a remote named <code>birddb</code>
+          of type <code>drive</code>. Leave client_id/client_secret empty and set
+          <code>root_folder_id</code> to the ID at the end of the repository URL above
+          (the part after <code>/folders/</code>).</li>
+        <li>When rclone opens the browser, <b>log in with your own Google account</b> and authorize
+          it — that creates your personal OAuth token. Uploads are attributed to this account.</li>
+        <li>The token is stored locally on your station in <code>~/.config/rclone/rclone.conf</code>.
+          Keep that file private (permissions 600): it grants access with your account. It never
+          leaves the station, renews itself automatically, and must never be shared or committed
+          to any repository.</li>
+        <li>Every deposit is validated on ingestion: a real FLAC clip (30 s max) with its metadata
+          sidecar and a matching sha256 — anything else is deleted and reported.</li>
+      </ol>
+      <p>BirdDB Brasil is a community sound repository: every detection of this station
+        (the audio clip plus its metadata sidecar — station name, GPS coordinates, date/time,
+        species, confidence and model parameters) is contributed to the central repository
+        linked above.<br><br>
+        <dt>By running this station you contribute your recordings voluntarily, in the spirit of
+        community collections such as xeno-canto — with one important difference: contributed
+        sounds are NOT publicly available. They are used exclusively to build and train
+        bird-identification models for the BirdDB Brasil project.</dt><br>
+        You keep the rights over your recordings; each contribution is attributed to the Google
+        account that uploaded it, and the repository maintainer validates every deposit
+        (integrity, format, metadata) before it enters the base. Recordings containing
+        intelligible human speech must not be contributed; contributors can request removal of
+        their material at any time.</p>
+      </td></tr></table><br>
+      <table class="settingstable" style="width:100%"><tr><td>
       <h2>Notifications</h2>
       <p><a target="_blank" href="https://github.com/caronc/apprise/wiki">Apprise Notifications</a> can be setup and enabled for 90+ notification services. Each service should be on its own line.</p>
       <label for="apprise_input">Apprise Notifications Configuration: </label><br>
@@ -487,6 +535,14 @@ https://discordapp.com/api/webhooks/{WebhookID}/{WebhookToken}
       <label for="apprise_weekly_report">Send <a href="views.php?view=Weekly%20Report"> weekly report</a></label><br>
 
       <hr>
+      <label for="notification_default_tier">Default notification tier for species not listed in Species Management:</label>
+      <select name="notification_default_tier" id="notification_default_tier" style="width:12em;">
+        <?php $ndt = strtolower($config['NOTIFICATION_DEFAULT_TIER'] ?? 'normal');
+        foreach (['muted' => 'None (muted)', 'normal' => 'Normal', 'rare' => 'Rare'] as $t_val => $t_label) {
+          $t_sel = $ndt === $t_val ? " selected" : "";
+          echo "<option value='{$t_val}'{$t_sel}>{$t_label}</option>";
+        } ?>
+      </select><br>
       <label for="minimum_time_limit">Minimum time between notifications of the same species (sec):</label>
       <input type="number" id="minimum_time_limit" name="minimum_time_limit" value="<?php echo $config['APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES'];?>" style="width:6em;" min="0"><br>
       <label for="only_notify_species_names">Exclude these species (comma separated common names):</label>
