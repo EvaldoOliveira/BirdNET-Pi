@@ -42,7 +42,7 @@ $base           = realpath($base_symlink);
 $confirm_file   = __DIR__ . '/confirmed_species_list.txt';
 $exclude_file   = __DIR__ . '/exclude_species_list.txt';
 $whitelist_file = __DIR__ . '/whitelist_species_list.txt';
-$tiers_file     = __DIR__ . '/notification_tiers.txt';
+$tiers_file     = dirname(__DIR__) . '/notification_tiers.txt';
 
 foreach ([$confirm_file, $exclude_file, $whitelist_file, $tiers_file] as $file) {
     if (!file_exists($file)) touch($file);
@@ -96,13 +96,14 @@ function collect_species_targets(SQLite3 $db, string $species, string $home, $ba
 /* ---------- set notification tier (Muted/Normal/Rare) ---------- */
 if (isset($_GET['settier'], $_GET['species'], $_GET['tier'])) {
   $species = htmlspecialchars_decode($_GET['species'], ENT_QUOTES);
+  if ($species === '' || strpbrk($species, "=\n\r") !== false) { header('Content-Type: text/plain'); echo 'Invalid species'; exit; }
   $tier    = strtolower($_GET['tier']);
   if (!in_array($tier, ['normal', 'muted', 'rare'], true)) { header('Content-Type: text/plain'); echo 'Invalid tier'; exit; }
   $lines = file_exists($tiers_file) ? file($tiers_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
   $lines = array_values(array_filter($lines, fn($l) => explode('=', trim($l), 2)[0] !== $species));
   if ($tier !== 'normal') $lines[] = $species . '=' . $tier;
   sort($lines, SORT_STRING);
-  file_put_contents($tiers_file, implode("\n", $lines) . (empty($lines) ? "" : "\n"));
+  file_put_contents($tiers_file, implode("\n", $lines) . (empty($lines) ? "" : "\n"), LOCK_EX);
   header('Content-Type: text/plain'); echo 'OK'; exit;
 }
 
@@ -143,9 +144,10 @@ if (isset($_GET['delete'])) {
   $info = collect_species_targets($db, $species, $home, $base);
   $deleted = count($info['files']);
   foreach ($info['dirs'] as $dir) {
-    if (exec("sudo rm -r $dir 2>&1", $output)) {
-      echo "Error - files deletion failed : " . implode(", ", $output) . "<br>";
-	  exit;
+    $output = [];
+    if (exec("sudo rm -r " . escapeshellarg($dir) . " 2>&1", $output, $rc) === false || $rc !== 0) {
+      echo json_encode(['error' => 'files deletion failed: ' . implode(', ', $output)]);
+      exit;
     }
   }
   $del = $db->prepare('DELETE FROM detections WHERE Sci_Name = :name');
@@ -158,6 +160,13 @@ if (isset($_GET['delete'])) {
     $identifier = $info['sci'];
     $lines = array_values(array_filter($confirmed_species, fn($l) => $l !== $identifier));
     file_put_contents($confirm_file, implode("\n", $lines) . (empty($lines) ? "" : "\n"));
+  }
+
+  if ($info['sci'] !== null && file_exists($tiers_file)) {
+    $identifier = $info['sci'];
+    $t_lines = file($tiers_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $t_lines = array_values(array_filter($t_lines, fn($l) => explode('=', trim($l), 2)[0] !== $identifier));
+    file_put_contents($tiers_file, implode("\n", $t_lines) . (empty($t_lines) ? "" : "\n"), LOCK_EX);
   }
 
   echo json_encode(['lines' => $lines_deleted, 'files' => $deleted]); exit;

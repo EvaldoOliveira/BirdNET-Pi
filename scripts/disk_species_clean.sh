@@ -5,7 +5,7 @@
 source /etc/birdnet/birdnet.conf
 base_dir="$HOME/BirdSongs/Extracted/By_Date"
 max_files_species="${MAX_FILES_SPECIES:-1000}"
-cd "$base_dir" || true
+cd "$base_dir" || exit 1
 
 # If max_files_species is not higher than 1, exit
 if [[ "$max_files_species" -lt 1 ]]; then
@@ -51,7 +51,7 @@ fi
 # Read each line from the variable and echo the species
 while read -r species; do
     echo -n "$species : "
-    species_san="${species/-/=}"
+    species_san="${species//-/=}"
     # Dummy file to execute the rm using xargs even if no files are there. Best solution found for code speed
     touch temp
     find */"$species" -type f -name "*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*.*" \

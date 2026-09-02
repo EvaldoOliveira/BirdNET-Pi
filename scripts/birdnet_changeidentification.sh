@@ -67,8 +67,11 @@ fi
 # Intro
 [[ "$OUTPUT_TYPE" == "debug" ]] && echo "Starting to modify $OLDNAME to $NEWNAME"
 
+# Escape single quotes for SQL by doubling them
+OLDNAME_SQL="${OLDNAME//\'/\'\'}"
+
 # Get the line where the column "File_Name" matches exactly $OLDNAME
-IFS='|' read -r OLDNAME_sciname OLDNAME_comname OLDNAME_date < <(sqlite3 "$DB_FILE" "SELECT Sci_Name, Com_Name, Date FROM $DETECTIONS_TABLE WHERE File_Name = '$OLDNAME' LIMIT 1;")
+IFS='|' read -r OLDNAME_sciname OLDNAME_comname OLDNAME_date < <(sqlite3 "$DB_FILE" "SELECT Sci_Name, Com_Name, Date FROM $DETECTIONS_TABLE WHERE File_Name = '$OLDNAME_SQL' LIMIT 1;")
 
 if [[ -z "$OLDNAME_sciname" ]]; then
     echo "Error: No line matching $OLDNAME in $DB_FILE"
@@ -112,8 +115,13 @@ fi
 # EXECUTE : UPDATE DATABASE FILES #
 ###################################
 
+# Escape single quotes for SQL by doubling them
+NEWNAME_sciname_SQL="${NEWNAME_sciname//\'/\'\'}"
+NEWNAME_comname_SQL="${NEWNAME_comname//\'/\'\'}"
+NEWNAME_filename_SQL="${NEWNAME_filename//\'/\'\'}"
+
 # Update the database
-sqlite3 "$DB_FILE" "UPDATE $DETECTIONS_TABLE SET Sci_Name = '$NEWNAME_sciname', Com_Name = '$NEWNAME_comname', Confidence = '0', File_Name = '$NEWNAME_filename' WHERE File_Name = '$OLDNAME';"
+sqlite3 "$DB_FILE" "UPDATE $DETECTIONS_TABLE SET Sci_Name = '$NEWNAME_sciname_SQL', Com_Name = '$NEWNAME_comname_SQL', Confidence = '0', File_Name = '$NEWNAME_filename_SQL' WHERE File_Name = '$OLDNAME_SQL';"
 
 [[ "$OUTPUT_TYPE" == "debug" ]] && echo "Database entry removed"
 

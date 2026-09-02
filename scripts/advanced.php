@@ -127,13 +127,13 @@ if(isset($_GET['submit'])) {
 
   if(isset($_GET["freqshift_reconnect_delay"]) && is_numeric($_GET['freqshift_reconnect_delay'])) {
     $freqshift_reconnect_delay = $_GET["freqshift_reconnect_delay"];
-    if(strcmp($freqshift_hi,$config['FREQSHIFT_RECONNECT_DELAY']) !== 0) {
+    if(strcmp($freqshift_reconnect_delay,$config['FREQSHIFT_RECONNECT_DELAY']) !== 0) {
       $contents = preg_replace("/FREQSHIFT_RECONNECT_DELAY=.*/", "FREQSHIFT_RECONNECT_DELAY=$freqshift_reconnect_delay", $contents);
     }
   }
 
   if(isset($_GET["spectrogram_height"]) && is_numeric($_GET['spectrogram_height'])) {
-    $spectrogram_height = $_GET["spectrogram_height"];
+    $spectrogram_height = max(20, min(100, intval($_GET['spectrogram_height'])));
     if(strcmp($spectrogram_height,($config['SPECTROGRAM_HEIGHT'] ?? '')) !== 0) {
       if(preg_match("/^SPECTROGRAM_HEIGHT=/m", $contents)) {
         $contents = preg_replace("/SPECTROGRAM_HEIGHT=.*/", "SPECTROGRAM_HEIGHT=$spectrogram_height", $contents);
@@ -211,7 +211,7 @@ if (isset($_GET["max_files_species"])) {
     if(strcmp($silence_update_indicator,$config['SILENCE_UPDATE_INDICATOR']) !== 0) {
       $contents = preg_replace("/SILENCE_UPDATE_INDICATOR=.*/", "SILENCE_UPDATE_INDICATOR=$silence_update_indicator", $contents);
     }
-  } else {
+  } else if (isset($_GET['advanced_form'])) {
     $contents = preg_replace("/SILENCE_UPDATE_INDICATOR=.*/", "SILENCE_UPDATE_INDICATOR=0", $contents);
   }
 
@@ -220,16 +220,16 @@ if (isset($_GET["max_files_species"])) {
     if(strcmp($automatic_update,$config['AUTOMATIC_UPDATE']) !== 0) {
       $contents = preg_replace("/AUTOMATIC_UPDATE=.*/", "AUTOMATIC_UPDATE=$automatic_update", $contents);
     }
-  } else {
+  } else if (isset($_GET['advanced_form'])) {
     $contents = preg_replace("/AUTOMATIC_UPDATE=.*/", "AUTOMATIC_UPDATE=0", $contents);
   }
 
   if(isset($_GET["raw_spectrogram"])) {
     $raw_spectrogram = 1;
-    if(strcmp($RAW_SPECTROGRAM,$config['RAW_SPECTROGRAM']) !== 0) {
+    if(strcmp($raw_spectrogram,$config['RAW_SPECTROGRAM']) !== 0) {
       $contents = preg_replace("/RAW_SPECTROGRAM=.*/", "RAW_SPECTROGRAM=$raw_spectrogram", $contents);
     }
-  } else {
+  } else if (isset($_GET['advanced_form'])) {
     $contents = preg_replace("/RAW_SPECTROGRAM=.*/", "RAW_SPECTROGRAM=0", $contents);
   }
 
@@ -238,7 +238,7 @@ if (isset($_GET["max_files_species"])) {
     if(strcmp($rare_species_threshold, $config['RARE_SPECIES_THRESHOLD']) !== 0) {
         $contents = preg_replace("/RARE_SPECIES_THRESHOLD=.*/", "RARE_SPECIES_THRESHOLD=$rare_species_threshold", $contents);
     }
-  } else {
+  } else if (isset($_GET['advanced_form'])) {
       $contents = preg_replace("/RARE_SPECIES_THRESHOLD=.*/", "RARE_SPECIES_THRESHOLD=30", $contents);
   }
 
@@ -656,6 +656,7 @@ foreach($formats as $format){
         </table>
       <br><br>
       <input type="hidden" name="view" value="Advanced">
+      <input type="hidden" name="advanced_form" value="1">
 <div class="float">
       <button type="submit" id="advancedformsubmit" onclick="collectrtspUrls(); if(document.getElementById('advancedform').checkValidity()){this.innerHTML = 'Updating... please wait.';this.classList.add('disabled')}" name="submit" value="advanced">
 <?php
