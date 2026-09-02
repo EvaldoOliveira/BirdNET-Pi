@@ -1,1 +1,2 @@
- syslog://
+# Channels are composed at install time (setup22: mailto + telegram from the
+# station secrets) or configured in the web UI Notifications sections.
