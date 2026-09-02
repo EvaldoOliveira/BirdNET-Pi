@@ -47,7 +47,8 @@ def notify(body, title, attached=""):
 
 def get_notification_tier(sci_name):
     # Species tiers set on the Species Management page: one 'Sci_Name=tier' line
-    # per non-normal species (muted/rare); a species not listed is normal.
+    # per non-normal species (muted/rare); a species not listed gets the
+    # NOTIFICATION_DEFAULT_TIER setting (normal when absent/invalid).
     try:
         with open(NOTIFICATION_TIERS) as f:
             for line in f:
@@ -56,7 +57,8 @@ def get_notification_tier(sci_name):
                     return tier.lower() or 'normal'
     except OSError:
         pass
-    return 'normal'
+    default = (get_settings().get('NOTIFICATION_DEFAULT_TIER') or 'normal').lower()
+    return default if default in ('muted', 'normal', 'rare') else 'normal'
 
 
 def sendAppriseNotifications(sci_name, com_name, confidence, confidencepct, path, date, time_of_day, week, latitude, longitude, cutoff, sens, overlap, file_path=""):
