@@ -83,7 +83,39 @@ if ! grep -E '^SPECTROGRAM_HEIGHT=' /etc/birdnet/birdnet.conf &>/dev/null;then
 fi
 
 if ! grep -E '^APPRISE_NOTIFICATION_TITLE_RARE=' /etc/birdnet/birdnet.conf &>/dev/null;then
-  echo 'APPRISE_NOTIFICATION_TITLE_RARE=""' >> /etc/birdnet/birdnet.conf
+  echo 'APPRISE_NOTIFICATION_TITLE_RARE="RARE BirdNET-Pi $comname ($sciname) detected with $confidencepct% confidence"' >> /etc/birdnet/birdnet.conf
+fi
+
+# standard notification bodies (created only when missing — user bodies kept)
+BNP_DIR=$(dirname "$(readlink -f /etc/birdnet/birdnet.conf)")
+if ! [ -s "$BNP_DIR/body.txt" ];then
+  cat << 'BODYEOF' > "$BNP_DIR/body.txt"
+A Normal $comname ($sciname) detected with $confidencepct% confidence
+Reason: $reason
+Link to the detection: $listenurl
+Minimum Confidence: $cutoff
+Sigmoid Sensitivity: $sens
+Overlap: $overlap
+$image
+$audio
+BODYEOF
+fi
+if ! [ -f "$BNP_DIR/body-rare.txt" ];then
+  cat << 'BODYEOF' > "$BNP_DIR/body-rare.txt"
+$comname ($sciname) detected
+Confidence=$confidencepct% 
+Reason: $reason
+Minimum Confidence: $cutoff
+Sigmoid Sensitivity: $sens
+Overlap: $overlap
+Link to the detection: $listenurl
+$image
+$audio
+BODYEOF
+fi
+
+if ! grep -E '^NOTIFICATION_EMAIL=' /etc/birdnet/birdnet.conf &>/dev/null;then
+  echo 'NOTIFICATION_EMAIL=""' >> /etc/birdnet/birdnet.conf
 fi
 
 if ! grep -E '^NOTIFICATION_DEFAULT_TIER=' /etc/birdnet/birdnet.conf &>/dev/null;then

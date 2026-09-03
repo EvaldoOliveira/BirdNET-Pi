@@ -28,6 +28,9 @@ if __name__ == "__main__":
     notifications.APPRISE_CONFIG_RARE = args.config
     notifications.APPRISE_BODY = args.body
     notifications.APPRISE_BODY_RARE = args.body
+    # A test exercises the clicked box's channels — tier policy must not gate it
+    # (a muted latest detection made the test button silently do nothing).
+    notifications.get_notification_tier = lambda sci_name: 'normal'
 
     logger = logging.getLogger()
     formatter = logging.Formatter("[%(name)s][%(levelname)s] %(message)s")

@@ -87,6 +87,7 @@ if(isset($_GET["latitude"])){
   if(isset($_GET['only_notify_species_names'])) { $only_notify_species_names = htmlspecialchars_decode($_GET['only_notify_species_names'], ENT_QUOTES); }
   if(isset($_GET['only_notify_species_names_2'])) { $only_notify_species_names_2 = htmlspecialchars_decode($_GET['only_notify_species_names_2'], ENT_QUOTES); }
 
+  if(isset($_GET['notification_email'])) { $notification_email = trim($_GET['notification_email']); }
   if(isset($_GET['notification_default_tier'])) {
     $notification_default_tier = strtolower($_GET['notification_default_tier']);
     if(!in_array($notification_default_tier, ['muted', 'normal', 'rare'], true)) {
@@ -181,6 +182,14 @@ if(isset($_GET["latitude"])){
   $contents = preg_replace("/DATA_MODEL_VERSION=.*/", "DATA_MODEL_VERSION=$data_model_version", $contents);
   if(isset($only_notify_species_names)) { $contents = preg_replace("/APPRISE_ONLY_NOTIFY_SPECIES_NAMES=.*/", "APPRISE_ONLY_NOTIFY_SPECIES_NAMES=\"$only_notify_species_names\"", $contents); }
   if(isset($only_notify_species_names_2)) { $contents = preg_replace("/APPRISE_ONLY_NOTIFY_SPECIES_NAMES_2=.*/", "APPRISE_ONLY_NOTIFY_SPECIES_NAMES_2=\"$only_notify_species_names_2\"", $contents); }
+  if(isset($notification_email)) {
+    if(preg_match("/^NOTIFICATION_EMAIL=/m", $contents)) {
+      $contents = preg_replace("/NOTIFICATION_EMAIL=.*/", "NOTIFICATION_EMAIL=\"$notification_email\"", $contents);
+    } else {
+      // Config written before this setting existed - append the new key
+      $contents .= "\nNOTIFICATION_EMAIL=\"$notification_email\"\n";
+    }
+  }
   if(isset($notification_default_tier)) {
     if(preg_match("/^NOTIFICATION_DEFAULT_TIER=/m", $contents)) {
       $contents = preg_replace("/NOTIFICATION_DEFAULT_TIER=.*/", "NOTIFICATION_DEFAULT_TIER=$notification_default_tier", $contents);
@@ -555,6 +564,13 @@ function runProcess() {
       <dt>$audio</dt>
       <dd>Attach the detection's audio clip to the notification — identical on every
         tier: no tag, no clip. The tag itself is removed from the text.</dd>
+      <dt>$user, $hostname</dt>
+      <dd>This station's user and hostname — usable inside the Apprise Configuration boxes
+        (e.g. <code>from=$user@$hostname.local</code>) to keep the box content generic.</dd>
+      <dt>$email</dt>
+      <dd>The notification e-mail address configured below — usable ONLY inside the Apprise
+        Configuration boxes (e.g. <code>mailto://localhost:25?from=$user@$hostname.local&amp;to=$email&amp;secure=no&amp;format=text</code>),
+        so the box content stays generic and shareable.</dd>
       <dt>$token1 &hellip; $token20</dt>
       <dd>Secret values from the station's private token store (<code>apprise-tokens.txt</code>, refreshed from the station secrets on every service start).<br>
         Usable ONLY inside the Apprise Configuration boxes (e.g. <code>tgram://$token1/$token2</code>)<br>
@@ -573,6 +589,8 @@ function runProcess() {
       <hr>
       <label for="minimum_time_limit">Minimum time between notifications of the same species (sec):</label>
       <input type="number" id="minimum_time_limit" name="minimum_time_limit" value="<?php echo $config['APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES'];?>" style="width:6em;" min="0"><br>
+      <label for="notification_email">Notification e-mail address (used as $email in the Apprise boxes):</label>
+      <input type="text" id="notification_email" name="notification_email" placeholder="you@example.com" value="<?php echo $config['NOTIFICATION_EMAIL'] ?? '';?>" size=40><br>
       <label for="notification_default_tier">Default notification tier for species not listed in Species Management:</label>
       <select name="notification_default_tier" id="notification_default_tier" style="width:12em;">
         <?php $ndt = strtolower($config['NOTIFICATION_DEFAULT_TIER'] ?? 'normal');

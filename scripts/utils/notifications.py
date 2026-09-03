@@ -65,9 +65,18 @@ def notify(body, title, attached="", tier='normal'):
         except OSError:
             content = ''
         tokens = _load_apprise_tokens()
-        # longest name first, so $token_telegram_bot is never clipped by $token_telegram
+        # longest name first, so $token2 is never clipped out of $token20
         for name in sorted(tokens, key=len, reverse=True):
             content = content.replace('$' + name, tokens[name])
+        # $email resolves from the settings (NOTIFICATION_EMAIL) — an address is
+        # configuration, not a secret, so it lives in birdnet.conf, keeping the
+        # box content generic and shareable.
+        email = (get_settings().get('NOTIFICATION_EMAIL') or '').strip()
+        if email:
+            content = content.replace('$email', email)
+        # $user/$hostname keep e.g. from=$user@$hostname.local generic per station
+        content = content.replace('$hostname', socket.gethostname())
+        content = content.replace('$user', os.path.basename(userDir))
         config.add_config(content, format='text')
         apobj.add(config)
         apobjs[config_path] = apobj

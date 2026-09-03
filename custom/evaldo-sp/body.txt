@@ -1,5 +1,5 @@
 A Normal $comname ($sciname) detected with $confidencepct% confidence
-($reason)
+Reason: $reason
 Link to the detection: $listenurl
 Minimum Confidence: $cutoff
 Sigmoid Sensitivity: $sens
