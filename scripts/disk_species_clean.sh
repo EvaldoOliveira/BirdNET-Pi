@@ -66,7 +66,17 @@ while read -r species; do
         -not -name "*$(date '+%Y-%m-%d')*" |
         grep -vFf "$HOME/BirdNET-Pi/scripts/disk_check_exclude.txt" |
         sed "s|$species|$species_san|g" |
-        sort -t'-' -k4,4nr -k1,1nr -k2,2nr -k3,3nr |
+        awk -F'/' '{ n=$NF;
+            # confidence: new format carries an explicit -conf-NN. marker;
+            # legacy is Species-NN-date... (2nd field of the sanitized basename)
+            if (match(n, /-conf-[0-9]+\./)) {
+                conf = substr(n, RSTART + 6, RLENGTH - 7) + 0;
+            } else {
+                split(n, a, "-"); conf = a[2] + 0;
+            }
+            print conf "\t" $0 }' |
+        sort -t"$(printf '\t')" -k1,1nr -k2,2r |
+        cut -f2- |
         tail -n +"$((max_files_species + 1))" |
         sed "s|$species_san|$species|g" |
         sed 'p; s/\(\.[^.]*\)$/\1.png/' |
