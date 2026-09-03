@@ -83,7 +83,7 @@ if ! grep -E '^SPECTROGRAM_HEIGHT=' /etc/birdnet/birdnet.conf &>/dev/null;then
 fi
 
 if ! grep -E '^APPRISE_NOTIFICATION_TITLE_RARE=' /etc/birdnet/birdnet.conf &>/dev/null;then
-  echo 'APPRISE_NOTIFICATION_TITLE_RARE="RARE BirdNET-Pi $comname ($sciname) detected with $confidencepct% confidence"' >> /etc/birdnet/birdnet.conf
+  echo 'APPRISE_NOTIFICATION_TITLE_RARE="RARE BirdNET-Pi $comname ($sciname) $confidencepct% confidence"' >> /etc/birdnet/birdnet.conf
 fi
 
 # standard notification bodies (created only when missing — user bodies kept)
