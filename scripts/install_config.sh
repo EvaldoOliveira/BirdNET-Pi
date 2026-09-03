@@ -99,8 +99,8 @@ RTSP_STREAM_TO_LIVESTREAM="0"
 
 #-----------------------  Apprise Miscellanous Configuration -------------------#
 
-APPRISE_NOTIFICATION_TITLE="BirdNET-Pi \$comname (\$sciname) detected with \$confidencepct% confidence"
-APPRISE_NOTIFICATION_TITLE_RARE="RARE BirdNET-Pi \$comname (\$sciname) detected with \$confidencepct% confidence"
+APPRISE_NOTIFICATION_TITLE="BirdNET-Pi \$comname (\$sciname) \$confidencepct% confidence"
+APPRISE_NOTIFICATION_TITLE_RARE="RARE BirdNET-Pi \$comname (\$sciname) \$confidencepct% confidence"
 APPRISE_NOTIFY_EACH_DETECTION=0
 APPRISE_NOTIFY_NEW_SPECIES=0
 APPRISE_WEEKLY_REPORT=1
