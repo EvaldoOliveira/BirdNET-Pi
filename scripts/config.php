@@ -87,7 +87,7 @@ if(isset($_GET["latitude"])){
   if(isset($_GET['only_notify_species_names'])) { $only_notify_species_names = htmlspecialchars_decode($_GET['only_notify_species_names'], ENT_QUOTES); }
   if(isset($_GET['only_notify_species_names_2'])) { $only_notify_species_names_2 = htmlspecialchars_decode($_GET['only_notify_species_names_2'], ENT_QUOTES); }
 
-  if(isset($_GET['notification_email'])) { $notification_email = trim($_GET['notification_email']); }
+  if(isset($_GET['notification_email']) && trim($_GET['notification_email']) != '') { $notification_email = trim($_GET['notification_email']); }
   if(isset($_GET['notification_default_tier'])) {
     $notification_default_tier = strtolower($_GET['notification_default_tier']);
     if(!in_array($notification_default_tier, ['muted', 'normal', 'rare'], true)) {
@@ -590,7 +590,7 @@ function runProcess() {
       <label for="minimum_time_limit">Minimum time between notifications of the same species (sec):</label>
       <input type="number" id="minimum_time_limit" name="minimum_time_limit" value="<?php echo $config['APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES'];?>" style="width:6em;" min="0"><br>
       <label for="notification_email">Notification e-mail address (used as $email in the Apprise boxes):</label>
-      <input type="text" id="notification_email" name="notification_email" placeholder="you@example.com" value="<?php echo $config['NOTIFICATION_EMAIL'] ?? '';?>" size=40><br>
+      <input type="text" id="notification_email" name="notification_email" placeholder="you@example.com (empty = keep current)" value="<?php echo $config['NOTIFICATION_EMAIL'] ?? '';?>" size=40><br>
       <label for="notification_default_tier">Default notification tier for species not listed in Species Management:</label>
       <select name="notification_default_tier" id="notification_default_tier" style="width:12em;">
         <?php $ndt = strtolower($config['NOTIFICATION_DEFAULT_TIER'] ?? 'normal');
