@@ -12,6 +12,9 @@ class Detection:
         self.datetime = file_date + datetime.timedelta(seconds=self.start)
         self.date = self.datetime.strftime("%Y-%m-%d")
         self.time = self.datetime.strftime("%H:%M:%S")
+        # colon-free variant for FILE NAMES (colons are illegal on SMB/Windows
+        # and get mangled by CIFS); the DB keeps the standard %H:%M:%S above
+        self.time_safe = self.datetime.strftime("%Hh%Mm%Ss")
         self.iso8601 = self.datetime.astimezone(get_localzone()).isoformat()
         self.week = self.datetime.isocalendar()[1]
         self.confidence = round(float(confidence), 4)
@@ -31,8 +34,11 @@ class ParseFileName:
         self.file_name = file_name
         name = os.path.splitext(os.path.basename(file_name))[0]
         date_created = re.search('^[0-9]+-[0-9]+-[0-9]+', name).group()
-        time_created = re.search('[0-9]+:[0-9]+:[0-9]+$', name).group()
-        self.file_date = datetime.datetime.strptime(f'{date_created}T{time_created}', "%Y-%m-%dT%H:%M:%S")
+        # accepts both 14:13:09 (legacy) and 14h13m09s (colon-free) names,
+        # anywhere in the name (new format: <date>_<time>-birdnet)
+        time_created = re.search('[0-9]+h[0-9]+m[0-9]+s|[0-9]+:[0-9]+:[0-9]+', name).group()
+        time_norm = re.sub('[hm]', ':', time_created).rstrip('s')
+        self.file_date = datetime.datetime.strptime(f'{date_created}T{time_norm}', "%Y-%m-%dT%H:%M:%S")
         self.root = name
 
         ident_match = re.search("RTSP_[0-9]+-", file_name)

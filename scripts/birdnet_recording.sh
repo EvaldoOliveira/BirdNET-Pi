@@ -4,7 +4,7 @@ source /etc/birdnet/birdnet.conf
 
 loop_ffmpeg(){
   while true;do
-    if ! ffmpeg -hide_banner -loglevel $LOGGING_LEVEL -nostdin ${1} -i ${2} -vn -map a:0 -acodec pcm_s16le -ac 2 -ar 48000 -f segment -segment_format wav -segment_time ${RECORDING_LENGTH} -strftime 1 ${RECS_DIR}/StreamData/%F-birdnet-RTSP_${3}-%H:%M:%S.wav
+    if ! ffmpeg -hide_banner -loglevel $LOGGING_LEVEL -nostdin ${1} -i ${2} -vn -map a:0 -acodec pcm_s16le -ac 2 -ar 48000 -f segment -segment_format wav -segment_time ${RECORDING_LENGTH} -strftime 1 ${RECS_DIR}/StreamData/%F_%Hh%Mm%Ss-RTSP_${3}-birdnet.wav
     then
       sleep 1
     fi
@@ -52,10 +52,10 @@ else
   else
     if [ -z ${REC_CARD} ];then
       arecord -f S16_LE -c${CHANNELS} -r48000 -t wav --max-file-time ${RECORDING_LENGTH}\
-	      	      	       --use-strftime ${RECS_DIR}/StreamData/%F-birdnet-%H:%M:%S.wav
+	      	      	       --use-strftime ${RECS_DIR}/StreamData/%F_%Hh%Mm%Ss-birdnet.wav
     else
       arecord -f S16_LE -c${CHANNELS} -r48000 -t wav --max-file-time ${RECORDING_LENGTH}\
-        -D "${REC_CARD}" --use-strftime ${RECS_DIR}/StreamData/%F-birdnet-%H:%M:%S.wav
+        -D "${REC_CARD}" --use-strftime ${RECS_DIR}/StreamData/%F_%Hh%Mm%Ss-birdnet.wav
     fi
   fi
 fi
