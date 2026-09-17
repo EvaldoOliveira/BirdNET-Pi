@@ -144,6 +144,21 @@ if(isset($_GET['submit'])) {
     }
   }
 
+  // US-41: colour palette of the live spectrogram and of the SoX images
+  if(isset($_GET["spectrogram_palette"])) {
+    $spectrogram_palette = trim($_GET['spectrogram_palette']);
+    if(in_array($spectrogram_palette, array('birdnet','viridis','inferno','ocean','grayscale','soxheat'), true)
+       && strcmp($spectrogram_palette,($config['SPECTROGRAM_PALETTE'] ?? '')) !== 0) {
+      if(preg_match("/^SPECTROGRAM_PALETTE=/m", $contents)) {
+        $contents = preg_replace("/SPECTROGRAM_PALETTE=.*/", "SPECTROGRAM_PALETTE=$spectrogram_palette", $contents);
+      } else {
+        $contents .= "\n## SPECTROGRAM_PALETTE is the colour palette of the spectrograms: birdnet, viridis, inferno, ocean, grayscale, soxheat\nSPECTROGRAM_PALETTE=$spectrogram_palette\n";
+      }
+      // the static SoX image follows the palette on its next refresh
+      exec("sudo systemctl restart spectrogram_viewer.service");
+    }
+  }
+
   if(isset($_GET["full_disk"])) {
     $full_disk = $_GET["full_disk"];
     if(strcmp($full_disk,$config['FULL_DISK']) !== 0) {
@@ -566,6 +581,15 @@ foreach($formats as $format){
         <p style="margin-left: 40px">
         <label for="spectrogram_height">Live spectrogram height (% of the page): </label>
         <input name="spectrogram_height" type="number" style="width:5em;" min="20" max="100" step="1" value="<?php print(is_numeric($newconfig['SPECTROGRAM_HEIGHT'] ?? null) ? $newconfig['SPECTROGRAM_HEIGHT'] : 80);?>" required/>
+        </p>
+        <p style="margin-left: 40px">
+        <label for="spectrogram_palette">Spectrogram palette: </label>
+        <select name="spectrogram_palette">
+          <?php $pal = $newconfig['SPECTROGRAM_PALETTE'] ?? 'birdnet';
+          foreach (array('birdnet'=>'BirdNET classic','viridis'=>'Viridis','inferno'=>'Inferno','ocean'=>'Ocean','grayscale'=>'Grayscale','soxheat'=>'SoX heat') as $k => $l) {
+            echo '<option value="' . $k . '"' . ($k == $pal ? ' selected' : '') . '>' . $l . '</option>';
+          } ?>
+        </select>
         </p>
 
         <p style="margin-left: 40px">

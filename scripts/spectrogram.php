@@ -18,6 +18,21 @@ if(!empty($config['SPECTROGRAM_HEIGHT']) && is_numeric($config['SPECTROGRAM_HEIG
     $SPECTROGRAM_HEIGHT = 80;
 }
 
+// US-41: colour palette of the live waterfall (and of the SoX images, see
+// spectrogram.sh / reporting.py). Names must match $SPECTROGRAM_PALETTES.
+$SPECTROGRAM_PALETTES = array(
+  'birdnet'   => 'BirdNET classic',
+  'viridis'   => 'Viridis (dark → yellow)',
+  'inferno'   => 'Inferno (black → red → yellow)',
+  'ocean'     => 'Ocean (black → cyan)',
+  'grayscale' => 'Grayscale',
+  'soxheat'   => 'SoX heat',
+);
+$SPECTROGRAM_PALETTE = 'birdnet';
+if(!empty($config['SPECTROGRAM_PALETTE']) && array_key_exists($config['SPECTROGRAM_PALETTE'], $SPECTROGRAM_PALETTES)){
+    $SPECTROGRAM_PALETTE = $config['SPECTROGRAM_PALETTE'];
+}
+
 if(isset($_GET['ajax_csv'])) {
   $RECS_DIR = $config["RECS_DIR"];
   $STREAM_DATA_DIR = $RECS_DIR . "/StreamData/";
@@ -198,7 +213,7 @@ function applyText(text,x,y,opacity) {
   CTX.font = '15px Roboto Flex';
   //fitTextOnCanvas(text,"Roboto Flex",document.body.querySelector('canvas').scrollHeight * 0.35)
   CTX.fillText(text,parseInt(x),y)
-  CTX.fillStyle = 'hsl(280, 100%, 10%)';
+  CTX.fillStyle = paletteColor(0);
 }
 
 var add=0;
@@ -239,6 +254,31 @@ function loadDetectionIfNewExists() {
 window.setInterval(function(){
    loadDetectionIfNewExists();
 }, 1000);
+
+// US-41: palettes as RGB stops over the 0..1 magnitude; birdnet keeps the
+// original HSL ramp (hue 280 → 400, lightness 10 % → 80 %).
+const PALETTE_STOPS = {
+  viridis:   [[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37]],
+  inferno:   [[0,0,4],[87,16,110],[188,55,84],[249,142,9],[252,255,164]],
+  ocean:     [[0,0,0],[0,30,90],[0,110,180],[0,200,230],[220,255,255]],
+  grayscale: [[0,0,0],[255,255,255]],
+  soxheat:   [[0,0,0],[30,0,90],[120,0,140],[200,40,60],[240,140,0],[255,240,120],[255,255,255]],
+};
+var palette = "<?php echo $SPECTROGRAM_PALETTE; ?>";
+function paletteColor(rat) {
+  if (!(palette in PALETTE_STOPS)) {
+    let hue = Math.round((rat * 120) + 280 % 360);
+    return `hsl(${hue}, 100%, ${10 + (70 * rat)}%)`;
+  }
+  const st = PALETTE_STOPS[palette];
+  const pos = Math.min(Math.max(rat, 0), 1) * (st.length - 1);
+  const i = Math.min(Math.floor(pos), st.length - 2);
+  const f = pos - i;
+  const r = Math.round(st[i][0] + (st[i+1][0] - st[i][0]) * f);
+  const g = Math.round(st[i][1] + (st[i+1][1] - st[i][1]) * f);
+  const b = Math.round(st[i][2] + (st[i+1][2] - st[i][2]) * f);
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
 var compressor = undefined;
 var SOURCE;
@@ -391,7 +431,7 @@ function initialize() {
     const LEN = DATA.length;
     const h = (H / LEN + 0.9);
     const x = W - 1;
-    CTX.fillStyle = 'hsl(280, 100%, 10%)';
+    CTX.fillStyle = paletteColor(0);
     CTX.fillRect(0, 0, W, H);
 
     loop();
@@ -410,16 +450,14 @@ function initialize() {
       window.requestAnimationFrame((timeRes) => loop(timeRes));
       let imgData = CTX.getImageData(1, 0, W - 1, H);
 
+      CTX.fillStyle = paletteColor(0);
       CTX.fillRect(0, 0, W, H);
       CTX.putImageData(imgData, 0, 0);
       ANALYSER.getByteFrequencyData(DATA);
       for (let i = 0; i < LEN; i++) {
         let rat = DATA[i] / 255 ;
-        let hue = Math.round((rat * 120) + 280 % 360);
-        let sat = '100%';
-        let lit = 10 + (70 * rat) + '%';
         CTX.beginPath();
-        CTX.strokeStyle = `hsl(${hue}, ${sat}, ${lit})`;
+        CTX.strokeStyle = paletteColor(rat);
         CTX.moveTo(x, H - (i * h));
         CTX.lineTo(x, H - (i * h + h));
         CTX.stroke();
@@ -456,6 +494,20 @@ h1 {
 </style>
 
 <img id="spectrogramimage" style="width:100%;display:none" src="spectrogram.png?nocache=<?php echo $time;?>">
+
+<!-- US-41: palette picklist + height box, top-left of the spectrogram pane -->
+<div id="specopts" style="text-align:left;padding:2px 8px;font-size:12px;">
+  <label for="palette_select">Palette: </label>
+  <select id="palette_select" class="testbtn">
+    <?php foreach ($SPECTROGRAM_PALETTES as $key => $label) {
+      echo '<option value="' . $key . '"' . ($key == $SPECTROGRAM_PALETTE ? ' selected="selected"' : '') . '>' . $label . '</option>';
+    } ?>
+  </select>
+  &nbsp;&nbsp;
+  <label for="height_input">Height (% of page): </label>
+  <input id="height_input" type="number" min="20" max="100" step="1" style="width:4.5em;" value="<?php echo $SPECTROGRAM_HEIGHT; ?>">
+  <span id="specopts_status" style="margin-left:6px;color:#9f9;"></span>
+</div>
 
 <div class="centered">
 	<?php
@@ -593,4 +645,29 @@ var freqshift = document.getElementById("freqshift");
 freqshift.onclick = function() {
   toggleFreqshift(this.checked);
 }
+
+// US-41: persist the palette / height through the Advanced-settings save path
+// (same mechanism as the RTSP stream selector above). Palette applies live;
+// height needs the canvas buffer rebuilt, so the view is reloaded.
+function saveSpectrogramSetting(param, value, then) {
+  var status = document.getElementById('specopts_status');
+  status.textContent = 'saving…';
+  const xhr = new XMLHttpRequest();
+  xhr.open("GET", 'views.php?' + param + '=' + encodeURIComponent(value) + '&view=Advanced&submit=advanced');
+  xhr.onload = function () {
+    if (this.status === 200) { status.textContent = 'saved'; setTimeout(function(){ status.textContent = ''; }, 2000); if (then) then(); }
+    else { status.textContent = 'not saved (login?)'; }
+  };
+  xhr.onerror = function () { status.textContent = 'not saved'; };
+  xhr.send();
+}
+document.getElementById("palette_select").onchange = function() {
+  palette = this.value;
+  saveSpectrogramSetting('spectrogram_palette', this.value, null);
+};
+document.getElementById("height_input").onchange = function() {
+  var v = Math.max(20, Math.min(100, parseInt(this.value) || 80));
+  this.value = v;
+  saveSpectrogramSetting('spectrogram_height', v, function(){ window.location = "views.php?view=Spectrogram"; });
+};
 </script>
