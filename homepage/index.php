@@ -33,26 +33,25 @@ echo "<a href=\"https://github.com/Nachtzuster/BirdNET-Pi.git\" target=\"_blank\
 echo "<a href=\"https://github.com/Nachtzuster/BirdNET-Pi.git\" target=\"_blank\"><img src=\"images/bird.png\"></a>";
 }?>
   </div>
-
-
+  <div class="sitename"><?php echo $site_name; ?></div>
+  <h1><a href="/"><img class="topimage" src="images/bnp.png"></a></h1>
   <div class="stream">
 <?php
+// Compact header (owner 2026-09-17): station name beside the small logo on the
+// left, BirdNET-Pi logo centred, Live Audio on the right — one line, no h3 below.
 if(isset($_GET['stream'])){
   ensure_authenticated('You cannot listen to the live audio stream');
       echo "
-  <audio controls autoplay><source src=\"/stream\"></audio>
-  </div>
-  <h1><a href=\"/\"><img class=\"topimage\" src=\"images/bnp.png\"></a></h1>
-  </div><div class=\"centered\"><h3>$site_name</h3></div>";
+  <audio controls autoplay><source src=\"/stream\"></audio>";
 } else {
     echo "
   <form action=\"index.php\" method=\"GET\">
     <button type=\"submit\" name=\"stream\" value=\"play\">Live Audio</button>
-  </form>
-  </div>
-  <h1><a href=\"/\"><img class=\"topimage\" src=\"images/bnp.png\"></a></h1>
-</div><div class=\"centered\"><h3>$site_name</h3></div>";
+  </form>";
 }
+echo "
+  </div>
+</div>";
 if(isset($_GET['filename'])) {
   $filename = $_GET['filename'];
 echo "
