@@ -214,8 +214,9 @@ button:hover {
 .topnav {
   background-color: rgb(159, 226, 155);
   display: flex;
-  flex: 65%;
-  width: 65%;
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 96%;
   min-width: min-content;
   justify-content: space-between;
   margin-left: auto;
@@ -240,6 +241,7 @@ button:hover {
   text-align: center;
   padding: 6px 10px;
   font-size: 14px;
+  white-space: nowrap;
   width: auto;
   vertical-align: middle;
 }
