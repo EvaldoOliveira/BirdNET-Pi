@@ -52,11 +52,22 @@ def extract_safe(in_file, out_file, start, stop):
     extract(in_file, out_file, safe_start, safe_stop)
 
 
-def spectrogram(in_file, title, comment, raw=0):
+# US-41: SPECTROGRAM_PALETTE -> sox options (same table as scripts/spectrogram.sh)
+PALETTE_SOX_OPTS = {
+    'viridis': ['-h', '-p', '5', '-z', '80'],
+    'inferno': ['-z', '80'],
+    'ocean': ['-h', '-p', '2', '-z', '80'],
+    'grayscale': ['-m', '-z', '80'],
+    'soxheat': ['-z', '120'],
+}
+
+
+def spectrogram(in_file, title, comment, raw=0, palette='birdnet'):
     fd, tmp_file = tempfile.mkstemp(suffix='.png')
     os.close(fd)
     args = ['sox', '-V1', f'{in_file}', '-n', 'remix', '1', 'rate', '24k', 'spectrogram',
             '-t', '', '-c', '', '-o', tmp_file]
+    args += PALETTE_SOX_OPTS.get(palette, [])
     args += ['-r'] if int(raw) else []
 
     result = subprocess.run(args, check=True, capture_output=True)
@@ -89,7 +100,8 @@ def extract_detection(file: ParseFileName, detection: Detection):
     else:
         os.makedirs(new_dir, exist_ok=True)
         extract_safe(file.file_name, new_file, detection.start, detection.stop)
-        spectrogram(new_file, detection.common_name, new_file.replace(os.path.expanduser('~/'), ''), conf['RAW_SPECTROGRAM'])
+        spectrogram(new_file, detection.common_name, new_file.replace(os.path.expanduser('~/'), ''), conf['RAW_SPECTROGRAM'],
+                    conf.get('SPECTROGRAM_PALETTE', 'birdnet'))
     return new_file
 
 

@@ -15,6 +15,17 @@ fi
 next=0
 looptime=$(( RECORDING_LENGTH * 2 / 3 ))
 
+# US-41: SPECTROGRAM_PALETTE (birdnet.conf) -> sox spectrogram options. The
+# live canvas draws its own gradients; these are the closest sox equivalents.
+case "${SPECTROGRAM_PALETTE:-birdnet}" in
+  viridis)   PALETTE_OPTS="-h -p 5 -z 80" ;;
+  inferno)   PALETTE_OPTS="-z 80" ;;
+  ocean)     PALETTE_OPTS="-h -p 2 -z 80" ;;
+  grayscale) PALETTE_OPTS="-m -z 80" ;;
+  soxheat)   PALETTE_OPTS="-z 120" ;;
+  *)         PALETTE_OPTS="" ;;
+esac
+
 touch "$HOME/BirdSongs/StreamData/analyzing_now.txt"
 # Continuously loop generating a spectrogram
 inotifywait -m -e close_write "$HOME/BirdSongs/StreamData/analyzing_now.txt" |
@@ -28,9 +39,9 @@ while read; do
         # Check if RAW_SPECTROGRAM is 1
         if [ "$RAW_SPECTROGRAM" == "1" ]; then
           # If it is, add "-r" as an argument to the SOX command
-          sox -V1 "${analyzing_now}" -n remix 1 rate 24k spectrogram -c "${analyzing_now//$HOME\//}" -o "${spectrogram_png}" -r
+          sox -V1 "${analyzing_now}" -n remix 1 rate 24k spectrogram $PALETTE_OPTS -c "${analyzing_now//$HOME\//}" -o "${spectrogram_png}" -r
         else
-          sox -V1 "${analyzing_now}" -n remix 1 rate 24k spectrogram -c "${analyzing_now//$HOME\//}" -o "${spectrogram_png}"
+          sox -V1 "${analyzing_now}" -n remix 1 rate 24k spectrogram $PALETTE_OPTS -c "${analyzing_now//$HOME\//}" -o "${spectrogram_png}"
         fi
     fi
     next=$(( now + looptime ))
