@@ -32,6 +32,49 @@ $SPECTROGRAM_PALETTE = 'birdnet';
 if(!empty($config['SPECTROGRAM_PALETTE']) && array_key_exists($config['SPECTROGRAM_PALETTE'], $SPECTROGRAM_PALETTES)){
     $SPECTROGRAM_PALETTE = $config['SPECTROGRAM_PALETTE'];
 }
+// US-42: colour sensitivity — dB floor, dB range and contrast (gamma) of the ramp
+$SPECTROGRAM_FLOOR_DB = (isset($config['SPECTROGRAM_FLOOR_DB']) && is_numeric($config['SPECTROGRAM_FLOOR_DB'])) ? max(-120, min(-40, intval($config['SPECTROGRAM_FLOOR_DB']))) : -100;
+$SPECTROGRAM_RANGE_DB = (isset($config['SPECTROGRAM_RANGE_DB']) && is_numeric($config['SPECTROGRAM_RANGE_DB'])) ? max(30, min(120, intval($config['SPECTROGRAM_RANGE_DB']))) : 70;
+$SPECTROGRAM_CONTRAST = (isset($config['SPECTROGRAM_CONTRAST']) && is_numeric($config['SPECTROGRAM_CONTRAST'])) ? max(0.5, min(2.0, floatval($config['SPECTROGRAM_CONTRAST']))) : 1.0;
+
+// US-41/US-42 save endpoint (owner 2026-09-17: "do not restart the server when
+// changing colour or spectrogram — only the spectrogram engine"): writes ONLY
+// the spectrogram keys to birdnet.conf and restarts spectrogram_viewer.service
+// (the SoX image engine). Nothing else is touched — no restart_services.sh.
+if(isset($_GET['save_spectrogram'])) {
+  ensure_authenticated();
+  $keys = array(
+    'spectrogram_palette'  => array('SPECTROGRAM_PALETTE', 'enum', array_keys($SPECTROGRAM_PALETTES), 'colour palette of the spectrograms: birdnet, viridis, inferno, ocean, grayscale, soxheat'),
+    'spectrogram_height'   => array('SPECTROGRAM_HEIGHT', 'int', array(20, 100), 'height of the live spectrogram in percent of the page height (vh)'),
+    'spectrogram_floor_db' => array('SPECTROGRAM_FLOOR_DB', 'int', array(-120, -40), 'dB floor of the spectrogram colour scale'),
+    'spectrogram_range_db' => array('SPECTROGRAM_RANGE_DB', 'int', array(30, 120), 'dB range of the spectrogram colour scale above the floor'),
+    'spectrogram_contrast' => array('SPECTROGRAM_CONTRAST', 'float', array(0.5, 2.0), 'contrast (gamma) of the spectrogram colour ramp; 1 = linear'),
+  );
+  $contents = file_get_contents('/etc/birdnet/birdnet.conf');
+  $changed = 0;
+  foreach ($keys as $param => $spec) {
+    if (!isset($_GET[$param])) continue;
+    list($key, $type, $bounds, $desc) = $spec;
+    $raw = trim($_GET[$param]);
+    if ($type == 'enum') { if (!in_array($raw, $bounds, true)) continue; $val = $raw; }
+    elseif (!is_numeric($raw)) { continue; }
+    elseif ($type == 'int') { $val = max($bounds[0], min($bounds[1], intval($raw))); }
+    else { $val = max($bounds[0], min($bounds[1], round(floatval($raw), 2))); }
+    if (preg_match("/^$key=/m", $contents)) {
+      $contents = preg_replace("/^$key=.*/m", "$key=$val", $contents);
+    } else {
+      $contents .= "\n## $key is the $desc\n$key=$val\n";
+    }
+    $changed++;
+  }
+  if ($changed > 0) {
+    file_put_contents('/etc/birdnet/birdnet.conf', $contents);
+    exec("sudo systemctl restart spectrogram_viewer.service");
+  }
+  header('Content-Type: text/plain');
+  echo $changed > 0 ? "OK" : "NOCHANGE";
+  die();
+}
 
 if(isset($_GET['ajax_csv'])) {
   $RECS_DIR = $config["RECS_DIR"];
@@ -265,7 +308,19 @@ const PALETTE_STOPS = {
   soxheat:   [[0,0,0],[30,0,90],[120,0,140],[200,40,60],[240,140,0],[255,240,120],[255,255,255]],
 };
 var palette = "<?php echo $SPECTROGRAM_PALETTE; ?>";
+// US-42: sensitivity — the analyser maps [floor, floor+range] dB onto 0..255;
+// the ramp is then bent by the contrast gamma (1 = linear, < 1 lifts faint
+// sounds, > 1 keeps only the strong ones).
+var specFloor = <?php echo $SPECTROGRAM_FLOOR_DB; ?>;
+var specRange = <?php echo $SPECTROGRAM_RANGE_DB; ?>;
+var specGamma = <?php echo $SPECTROGRAM_CONTRAST; ?>;
+function applySensitivity() {
+  if (typeof ANALYSER === 'undefined' || !ANALYSER) return;
+  ANALYSER.minDecibels = specFloor;
+  ANALYSER.maxDecibels = Math.min(0, specFloor + specRange);
+}
 function paletteColor(rat) {
+  rat = Math.pow(Math.min(Math.max(rat, 0), 1), specGamma);
   if (!(palette in PALETTE_STOPS)) {
     let hue = Math.round((rat * 120) + 280 % 360);
     return `hsl(${hue}, 100%, ${10 + (70 * rat)}%)`;
@@ -396,6 +451,7 @@ function initialize() {
   ANALYSER = ACTX.createAnalyser();
 
   ANALYSER.fftSize = 2048;  
+  applySensitivity();
   drawFrequencyAxis();
   
   try{
@@ -506,6 +562,15 @@ h1 {
   &nbsp;&nbsp;
   <label for="height_input">Height (% of page): </label>
   <input id="height_input" type="number" min="20" max="100" step="1" style="width:4.5em;" value="<?php echo $SPECTROGRAM_HEIGHT; ?>">
+  &nbsp;&nbsp;
+  <label for="floor_input" title="Signal at or below this level takes the darkest colour">Floor (dB): </label>
+  <input id="floor_input" type="number" min="-120" max="-40" step="5" style="width:4.5em;" value="<?php echo $SPECTROGRAM_FLOOR_DB; ?>">
+  &nbsp;
+  <label for="range_input" title="Width of the colour scale above the floor">Range (dB): </label>
+  <input id="range_input" type="number" min="30" max="120" step="5" style="width:4.5em;" value="<?php echo $SPECTROGRAM_RANGE_DB; ?>">
+  &nbsp;
+  <label for="contrast_input" title="Gamma of the colour ramp: below 1 lifts faint sounds, above 1 keeps only the strong ones">Contrast: </label>
+  <input id="contrast_input" type="number" min="0.5" max="2" step="0.1" style="width:4.5em;" value="<?php echo $SPECTROGRAM_CONTRAST; ?>">
   <span id="specopts_status" style="margin-left:6px;color:#9f9;"></span>
 </div>
 
@@ -646,27 +711,26 @@ freqshift.onclick = function() {
   toggleFreqshift(this.checked);
 }
 
-// US-41: persist the palette / height through the Advanced-settings save path
-// (same mechanism as the RTSP stream selector above). That path runs
-// restart_services.sh, which interrupts the audio stream for a few seconds —
-// the analyser then feeds zeros and the waterfall goes black (only the species
-// labels survive). So after EVERY save the view is reloaded once the services
-// are back (owner 2026-09-17): fresh audio context, fresh canvas.
-var RELOAD_AFTER_SAVE_MS = 5000;
+// US-41/US-42: persist through the page's own endpoint (save_spectrogram),
+// which writes only the spectrogram keys and restarts only the SoX image
+// engine — the audio stream and the analysis are never touched, so the live
+// canvas keeps running (owner 2026-09-17: "o rendering atual, mais nada").
+// Palette / floor / range / contrast apply live; only the height needs a
+// reload (the drawing buffer is sized once at initialize()).
 function saveSpectrogramSetting(param, value) {
   var status = document.getElementById('specopts_status');
   status.textContent = 'saving…';
   const xhr = new XMLHttpRequest();
-  xhr.open("GET", 'views.php?' + param + '=' + encodeURIComponent(value) + '&view=Advanced&submit=advanced');
+  xhr.open("GET", 'spectrogram.php?save_spectrogram=1&' + param + '=' + encodeURIComponent(value));
   xhr.onload = function () {
     if (this.status === 200) {
-      var left = RELOAD_AFTER_SAVE_MS / 1000;
-      status.textContent = 'saved — reloading in ' + left + ' s';
-      var tick = setInterval(function () {
-        left -= 1;
-        status.textContent = 'saved — reloading in ' + left + ' s';
-        if (left <= 0) { clearInterval(tick); window.location = "views.php?view=Spectrogram"; }
-      }, 1000);
+      if (param === 'spectrogram_height') {
+        status.textContent = 'saved — reloading';
+        window.location = "views.php?view=Spectrogram";
+      } else {
+        status.textContent = 'saved';
+        setTimeout(function(){ status.textContent = ''; }, 2000);
+      }
     } else {
       status.textContent = 'not saved (login?)';
     }
@@ -682,5 +746,21 @@ document.getElementById("height_input").onchange = function() {
   var v = Math.max(20, Math.min(100, parseInt(this.value) || 80));
   this.value = v;
   saveSpectrogramSetting('spectrogram_height', v);
+};
+// US-42: sensitivity controls — live preview, then the same save + reload
+document.getElementById("floor_input").onchange = function() {
+  var v = Math.max(-120, Math.min(-40, parseInt(this.value) || -100));
+  this.value = v; specFloor = v; applySensitivity();
+  saveSpectrogramSetting('spectrogram_floor_db', v);
+};
+document.getElementById("range_input").onchange = function() {
+  var v = Math.max(30, Math.min(120, parseInt(this.value) || 70));
+  this.value = v; specRange = v; applySensitivity();
+  saveSpectrogramSetting('spectrogram_range_db', v);
+};
+document.getElementById("contrast_input").onchange = function() {
+  var v = Math.max(0.5, Math.min(2, parseFloat(this.value) || 1));
+  this.value = v; specGamma = v;
+  saveSpectrogramSetting('spectrogram_contrast', v);
 };
 </script>

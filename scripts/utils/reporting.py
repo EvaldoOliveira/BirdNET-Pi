@@ -54,20 +54,32 @@ def extract_safe(in_file, out_file, start, stop):
 
 # US-41: SPECTROGRAM_PALETTE -> sox options (same table as scripts/spectrogram.sh)
 PALETTE_SOX_OPTS = {
-    'viridis': ['-h', '-p', '5', '-z', '80'],
-    'inferno': ['-z', '80'],
-    'ocean': ['-h', '-p', '2', '-z', '80'],
-    'grayscale': ['-m', '-z', '80'],
-    'soxheat': ['-z', '120'],
-}
+    'viridis': ['-h', '-p', '5'],
+    'ocean': ['-h', '-p', '2'],
+    'grayscale': ['-m'],
+}   # birdnet / inferno / soxheat = sox default colours
 
 
-def spectrogram(in_file, title, comment, raw=0, palette='birdnet'):
+def sensitivity_sox_opts(conf):
+    """US-42: SPECTROGRAM_FLOOR_DB / SPECTROGRAM_RANGE_DB -> sox -Z (top, dBFS) / -z (range)."""
+    try:
+        floor = max(-120, min(-40, int(float(conf.get('SPECTROGRAM_FLOOR_DB', -100)))))
+    except (TypeError, ValueError):
+        floor = -100
+    try:
+        rng = max(30, min(120, int(float(conf.get('SPECTROGRAM_RANGE_DB', 70)))))
+    except (TypeError, ValueError):
+        rng = 70
+    return ['-Z', str(min(0, floor + rng)), '-z', str(rng)]
+
+
+def spectrogram(in_file, title, comment, raw=0, palette='birdnet', sens_opts=None):
     fd, tmp_file = tempfile.mkstemp(suffix='.png')
     os.close(fd)
     args = ['sox', '-V1', f'{in_file}', '-n', 'remix', '1', 'rate', '24k', 'spectrogram',
             '-t', '', '-c', '', '-o', tmp_file]
     args += PALETTE_SOX_OPTS.get(palette, [])
+    args += sens_opts or []
     args += ['-r'] if int(raw) else []
 
     result = subprocess.run(args, check=True, capture_output=True)
@@ -101,7 +113,7 @@ def extract_detection(file: ParseFileName, detection: Detection):
         os.makedirs(new_dir, exist_ok=True)
         extract_safe(file.file_name, new_file, detection.start, detection.stop)
         spectrogram(new_file, detection.common_name, new_file.replace(os.path.expanduser('~/'), ''), conf['RAW_SPECTROGRAM'],
-                    conf.get('SPECTROGRAM_PALETTE', 'birdnet'))
+                    conf.get('SPECTROGRAM_PALETTE', 'birdnet'), sensitivity_sox_opts(conf))
     return new_file
 
 

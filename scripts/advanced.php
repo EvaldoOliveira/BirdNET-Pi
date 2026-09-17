@@ -159,6 +159,24 @@ if(isset($_GET['submit'])) {
     }
   }
 
+  // US-42: colour sensitivity (floor / range / contrast) — same append-if-missing save
+  foreach (array('spectrogram_floor_db' => array('SPECTROGRAM_FLOOR_DB', -120, -40, 'int', 'dB floor of the spectrogram colour scale'),
+                 'spectrogram_range_db' => array('SPECTROGRAM_RANGE_DB', 30, 120, 'int', 'dB range of the spectrogram colour scale above the floor'),
+                 'spectrogram_contrast' => array('SPECTROGRAM_CONTRAST', 0.5, 2.0, 'float', 'contrast (gamma) of the spectrogram colour ramp; 1 = linear')) as $param => $spec) {
+    if(isset($_GET[$param]) && is_numeric($_GET[$param])) {
+      list($key, $lo, $hi, $type, $desc) = $spec;
+      $val = $type == 'int' ? max($lo, min($hi, intval($_GET[$param]))) : max($lo, min($hi, round(floatval($_GET[$param]), 2)));
+      if(strcmp((string)$val, (string)($config[$key] ?? '')) !== 0) {
+        if(preg_match("/^$key=/m", $contents)) {
+          $contents = preg_replace("/$key=.*/", "$key=$val", $contents);
+        } else {
+          $contents .= "\n## $key is the $desc\n$key=$val\n";
+        }
+        exec("sudo systemctl restart spectrogram_viewer.service");
+      }
+    }
+  }
+
   if(isset($_GET["full_disk"])) {
     $full_disk = $_GET["full_disk"];
     if(strcmp($full_disk,$config['FULL_DISK']) !== 0) {
