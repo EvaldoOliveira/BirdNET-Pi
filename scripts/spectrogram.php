@@ -248,12 +248,20 @@ function fitTextOnCanvas(text,fontface,yPosition){
 function applyText(text,x,y,opacity) {
   console.log("conf: "+opacity)
   console.log(text+" "+parseInt(x)+" "+y)
-  if(opacity < 0.2) {
-    opacity = 0.2;
+  // Readable on every palette (US-41/42 follow-up): the label sits at mid
+  // height, right where the call is painted bright (yellow on Viridis), so
+  // plain white text vanished there. Dark outline under a bold white fill,
+  // opacity floor raised to 0.6.
+  if(opacity < 0.6) {
+    opacity = 0.6;
   }
   CTX.textAlign = "center";
-    CTX.fillStyle = "rgba(255, 255, 255, "+opacity+")";
-  CTX.font = '15px Roboto Flex';
+  CTX.font = 'bold 15px Roboto Flex';
+  CTX.lineWidth = 4;
+  CTX.lineJoin = "round";
+  CTX.strokeStyle = "rgba(0, 0, 0, "+opacity+")";
+  CTX.strokeText(text,parseInt(x),y);
+  CTX.fillStyle = "rgba(255, 255, 255, "+opacity+")";
   //fitTextOnCanvas(text,"Roboto Flex",document.body.querySelector('canvas').scrollHeight * 0.35)
   CTX.fillText(text,parseInt(x),y)
   CTX.fillStyle = paletteColor(0);
