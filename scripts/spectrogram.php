@@ -647,27 +647,40 @@ freqshift.onclick = function() {
 }
 
 // US-41: persist the palette / height through the Advanced-settings save path
-// (same mechanism as the RTSP stream selector above). Palette applies live;
-// height needs the canvas buffer rebuilt, so the view is reloaded.
-function saveSpectrogramSetting(param, value, then) {
+// (same mechanism as the RTSP stream selector above). That path runs
+// restart_services.sh, which interrupts the audio stream for a few seconds —
+// the analyser then feeds zeros and the waterfall goes black (only the species
+// labels survive). So after EVERY save the view is reloaded once the services
+// are back (owner 2026-09-17): fresh audio context, fresh canvas.
+var RELOAD_AFTER_SAVE_MS = 5000;
+function saveSpectrogramSetting(param, value) {
   var status = document.getElementById('specopts_status');
   status.textContent = 'saving…';
   const xhr = new XMLHttpRequest();
   xhr.open("GET", 'views.php?' + param + '=' + encodeURIComponent(value) + '&view=Advanced&submit=advanced');
   xhr.onload = function () {
-    if (this.status === 200) { status.textContent = 'saved'; setTimeout(function(){ status.textContent = ''; }, 2000); if (then) then(); }
-    else { status.textContent = 'not saved (login?)'; }
+    if (this.status === 200) {
+      var left = RELOAD_AFTER_SAVE_MS / 1000;
+      status.textContent = 'saved — reloading in ' + left + ' s';
+      var tick = setInterval(function () {
+        left -= 1;
+        status.textContent = 'saved — reloading in ' + left + ' s';
+        if (left <= 0) { clearInterval(tick); window.location = "views.php?view=Spectrogram"; }
+      }, 1000);
+    } else {
+      status.textContent = 'not saved (login?)';
+    }
   };
   xhr.onerror = function () { status.textContent = 'not saved'; };
   xhr.send();
 }
 document.getElementById("palette_select").onchange = function() {
-  palette = this.value;
-  saveSpectrogramSetting('spectrogram_palette', this.value, null);
+  palette = this.value;   // live preview until the reload
+  saveSpectrogramSetting('spectrogram_palette', this.value);
 };
 document.getElementById("height_input").onchange = function() {
   var v = Math.max(20, Math.min(100, parseInt(this.value) || 80));
   this.value = v;
-  saveSpectrogramSetting('spectrogram_height', v, function(){ window.location = "views.php?view=Spectrogram"; });
+  saveSpectrogramSetting('spectrogram_height', v);
 };
 </script>
