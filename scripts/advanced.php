@@ -578,20 +578,7 @@ foreach($formats as $format){
         <label for="freqshift_reconnect_delay">Livestream reconnection delay (in ms): </label>
         <input name="freqshift_reconnect_delay" type="number" style="width:5em;" min="1000" max="10000" step="100" value="<?php print($newconfig['FREQSHIFT_RECONNECT_DELAY']);?>" required/>
         </p>
-        <p style="margin-left: 40px">
-        <label for="spectrogram_height">Live spectrogram height (% of the page): </label>
-        <input name="spectrogram_height" type="number" style="width:5em;" min="20" max="100" step="1" value="<?php print(is_numeric($newconfig['SPECTROGRAM_HEIGHT'] ?? null) ? $newconfig['SPECTROGRAM_HEIGHT'] : 80);?>" required/>
-        </p>
-        <p style="margin-left: 40px">
-        <label for="spectrogram_palette">Spectrogram palette: </label>
-        <select name="spectrogram_palette">
-          <?php $pal = $newconfig['SPECTROGRAM_PALETTE'] ?? 'birdnet';
-          foreach (array('birdnet'=>'BirdNET classic','viridis'=>'Viridis','inferno'=>'Inferno','ocean'=>'Ocean','grayscale'=>'Grayscale','soxheat'=>'SoX heat') as $k => $l) {
-            echo '<option value="' . $k . '"' . ($k == $pal ? ' selected' : '') . '>' . $l . '</option>';
-          } ?>
-        </select>
-        </p>
-
+        <!-- Spectrogram height and palette moved to Basic Settings > "Spectrogram and colours" (owner 2026-09-17); the GET handlers above still serve the Spectrogram page -->
         <p style="margin-left: 40px">
         Using sox:
         e.g. shiftPitch=-1200 performs a shift of 1 octave down. This value is in 100ths of a semitone.<br>

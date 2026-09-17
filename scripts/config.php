@@ -76,6 +76,9 @@ if(isset($_GET["latitude"])){
   $language = $_GET["language"];
   $info_site = $_GET["info_site"];
   $color_scheme = $_GET["color_scheme"];
+  // US-41 follow-up (owner 2026-09-17): spectrogram height + palette live here, under "Spectrogram and colours"
+  $spectrogram_height = isset($_GET['spectrogram_height']) && is_numeric($_GET['spectrogram_height']) ? max(20, min(100, intval($_GET['spectrogram_height']))) : null;
+  $spectrogram_palette = isset($_GET['spectrogram_palette']) && in_array($_GET['spectrogram_palette'], array('birdnet','viridis','inferno','ocean','grayscale','soxheat'), true) ? $_GET['spectrogram_palette'] : null;
   $timezone = $_GET["timezone"];
   $model = $_GET["model"];
   $sf_thresh = $_GET["sf_thresh"];
@@ -175,6 +178,23 @@ if(isset($_GET["latitude"])){
   }
   $contents = preg_replace("/INFO_SITE=.*/", "INFO_SITE=$info_site", $contents);
   $contents = preg_replace("/COLOR_SCHEME=.*/", "COLOR_SCHEME=$color_scheme", $contents);  
+  if($spectrogram_height !== null) {
+    if(preg_match("/^SPECTROGRAM_HEIGHT=/m", $contents)) {
+      $contents = preg_replace("/SPECTROGRAM_HEIGHT=.*/", "SPECTROGRAM_HEIGHT=$spectrogram_height", $contents);
+    } else {
+      $contents .= "\n## SPECTROGRAM_HEIGHT is the height of the live spectrogram in percent of the page height (vh)\nSPECTROGRAM_HEIGHT=$spectrogram_height\n";
+    }
+  }
+  if($spectrogram_palette !== null) {
+    if(preg_match("/^SPECTROGRAM_PALETTE=/m", $contents)) {
+      $contents = preg_replace("/SPECTROGRAM_PALETTE=.*/", "SPECTROGRAM_PALETTE=$spectrogram_palette", $contents);
+    } else {
+      $contents .= "\n## SPECTROGRAM_PALETTE is the colour palette of the spectrograms: birdnet, viridis, inferno, ocean, grayscale, soxheat\nSPECTROGRAM_PALETTE=$spectrogram_palette\n";
+    }
+    if($spectrogram_palette != ($config['SPECTROGRAM_PALETTE'] ?? '')) {
+      shell_exec("sudo systemctl restart spectrogram_viewer.service");
+    }
+  }
   $contents = preg_replace("/FLICKR_FILTER_EMAIL=.*/", "FLICKR_FILTER_EMAIL=$flickr_filter_email", $contents);
   $contents = preg_replace("/APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES=.*/", "APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES=$minimum_time_limit", $contents);
   $contents = preg_replace("/MODEL=.*/", "MODEL=$model", $contents);
@@ -743,7 +763,7 @@ mailto://{user}:{password}@gmail.com
 
 
       <table class="settingstable"><tr><td>
-      <h2>Color scheme </h2>
+      <h2>Spectrogram and colours</h2>
       Note: when changing themes the daily chart may need a page refresh before updating.<br><br>
       <label for="color_scheme">Color scheme for the site : </label>
       <select name="color_scheme" class="testbtn">
@@ -758,6 +778,19 @@ mailto://{user}:{password}@gmail.com
           echo "<option value='{$color_scheme}' $isSelected>$color_scheme</option>";
         }
       ?>
+      </select><br><br>
+      <label for="spectrogram_palette">Spectrogram palette: </label>
+      <select name="spectrogram_palette" class="testbtn">
+      <?php
+      $pal = $config['SPECTROGRAM_PALETTE'] ?? 'birdnet';
+      foreach (array('birdnet'=>'BirdNET classic','viridis'=>'Viridis (dark → yellow)','inferno'=>'Inferno (black → red → yellow)','ocean'=>'Ocean (black → cyan)','grayscale'=>'Grayscale','soxheat'=>'SoX heat') as $k => $l) {
+        echo "<option value='{$k}'" . ($k == $pal ? ' selected="selected"' : '') . ">{$l}</option>";
+      }
+      ?>
+      </select><br>
+      Applies to the live waterfall and to the SoX images (Overview, detections). Also selectable at the top left of the Spectrogram page.<br><br>
+      <label for="spectrogram_height">Live spectrogram height (% of the page): </label>
+      <input name="spectrogram_height" type="number" style="width:5em;" min="20" max="100" step="1" value="<?php print(is_numeric($config['SPECTROGRAM_HEIGHT'] ?? null) ? $config['SPECTROGRAM_HEIGHT'] : 80);?>" required/>
       </td></tr></table><br>
         
       <script>
