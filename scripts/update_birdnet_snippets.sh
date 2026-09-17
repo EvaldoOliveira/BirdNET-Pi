@@ -326,6 +326,26 @@ sqlite3 $HOME/BirdNET-Pi/scripts/birds.db << EOF
 CREATE INDEX IF NOT EXISTS "detections_Sci_Name" ON "detections" ("Sci_Name");
 EOF
 
+# Station layer (fork): update_birdnet.sh resets the tree to the branch, which puts
+# the upstream model files back over the station's own (custom/<layer>/model). The
+# analyzer loads them at start, so re-apply them before restart_services.sh below;
+# otherwise the detections get the upstream common names (2026-09-17: a CBRO station
+# wrote 36 detections with Portugal-Portuguese names after a webui deploy).
+# STATION_LAYER comes from birdnet.conf; empty or missing = no layer, nothing to do.
+if [ -n "${STATION_LAYER}" ] && [ -d "$HOME/BirdNET-Pi/custom/${STATION_LAYER}/model" ]; then
+  layer_model="$HOME/BirdNET-Pi/custom/${STATION_LAYER}/model"
+  for src in "$layer_model"/labels.txt "$layer_model"/l18n/labels_*.json; do
+    [ -f "$src" ] || continue
+    dst="$HOME/BirdNET-Pi/model/${src#"$layer_model"/}"
+    # model/labels.txt may be a language symlink on stock installs - leave those alone
+    [ -L "$dst" ] && continue
+    if ! cmp -s "$src" "$dst"; then
+      install -m 664 -o "$USER" -g "$USER" "$src" "$dst" \
+        && echo "station layer ${STATION_LAYER}: re-applied ${dst#"$HOME"/BirdNET-Pi/}"
+    fi
+  done
+fi
+
 # update snippets above
 
 systemctl daemon-reload
