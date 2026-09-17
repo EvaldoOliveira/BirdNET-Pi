@@ -79,6 +79,10 @@ if(isset($_GET["latitude"])){
   // US-41 follow-up (owner 2026-09-17): spectrogram height + palette live here, under "Spectrogram and colours"
   $spectrogram_height = isset($_GET['spectrogram_height']) && is_numeric($_GET['spectrogram_height']) ? max(20, min(100, intval($_GET['spectrogram_height']))) : null;
   $spectrogram_palette = isset($_GET['spectrogram_palette']) && in_array($_GET['spectrogram_palette'], array('birdnet','viridis','inferno','ocean','grayscale','soxheat'), true) ? $_GET['spectrogram_palette'] : null;
+  // US-42: colour sensitivity
+  $spectrogram_floor_db = isset($_GET['spectrogram_floor_db']) && is_numeric($_GET['spectrogram_floor_db']) ? max(-120, min(-40, intval($_GET['spectrogram_floor_db']))) : null;
+  $spectrogram_range_db = isset($_GET['spectrogram_range_db']) && is_numeric($_GET['spectrogram_range_db']) ? max(30, min(120, intval($_GET['spectrogram_range_db']))) : null;
+  $spectrogram_contrast = isset($_GET['spectrogram_contrast']) && is_numeric($_GET['spectrogram_contrast']) ? max(0.5, min(2.0, round(floatval($_GET['spectrogram_contrast']), 2))) : null;
   $timezone = $_GET["timezone"];
   $model = $_GET["model"];
   $sf_thresh = $_GET["sf_thresh"];
@@ -195,6 +199,20 @@ if(isset($_GET["latitude"])){
       shell_exec("sudo systemctl restart spectrogram_viewer.service");
     }
   }
+  $spec_restart = false;
+  foreach (array('SPECTROGRAM_FLOOR_DB' => array($spectrogram_floor_db, 'dB floor of the spectrogram colour scale'),
+                 'SPECTROGRAM_RANGE_DB' => array($spectrogram_range_db, 'dB range of the spectrogram colour scale above the floor'),
+                 'SPECTROGRAM_CONTRAST' => array($spectrogram_contrast, 'contrast (gamma) of the spectrogram colour ramp; 1 = linear')) as $key => $pair) {
+    list($val, $desc) = $pair;
+    if($val === null) continue;
+    if(preg_match("/^$key=/m", $contents)) {
+      $contents = preg_replace("/$key=.*/", "$key=$val", $contents);
+    } else {
+      $contents .= "\n## $key is the $desc\n$key=$val\n";
+    }
+    if((string)$val !== (string)($config[$key] ?? '')) $spec_restart = true;
+  }
+  if($spec_restart) shell_exec("sudo systemctl restart spectrogram_viewer.service");
   $contents = preg_replace("/FLICKR_FILTER_EMAIL=.*/", "FLICKR_FILTER_EMAIL=$flickr_filter_email", $contents);
   $contents = preg_replace("/APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES=.*/", "APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES=$minimum_time_limit", $contents);
   $contents = preg_replace("/MODEL=.*/", "MODEL=$model", $contents);
@@ -790,7 +808,15 @@ mailto://{user}:{password}@gmail.com
       </select><br>
       Applies to the live waterfall and to the SoX images (Overview, detections). Also selectable at the top left of the Spectrogram page.<br><br>
       <label for="spectrogram_height">Live spectrogram height (% of the page): </label>
-      <input name="spectrogram_height" type="number" style="width:5em;" min="20" max="100" step="1" value="<?php print(is_numeric($config['SPECTROGRAM_HEIGHT'] ?? null) ? $config['SPECTROGRAM_HEIGHT'] : 80);?>" required/>
+      <input name="spectrogram_height" type="number" style="width:5em;" min="20" max="100" step="1" value="<?php print(is_numeric($config['SPECTROGRAM_HEIGHT'] ?? null) ? $config['SPECTROGRAM_HEIGHT'] : 80);?>" required/><br><br>
+      <b>Colour sensitivity</b> (live waterfall; the SoX images follow floor and range)<br>
+      <label for="spectrogram_floor_db">Floor (dB, −120…−40): </label>
+      <input name="spectrogram_floor_db" type="number" style="width:5em;" min="-120" max="-40" step="5" value="<?php print(is_numeric($config['SPECTROGRAM_FLOOR_DB'] ?? null) ? $config['SPECTROGRAM_FLOOR_DB'] : -100);?>" required/>
+      &nbsp; <label for="spectrogram_range_db">Range (dB, 30…120): </label>
+      <input name="spectrogram_range_db" type="number" style="width:5em;" min="30" max="120" step="5" value="<?php print(is_numeric($config['SPECTROGRAM_RANGE_DB'] ?? null) ? $config['SPECTROGRAM_RANGE_DB'] : 70);?>" required/>
+      &nbsp; <label for="spectrogram_contrast">Contrast (gamma, 0.5…2): </label>
+      <input name="spectrogram_contrast" type="number" style="width:5em;" min="0.5" max="2" step="0.1" value="<?php print(is_numeric($config['SPECTROGRAM_CONTRAST'] ?? null) ? $config['SPECTROGRAM_CONTRAST'] : 1.0);?>" required/><br>
+      Floor: signal at or below it takes the darkest colour. Range: width of the scale above the floor. Contrast: below 1 lifts faint sounds, above 1 keeps only the strong ones.
       </td></tr></table><br>
         
       <script>

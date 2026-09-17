@@ -18,13 +18,21 @@ looptime=$(( RECORDING_LENGTH * 2 / 3 ))
 # US-41: SPECTROGRAM_PALETTE (birdnet.conf) -> sox spectrogram options. The
 # live canvas draws its own gradients; these are the closest sox equivalents.
 case "${SPECTROGRAM_PALETTE:-birdnet}" in
-  viridis)   PALETTE_OPTS="-h -p 5 -z 80" ;;
-  inferno)   PALETTE_OPTS="-z 80" ;;
-  ocean)     PALETTE_OPTS="-h -p 2 -z 80" ;;
-  grayscale) PALETTE_OPTS="-m -z 80" ;;
-  soxheat)   PALETTE_OPTS="-z 120" ;;
-  *)         PALETTE_OPTS="" ;;
+  viridis)   PALETTE_OPTS="-h -p 5" ;;
+  ocean)     PALETTE_OPTS="-h -p 2" ;;
+  grayscale) PALETTE_OPTS="-m" ;;
+  *)         PALETTE_OPTS="" ;;   # birdnet / inferno / soxheat = sox default colours
 esac
+# US-42: colour sensitivity — floor and range (dB) become the sox Z-axis
+# (-Z = top of the scale in dBFS, -z = range below it). Contrast has no sox
+# equivalent (canvas only).
+_floor=${SPECTROGRAM_FLOOR_DB:--100}; _range=${SPECTROGRAM_RANGE_DB:-70}
+[[ "$_floor" =~ ^-?[0-9]+$ ]] || _floor=-100
+[[ "$_range" =~ ^[0-9]+$ ]] || _range=70
+(( _floor < -120 )) && _floor=-120; (( _floor > -40 )) && _floor=-40
+(( _range < 30 )) && _range=30; (( _range > 120 )) && _range=120
+_top=$(( _floor + _range )); (( _top > 0 )) && _top=0
+PALETTE_OPTS="$PALETTE_OPTS -Z $_top -z $_range"
 
 touch "$HOME/BirdSongs/StreamData/analyzing_now.txt"
 # Continuously loop generating a spectrogram

@@ -228,6 +228,12 @@ SPECTROGRAM_HEIGHT=80
 ## SPECTROGRAM_PALETTE is the colour palette of the spectrograms: birdnet, viridis, inferno, ocean, grayscale, soxheat
 SPECTROGRAM_PALETTE=birdnet
 
+## SPECTROGRAM_FLOOR_DB / SPECTROGRAM_RANGE_DB / SPECTROGRAM_CONTRAST: colour sensitivity of the spectrograms (US-42) —
+## floor of the colour scale in dB (-120..-40), range above the floor in dB (30..120), contrast gamma (0.5..2, 1 = linear)
+SPECTROGRAM_FLOOR_DB=-100
+SPECTROGRAM_RANGE_DB=70
+SPECTROGRAM_CONTRAST=1.0
+
 ## If the tool is sox, you have to define the pitch shift (amount of 100ths of semintone)
 ## FREQSHIFT_PITCH
 FREQSHIFT_PITCH=-1500
