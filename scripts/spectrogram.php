@@ -552,16 +552,17 @@ h1 {
 <img id="spectrogramimage" style="width:100%;display:none" src="spectrogram.png?nocache=<?php echo $time;?>">
 
 <!-- US-41: palette picklist + height box, top-left of the spectrogram pane -->
-<div id="specopts" style="text-align:left;padding:2px 8px;font-size:12px;">
+<div id="specopts" style="text-align:left;padding:2px 8px;font-size:12px;position:relative;">
+  <span style="position:absolute;right:8px;top:2px;">
+    <label for="height_input">Height (% of page): </label>
+    <input id="height_input" type="number" min="20" max="100" step="1" style="width:4.5em;" value="<?php echo $SPECTROGRAM_HEIGHT; ?>">
+  </span>
   <label for="palette_select">Palette: </label>
   <select id="palette_select" class="testbtn">
     <?php foreach ($SPECTROGRAM_PALETTES as $key => $label) {
       echo '<option value="' . $key . '"' . ($key == $SPECTROGRAM_PALETTE ? ' selected="selected"' : '') . '>' . $label . '</option>';
     } ?>
   </select>
-  &nbsp;&nbsp;
-  <label for="height_input">Height (% of page): </label>
-  <input id="height_input" type="number" min="20" max="100" step="1" style="width:4.5em;" value="<?php echo $SPECTROGRAM_HEIGHT; ?>">
   &nbsp;&nbsp;
   <label for="floor_input" title="Signal at or below this level takes the darkest colour">Floor (dB): </label>
   <input id="floor_input" type="number" min="-120" max="-40" step="5" style="width:4.5em;" value="<?php echo $SPECTROGRAM_FLOOR_DB; ?>">
