@@ -27,7 +27,7 @@ h3 {
 
 iframe {
   border: none;
-  height: 88%;
+  height: calc(100% - 56px);
   width: 100%;
   position: fixed;
   background-color: grey;
@@ -108,25 +108,47 @@ button:hover {
 }
 
 .banner {
-  height: 7%;
+  /* compact one-line header (owner 2026-09-17) */
+  display: flex;
+  align-items: center;
+  height: 54px;
+  padding: 0 10px;
+  position: relative;
   text-align: center;
   background-color: #2b2b2b;
 }
 
 .banner h1 {
-  padding: .5em;
+  margin: 0;
+  padding: 0;
   letter-spacing: 5px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  line-height: 0;
 }
 
 .banner audio,.banner form {
-  float: right;
-  width: 120px;
-  margin-left: -120px;
-  margin-right: auto;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.banner .stream {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.banner .sitename {
+  font-size: 17px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-left: 6px;
 }
 
 .banner button {
-  padding-top: 8px;
+  padding: 6px 10px;
   font-weight: bold;
   letter-spacing: 1px;
 }
@@ -200,14 +222,14 @@ button:hover {
   justify-content: space-between;
   margin-left: auto;
   margin-right: auto;
-  margin-bottom: 15px;
+  margin-bottom: 4px;
   border-radius: 4px;
 }
 
 .topimage {
-  width:175px;
+  width:130px;
   display:initial !important;
-  margin-left: 60px;
+  margin-left: 0;
   filter: drop-shadow(0px 0px 20px rgba(255, 255, 255, 1.0));
 }
 
@@ -219,7 +241,8 @@ button:hover {
 .topnav button {
   background-color: transparent;
   text-align: center;
-  padding: 14px 16px;
+  padding: 6px 10px;
+  font-size: 14px;
   width: auto;
   vertical-align: middle;
   color: #f5f5f5;
