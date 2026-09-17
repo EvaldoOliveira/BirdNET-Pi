@@ -314,6 +314,12 @@ var palette = "<?php echo $SPECTROGRAM_PALETTE; ?>";
 var specFloor = <?php echo $SPECTROGRAM_FLOOR_DB; ?>;
 var specRange = <?php echo $SPECTROGRAM_RANGE_DB; ?>;
 var specGamma = <?php echo $SPECTROGRAM_CONTRAST; ?>;
+var silentMode = false;
+try { silentMode = window.localStorage.getItem('spectrogram_silent') === '1'; } catch (e) {}
+function applySilent() {
+  if (typeof outGain === 'undefined' || !outGain) return;
+  outGain.gain.setValueAtTime(silentMode ? 0 : 1, ACTX.currentTime);
+}
 function applySensitivity() {
   if (typeof ANALYSER === 'undefined' || !ANALYSER) return;
   ANALYSER.minDecibels = specFloor;
@@ -340,6 +346,7 @@ var SOURCE;
 var ACTX;
 var ANALYSER;
 var gainNode;
+var outGain;   // last stage before the speakers — 0 = silent mode (spectrogram only), 1 = audible
 
 function toggleCompression(state) {
   //var biquadFilter = ACTX.createBiquadFilter();
@@ -348,21 +355,21 @@ function toggleCompression(state) {
   if(state == true) {
     SOURCE.disconnect(gainNode)
     gainNode.disconnect(ANALYSER);
-    gainNode.disconnect(ACTX.destination);
+    gainNode.disconnect(outGain);
     SOURCE.connect(compressor);
     compressor.connect(ANALYSER);
     ANALYSER.connect(gainNode);
-    gainNode.connect(ACTX.destination);
+    gainNode.connect(outGain);
     //biquadFilter.connect(ANALYSER);
     //biquadFilter.connect(ACTX.destination);
   } else {
     SOURCE.disconnect(compressor);
     compressor.disconnect(ANALYSER);
     ANALYSER.disconnect(gainNode);
-    gainNode.disconnect(ACTX.destination);
+    gainNode.disconnect(outGain);
     SOURCE.connect(gainNode);
     gainNode.connect(ANALYSER);
-    gainNode.connect(ACTX.destination);
+    gainNode.connect(outGain);
   }
 }
 
@@ -475,9 +482,14 @@ function initialize() {
     compressor.release.setValueAtTime(0.25, ACTX.currentTime);
     gainNode = ACTX.createGain();
     gainNode.gain = 1;
+    // Silent mode (owner 2026-09-17): the analyser keeps drawing while the
+    // speakers get nothing — outGain sits between the graph and the output.
+    outGain = ACTX.createGain();
+    outGain.connect(ACTX.destination);
+    applySilent();
     SOURCE.connect(gainNode);
     gainNode.connect(ANALYSER);
-    gainNode.connect(ACTX.destination);
+    gainNode.connect(outGain);
 
     document.getElementById("compression").removeAttribute("disabled");
     document.getElementById("freqshift").removeAttribute("disabled");
@@ -617,6 +629,11 @@ h1 {
 	}
 	?>
   <!-- Gain slider removed (owner 2026-09-17): colour sensitivity lives in the top bar (floor / range / contrast) -->
+  <div style="display:inline" id="silent" >
+    <label for="silent_input" title="Draw the spectrogram without sending the audio to the speakers">Silent: </label>
+    <input name="silent" type="checkbox" id="silent_input">
+  </div>
+    &mdash;
   <div style="display:inline" id="comp" >
     <label>Compression: </label>
     <input name="compression" type="checkbox" id="compression" disabled>
@@ -685,6 +702,14 @@ if (typeof (rtsp_stream_select) !== 'undefined' && rtsp_stream_select !== null) 
             }
         }
     }
+}
+
+var silentBox = document.getElementById("silent_input");
+silentBox.checked = silentMode;
+silentBox.onclick = function() {
+  silentMode = this.checked;
+  try { window.localStorage.setItem('spectrogram_silent', silentMode ? '1' : '0'); } catch (e) {}
+  applySilent();
 }
 
 var compression = document.getElementById("compression");
