@@ -564,14 +564,17 @@ h1 {
     } ?>
   </select>
   &nbsp;&nbsp;
-  <label for="floor_input" title="Signal at or below this level takes the darkest colour">Floor (dB): </label>
-  <input id="floor_input" type="number" min="-120" max="-40" step="5" style="width:4.5em;" value="<?php echo $SPECTROGRAM_FLOOR_DB; ?>">
+  <label for="floor_input" title="Signal at or below this level takes the darkest colour">Floor </label>
+  <input id="floor_input" type="range" min="-120" max="-40" step="5" style="width:110px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_FLOOR_DB; ?>">
+  <span id="floor_value" style="display:inline-block;width:4em;"><?php echo $SPECTROGRAM_FLOOR_DB; ?> dB</span>
   &nbsp;
-  <label for="range_input" title="Width of the colour scale above the floor">Range (dB): </label>
-  <input id="range_input" type="number" min="30" max="120" step="5" style="width:4.5em;" value="<?php echo $SPECTROGRAM_RANGE_DB; ?>">
+  <label for="range_input" title="Width of the colour scale above the floor">Range </label>
+  <input id="range_input" type="range" min="30" max="120" step="5" style="width:110px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_RANGE_DB; ?>">
+  <span id="range_value" style="display:inline-block;width:4em;"><?php echo $SPECTROGRAM_RANGE_DB; ?> dB</span>
   &nbsp;
-  <label for="contrast_input" title="Gamma of the colour ramp: below 1 lifts faint sounds, above 1 keeps only the strong ones">Contrast: </label>
-  <input id="contrast_input" type="number" min="0.5" max="2" step="0.1" style="width:4.5em;" value="<?php echo $SPECTROGRAM_CONTRAST; ?>">
+  <label for="contrast_input" title="Gamma of the colour ramp: below 1 lifts faint sounds, above 1 keeps only the strong ones">Contrast </label>
+  <input id="contrast_input" type="range" min="0.5" max="2" step="0.1" style="width:110px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_CONTRAST; ?>">
+  <span id="contrast_value" style="display:inline-block;width:2.5em;"><?php echo $SPECTROGRAM_CONTRAST; ?></span>
   <span id="specopts_status" style="margin-left:6px;color:#9f9;"></span>
 </div>
 
@@ -613,14 +616,7 @@ h1 {
 		<?php
 	}
 	?>
-  <div style="display:inline" id="gain" >
-  <label>Gain: </label>
-  <span class="slidecontainer">
-    <input name="gain_input" type="range" min="0" max="250" value="100" class="slider" id="gain_input">
-    <span id="gain_value"></span>%
-  </span>
-  </div>
-    &mdash;
+  <!-- Gain slider removed (owner 2026-09-17): colour sensitivity lives in the top bar (floor / range / contrast) -->
   <div style="display:inline" id="comp" >
     <label>Compression: </label>
     <input name="compression" type="checkbox" id="compression" disabled>
@@ -691,17 +687,6 @@ if (typeof (rtsp_stream_select) !== 'undefined' && rtsp_stream_select !== null) 
     }
 }
 
-var slider = document.getElementById("gain_input");
-var output = document.getElementById("gain_value");
-output.innerHTML = slider.value; // Display the default slider value
-
-// Update the current slider value (each time you drag the slider handle)
-slider.oninput = function() {
-  output.innerHTML = this.value;
-  gainNode.gain.setValueAtTime((this.value/(100/2)), ACTX.currentTime);
-  gain=Math.abs(this.value - 255);
-}
-
 var compression = document.getElementById("compression");
 compression.onclick = function() {
   toggleCompression(this.checked);
@@ -748,20 +733,13 @@ document.getElementById("height_input").onchange = function() {
   this.value = v;
   saveSpectrogramSetting('spectrogram_height', v);
 };
-// US-42: sensitivity controls — live preview, then the same save + reload
-document.getElementById("floor_input").onchange = function() {
-  var v = Math.max(-120, Math.min(-40, parseInt(this.value) || -100));
-  this.value = v; specFloor = v; applySensitivity();
-  saveSpectrogramSetting('spectrogram_floor_db', v);
-};
-document.getElementById("range_input").onchange = function() {
-  var v = Math.max(30, Math.min(120, parseInt(this.value) || 70));
-  this.value = v; specRange = v; applySensitivity();
-  saveSpectrogramSetting('spectrogram_range_db', v);
-};
-document.getElementById("contrast_input").onchange = function() {
-  var v = Math.max(0.5, Math.min(2, parseFloat(this.value) || 1));
-  this.value = v; specGamma = v;
-  saveSpectrogramSetting('spectrogram_contrast', v);
-};
+// US-42: sensitivity sliders — live preview while dragging ('input'), saved
+// on release ('change'); nothing else on the page is touched.
+var floorS = document.getElementById("floor_input"), rangeS = document.getElementById("range_input"), contrastS = document.getElementById("contrast_input");
+floorS.oninput = function() { specFloor = parseInt(this.value); document.getElementById("floor_value").textContent = specFloor + " dB"; applySensitivity(); };
+rangeS.oninput = function() { specRange = parseInt(this.value); document.getElementById("range_value").textContent = specRange + " dB"; applySensitivity(); };
+contrastS.oninput = function() { specGamma = parseFloat(this.value); document.getElementById("contrast_value").textContent = specGamma.toFixed(1); };
+floorS.onchange = function() { saveSpectrogramSetting('spectrogram_floor_db', parseInt(this.value)); };
+rangeS.onchange = function() { saveSpectrogramSetting('spectrogram_range_db', parseInt(this.value)); };
+contrastS.onchange = function() { saveSpectrogramSetting('spectrogram_contrast', parseFloat(this.value)); };
 </script>
