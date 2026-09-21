@@ -5,7 +5,8 @@ The official model (MODEL) keeps feeding birds.db, the extractions and the notif
 both can be compared over weeks before a model switch. Nothing is extracted and nobody is notified.
 
 birdnet.conf keys (none of them ends in the name of an official key: config.php rewrites those with unanchored
-patterns such as "/MODEL=.*/"): SHADOW_MODEL_NAME (empty = off), SHADOW_MIN_CONF, SHADOW_SENS, SHADOW_GEO_THRESH.
+patterns such as "/MODEL=.*/"): SHADOW_MODEL_NAME (empty = off), SHADOW_MIN_CONF, SHADOW_SENS and
+SHADOW_GEO_THRESH (location threshold of the shadow model; the station's SF_THRESH when it is not set).
 """
 import logging
 import os
@@ -40,8 +41,22 @@ def shadow_settings():
         # the defaults are the ones the BirdNET Live app uses for BirdNET+ V3.0
         'confidence': conf_float(conf, 'SHADOW_MIN_CONF', 0.35),
         'sensitivity': conf_float(conf, 'SHADOW_SENS', 1.0),
-        'sf_thresh': conf_float(conf, 'SHADOW_GEO_THRESH', 0.03),
+        # the location threshold is the station's own unless the shadow model gets one of its own
+        'sf_thresh': conf_float(conf, 'SHADOW_GEO_THRESH', conf_float(conf, 'SF_THRESH', 0.03)),
     }
+
+
+def build_shadow_model(settings):
+    if settings['model'] == BirdNETPlusV3.model_name:
+        return BirdNETPlusV3(settings['sensitivity'], settings['sf_thresh'])
+    model = get_model(settings['model'])
+    # get_model() builds the model with the OFFICIAL sensitivity and location threshold: give it the shadow ones
+    if model is not None and hasattr(model, '_sensitivity'):
+        model._sensitivity = max(0.5, min(1.0 - (settings['sensitivity'] - 1.0), 1.5))
+    meta_model = getattr(model, '_mdata_model', None)
+    if hasattr(meta_model, '_sf_thresh'):
+        meta_model._sf_thresh = settings['sf_thresh']
+    return model
 
 
 def load_shadow_model():
@@ -56,10 +71,7 @@ def load_shadow_model():
     if SHADOW_MODEL is None:
         log.info('LOADING SHADOW MODEL %s...', settings['model'])
         try:
-            if settings['model'] == BirdNETPlusV3.model_name:
-                SHADOW_MODEL = BirdNETPlusV3(settings['sensitivity'], settings['sf_thresh'])
-            else:
-                SHADOW_MODEL = get_model(settings['model'])
+            SHADOW_MODEL = build_shadow_model(settings)
         except Exception as e:
             # a broken shadow model must never stop the station
             log.error('Shadow model could not be loaded, shadow mode is off until restart: %s', e)
