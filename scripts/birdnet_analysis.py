@@ -12,6 +12,7 @@ import inotify.adapters
 from inotify.constants import IN_CLOSE_WRITE
 
 from utils.analysis import load_global_model, run_analysis
+from utils.shadow import run_shadow_analysis
 from utils.helpers import get_settings, get_wav_files, ANALYZING_NOW
 from utils.classes import ParseFileName
 from utils.reporting import extract_detection, summary, write_to_file, write_to_db, apprise, bird_weather, sound_repo, heartbeat, \
@@ -92,6 +93,12 @@ def process_file(file_name, report_queue):
             analyzing.write(file_name)
         file = ParseFileName(file_name)
         detections = run_analysis(file)
+        try:
+            # SHADOW_MODEL_NAME set: a second model analyses the same file into its own database.
+            # It runs here because the reporting thread deletes the recording when it is done with it.
+            run_shadow_analysis(file)
+        except Exception as e:
+            log.error('Shadow analysis failed: %s', e)
         # we join() to make sure te reporting queue does not get behind
         if not report_queue.empty():
             log.warning('reporting queue not yet empty')

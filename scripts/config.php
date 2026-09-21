@@ -85,6 +85,9 @@ if(isset($_GET["latitude"])){
   $spectrogram_contrast = isset($_GET['spectrogram_contrast']) && is_numeric($_GET['spectrogram_contrast']) ? max(0.5, min(2.0, round(floatval($_GET['spectrogram_contrast']), 2))) : null;
   $timezone = $_GET["timezone"];
   $model = $_GET["model"];
+  $known_models = array("BirdNET_GLOBAL_6K_V2.4_Model_FP16", "BirdNET_6K_GLOBAL_MODEL", "BirdNET-Plus_V3.0-preview3.1_Global_10K");
+  $shadow_model = isset($_GET['shadow_model']) && in_array($_GET['shadow_model'], $known_models) && $_GET['shadow_model'] != $model ? $_GET['shadow_model'] : '';
+  $shadow_min_conf = isset($_GET['shadow_min_conf']) && is_numeric($_GET['shadow_min_conf']) ? max(0.01, min(0.99, round(floatval($_GET['shadow_min_conf']), 2))) : 0.35;
   $sf_thresh = $_GET["sf_thresh"];
   if(isset($_GET['data_model_version'])) {
     $data_model_version = 2;
@@ -216,6 +219,15 @@ if(isset($_GET["latitude"])){
   $contents = preg_replace("/FLICKR_FILTER_EMAIL=.*/", "FLICKR_FILTER_EMAIL=$flickr_filter_email", $contents);
   $contents = preg_replace("/APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES=.*/", "APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES=$minimum_time_limit", $contents);
   $contents = preg_replace("/MODEL=.*/", "MODEL=$model", $contents);
+  foreach (array('SHADOW_MODEL_NAME' => array($shadow_model, 'model that analyses the same recordings beside the official one, into scripts/birds_shadow.db only; empty = off'),
+                 'SHADOW_MIN_CONF' => array($shadow_min_conf, 'minimum confidence of a shadow model detection')) as $key => $pair) {
+    list($val, $desc) = $pair;
+    if(preg_match("/^$key=/m", $contents)) {
+      $contents = preg_replace("/^$key=.*/m", "$key=$val", $contents);
+    } else {
+      $contents .= "\n## $key is the $desc\n$key=$val\n";
+    }
+  }
   $contents = preg_replace("/SF_THRESH=.*/", "SF_THRESH=$sf_thresh", $contents);
   $contents = preg_replace("/DATA_MODEL_VERSION=.*/", "DATA_MODEL_VERSION=$data_model_version", $contents);
   if(isset($only_notify_species_names)) { $contents = preg_replace("/APPRISE_ONLY_NOTIFY_SPECIES_NAMES=.*/", "APPRISE_ONLY_NOTIFY_SPECIES_NAMES=\"$only_notify_species_names\"", $contents); }
@@ -318,7 +330,7 @@ $config = get_config($force_reload=true);
 <script>
   document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('modelsel').addEventListener('change', function() {
-    if(this.value == "BirdNET_GLOBAL_6K_V2.4_Model_FP16"){ 
+    if(this.value == "BirdNET_GLOBAL_6K_V2.4_Model_FP16" || this.value == "BirdNET-Plus_V3.0-preview3.1_Global_10K"){ 
       document.getElementById("soft").style.display="unset";
     } else {
       document.getElementById("soft").style.display="none";
@@ -354,7 +366,7 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
       <label for="model">Select a Model: </label>
       <select id="modelsel" name="model" class="testbtn">
       <?php
-      $models = array("BirdNET_GLOBAL_6K_V2.4_Model_FP16", "BirdNET_6K_GLOBAL_MODEL");
+      $models = array("BirdNET_GLOBAL_6K_V2.4_Model_FP16", "BirdNET_6K_GLOBAL_MODEL", "BirdNET-Plus_V3.0-preview3.1_Global_10K");
       foreach($models as $modelName){
           $isSelected = "";
           if($config['MODEL'] == $modelName){
@@ -365,6 +377,21 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
         }
       ?>
       </select>
+      <br>
+      <label for="shadow_model">Shadow model: </label>
+      <select name="shadow_model" class="testbtn">
+        <option value="">None</option>
+      <?php
+      foreach($models as $modelName){
+          $isSelected = (($config['SHADOW_MODEL_NAME'] ?? '') == $modelName) ? 'selected="selected"' : '';
+          echo "<option value='{$modelName}' $isSelected>$modelName</option>";
+        }
+      ?>
+      </select>
+      <label for="shadow_min_conf">min. confidence: </label>
+      <input name="shadow_min_conf" type="number" style="width:5em;" max="0.99" min="0.01" step="0.01" value="<?php print($config['SHADOW_MIN_CONF'] ?? '0.35');?>"/>
+      <span onclick="document.getElementById('shadowhelp').style.display='unset'" style="text-decoration:underline;cursor:pointer">[more info]</span>
+      <p id="shadowhelp" style='display:none'>A shadow model analyses every recording right after the model selected above and writes what it would have detected to a database of its own (<code>scripts/birds_shadow.db</code>). It never extracts audio, never notifies and never touches the detections of the station, so a new model can be compared with the current one for weeks before switching. <b>BirdNET-Plus_V3.0-preview3.1_Global_10K</b> is the developer preview model of the BirdNET Live app (32 kHz, about 10,000 classes including amphibians, mammals and insects, its own location filter). It needs ONNX Runtime and is downloaded (about 80 MB) the first time it is used. It has no human voice class yet, so the privacy filter does not work while it is the selected model.</p>
       <br>
       <span <?php if($config['MODEL'] == "BirdNET_6K_GLOBAL_MODEL") { ?>style="display: none"<?php } ?> id="soft">
       <input type="checkbox" name="data_model_version" <?php if($config['DATA_MODEL_VERSION'] == 2) { echo "checked"; };?> >
@@ -470,6 +497,8 @@ function runProcess() {
 </script>
 
       <dl>
+      <dt>BirdNET-Plus_V3.0-preview3.1_Global_10K (2026)</dt>
+      <dd id="ddnewline">Developer preview of the next BirdNET generation, the model of the BirdNET Live app. Try it as a shadow model first.</dd><br>
       <dt>BirdNET_GLOBAL_6K_V2.4_Model_FP16 (2023)</dt>
       <br>
       <dd id="ddnewline">This is the BirdNET-Analyzer model, the most advanced BirdNET model to date. Currently it  supports over 6,000 species worldwide, giving quite good species coverage for people in most of the world.</dd>

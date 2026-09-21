@@ -12,6 +12,8 @@ from .models import get_model
 log = logging.getLogger(__name__)
 
 MODEL = None
+# time slots of the last analysed file that the privacy filter blanked (start, end)
+LAST_HUMAN_SLOTS = []
 
 
 def loadCustomSpeciesList(path):
@@ -48,7 +50,8 @@ def readAudioData(path, overlap, sample_rate, chunk_duration):
     log.info('READING AUDIO DATA...')
 
     # Open file with librosa (uses ffmpeg or libav)
-    sig, rate = librosa.load(path, sr=sample_rate, mono=True, res_type='kaiser_fast')
+    # soxr ships with librosa; 'kaiser_fast' needs resampy, which is only missed once a model is not 48 kHz
+    sig, rate = librosa.load(path, sr=sample_rate, mono=True, res_type='soxr_hq')
 
     # Split audio into chunks
     chunks = splitSignal(sig, rate, overlap, seconds=chunk_duration)
@@ -76,10 +79,14 @@ def analyzeAudioData(chunks, overlap, lat, lon, week):
 
     labeled = {}
     pred_start = 0.0
+    LAST_HUMAN_SLOTS.clear()
     for p in filter_humans(detections):
         # Save timestamp and result
         pred_end = pred_start + model.chunk_duration
         labeled[str(pred_start) + ';' + str(pred_end)] = p
+        if p[0][0] == 'Human_Human':
+            # the shadow model (utils/shadow.py) has to drop the same windows
+            LAST_HUMAN_SLOTS.append((pred_start, pred_end))
 
         pred_start = pred_end - overlap
 
