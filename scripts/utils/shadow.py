@@ -24,14 +24,23 @@ SHADOW_MODEL = None
 SHADOW_FAILED = False
 
 
+def conf_float(conf, key, default):
+    # conf.getfloat(key, fallback=...) cannot be used: PHPConfigParser.get() turns a missing key into None,
+    # which getfloat() then feeds to float()
+    try:
+        return float(conf.get(key, fallback=None))
+    except (TypeError, ValueError):
+        return default
+
+
 def shadow_settings():
     conf = get_settings()
     return {
-        'model': conf.get('SHADOW_MODEL_NAME', fallback='').strip(),
+        'model': (conf.get('SHADOW_MODEL_NAME', fallback=None) or '').strip(),
         # the defaults are the ones the BirdNET Live app uses for BirdNET+ V3.0
-        'confidence': conf.getfloat('SHADOW_MIN_CONF', fallback=0.35),
-        'sensitivity': conf.getfloat('SHADOW_SENS', fallback=1.0),
-        'sf_thresh': conf.getfloat('SHADOW_GEO_THRESH', fallback=0.03),
+        'confidence': conf_float(conf, 'SHADOW_MIN_CONF', 0.35),
+        'sensitivity': conf_float(conf, 'SHADOW_SENS', 1.0),
+        'sf_thresh': conf_float(conf, 'SHADOW_GEO_THRESH', 0.03),
     }
 
 
