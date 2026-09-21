@@ -76,10 +76,15 @@ commit_hash=$(sudo_with_user git -C $HOME/BirdNET-Pi rev-parse HEAD)
 sudo_with_user git -C $HOME/BirdNET-Pi reset --hard
 
 # Fetches latest changes
-# a branch needs its remote-tracking ref, which a single-branch clone only has for its own branch;
-# a tag or a commit has no such ref and is fetched by name
-sudo_with_user git -C $HOME/BirdNET-Pi fetch $remote "+refs/heads/$branch:refs/remotes/$remote/$branch" 2> /dev/null \
-  || sudo_with_user git -C $HOME/BirdNET-Pi fetch --tags $remote $branch || { echo "Error: fetch of '$remote $branch' failed"; exit 1; }
+# a single-branch clone only follows its own branch: "switch --track" refuses any other one until the
+# clone is told to follow it too (a tag or a commit is not a branch and is simply fetched by name)
+if sudo_with_user git -C $HOME/BirdNET-Pi ls-remote --exit-code --heads $remote $branch > /dev/null 2>&1; then
+  fetch_specs=$(git -C $HOME/BirdNET-Pi config --get-all remote.$remote.fetch)
+  if [[ "$fetch_specs" != *"refs/heads/*"* && "$fetch_specs" != *"refs/heads/$branch:"* ]]; then
+    sudo_with_user git -C $HOME/BirdNET-Pi remote set-branches --add $remote $branch || { echo "Error: could not follow '$remote/$branch'"; exit 1; }
+  fi
+fi
+sudo_with_user git -C $HOME/BirdNET-Pi fetch --tags $remote $branch || { echo "Error: fetch of '$remote $branch' failed"; exit 1; }
 
 # Switches git to specified branch (or checks out a tag/commit detached)
 if sudo_with_user git -C $HOME/BirdNET-Pi show-ref --verify --quiet refs/remotes/$remote/$branch; then
