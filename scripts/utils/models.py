@@ -180,7 +180,8 @@ class BirdNetV2_4(BirdNet):
     model_name = 'BirdNET_GLOBAL_6K_V2.4_Model_FP16'
 
     def _set_meta_model(self):
-        return get_meta_model()
+        # ask for the range model of THIS model: as a shadow model it is not the MODEL of birdnet.conf
+        return get_meta_model(self.model_name)
 
     def predict(self, chunk):
         self.interpreter.set_tensor(self._input_layer_idx, np.array(chunk, dtype='float32')[np.newaxis, :])
