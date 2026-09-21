@@ -45,9 +45,13 @@ done
 shift $((OPTIND-1))
 
 sudo_with_user () {
+  local ret_val
   set -x
   sudo -u $USER "$@"
-  set +x
+  # keep the exit status of the command: a trailing "set +x" made this function always succeed,
+  # so none of the "|| exit 1" guards below could ever fire
+  { ret_val=$?; set +x; } 2> /dev/null
+  return $ret_val
 }
 
 can_auto_update () {
@@ -72,7 +76,10 @@ commit_hash=$(sudo_with_user git -C $HOME/BirdNET-Pi rev-parse HEAD)
 sudo_with_user git -C $HOME/BirdNET-Pi reset --hard
 
 # Fetches latest changes
-sudo_with_user git -C $HOME/BirdNET-Pi fetch $remote $branch || { echo "Error: fetch of '$remote $branch' failed"; exit 1; }
+# a branch needs its remote-tracking ref, which a single-branch clone only has for its own branch;
+# a tag or a commit has no such ref and is fetched by name
+sudo_with_user git -C $HOME/BirdNET-Pi fetch $remote "+refs/heads/$branch:refs/remotes/$remote/$branch" 2> /dev/null \
+  || sudo_with_user git -C $HOME/BirdNET-Pi fetch --tags $remote $branch || { echo "Error: fetch of '$remote $branch' failed"; exit 1; }
 
 # Switches git to specified branch (or checks out a tag/commit detached)
 if sudo_with_user git -C $HOME/BirdNET-Pi show-ref --verify --quiet refs/remotes/$remote/$branch; then
