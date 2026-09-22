@@ -21,16 +21,18 @@ set_timezone();
 <html lang="en">
 <title><?php echo $site_name; ?></title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link id="iconLink" rel="shortcut icon" sizes=85x85 href="images/bird.png" />
+<link id="iconLink" rel="shortcut icon" sizes=85x85 href="images/BirdNetBr.png" />
 <link rel="stylesheet" href="<?php echo $color_scheme . '?v=' . date('n.d.y', filemtime($color_scheme)); ?>">
 <link rel="stylesheet" type="text/css" href="static/dialog-polyfill.css" />
 <body>
 <div class="banner">
   <div class="logo">
 <?php if(isset($_GET['logo'])) {
-echo "<a href=\"https://github.com/Nachtzuster/BirdNET-Pi.git\" target=\"_blank\"><img style=\"width:60;height:60;\" src=\"images/bird.png\"></a>";
+// Station logo (owner 2026-09-22): BirdNetBr.png, the BR edition's own mark; the
+// link goes to the fork. The BirdNET-Pi wordmark stays centred (bnp.png).
+echo "<a href=\"https://github.com/EvaldoOliveira/BirdNET-Pi\" target=\"_blank\"><img style=\"width:60;height:60;\" src=\"images/BirdNetBr.png\"></a>";
 } else {
-echo "<a href=\"https://github.com/Nachtzuster/BirdNET-Pi.git\" target=\"_blank\"><img src=\"images/bird.png\"></a>";
+echo "<a href=\"https://github.com/EvaldoOliveira/BirdNET-Pi\" target=\"_blank\"><img src=\"images/BirdNetBr.png\"></a>";
 }?>
   </div>
   <div class="sitename"><?php echo $site_name; ?></div>
