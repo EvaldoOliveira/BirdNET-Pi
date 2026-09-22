@@ -1000,3 +1000,7 @@ pre#timer.bash {
 .modelstable { border-collapse: collapse; margin: 6px 0; }
 .modelstable th, .modelstable td { padding: 3px 8px; text-align: left; vertical-align: middle; }
 .modelstable th { font-weight: normal; opacity: 0.8; }
+/* shadow row greyed when the shadow switch is off: the fields stay in the form (a disabled input
+   would not be submitted and the save would wipe the shadow settings), only look and feel change */
+.modelstable tr.shadow-off select, .modelstable tr.shadow-off input[type=number] { opacity: 0.4; pointer-events: none; }
+.modelstable tr.shadow-off td b { opacity: 0.5; }
