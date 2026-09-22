@@ -955,3 +955,8 @@ pre#timer.bash {
 #ddnewline::before {
    content: none;
 }
+
+/* US-47: models block (official / shadow side by side) */
+.modelstable { border-collapse: collapse; margin: 6px 0; }
+.modelstable th, .modelstable td { padding: 3px 8px; text-align: left; vertical-align: middle; }
+.modelstable th { font-weight: normal; opacity: 0.8; }

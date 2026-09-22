@@ -89,6 +89,22 @@ if(isset($_GET["latitude"])){
   $shadow_model = isset($_GET['shadow_model']) && in_array($_GET['shadow_model'], $known_models) && $_GET['shadow_model'] != $model ? $_GET['shadow_model'] : '';
   $shadow_min_conf = isset($_GET['shadow_min_conf']) && is_numeric($_GET['shadow_min_conf']) ? max(0.01, min(0.99, round(floatval($_GET['shadow_min_conf']), 2))) : 0.35;
   $sf_thresh = $_GET["sf_thresh"];
+  // US-47 (owner 2026-09-22): both models and their parameters live in one "Models" block.
+  // Official: CONFIDENCE / SENSITIVITY / SF_THRESH; shadow: SHADOW_MIN_CONF / SHADOW_SENS /
+  // SHADOW_GEO_THRESH; OVERLAP is shared (one recording pipeline, both models see the same windows).
+  $confidence = isset($_GET['confidence']) && is_numeric($_GET['confidence']) ? max(0.01, min(0.99, round(floatval($_GET['confidence']), 2))) : $config['CONFIDENCE'];
+  $sensitivity = isset($_GET['sensitivity']) && is_numeric($_GET['sensitivity']) ? max(0.5, min(1.5, round(floatval($_GET['sensitivity']), 2))) : $config['SENSITIVITY'];
+  $overlap = isset($_GET['overlap']) && is_numeric($_GET['overlap']) ? max(0.0, min(2.9, round(floatval($_GET['overlap']), 1))) : $config['OVERLAP'];
+  $shadow_sens = isset($_GET['shadow_sens']) && is_numeric($_GET['shadow_sens']) ? max(0.5, min(1.5, round(floatval($_GET['shadow_sens']), 2))) : ($config['SHADOW_SENS'] ?? 1.0);
+  $shadow_geo_thresh = isset($_GET['shadow_geo_thresh']) && is_numeric($_GET['shadow_geo_thresh']) ? max(0.0005, min(0.99, floatval($_GET['shadow_geo_thresh']))) : ($config['SHADOW_GEO_THRESH'] ?? 0.03);
+  // Swap: the shadow model becomes the official one and vice versa, each keeping its own
+  // three parameters (what the owner did by hand on 2026-09-21). Only when a shadow is set.
+  if(isset($_GET['swap_models']) && $shadow_model != '') {
+    list($model, $shadow_model) = array($shadow_model, $model);
+    list($confidence, $shadow_min_conf) = array($shadow_min_conf, $confidence);
+    list($sensitivity, $shadow_sens) = array($shadow_sens, $sensitivity);
+    list($sf_thresh, $shadow_geo_thresh) = array($shadow_geo_thresh, $sf_thresh);
+  }
   if(isset($_GET['data_model_version'])) {
     $data_model_version = 2;
   } else {
@@ -219,8 +235,13 @@ if(isset($_GET["latitude"])){
   $contents = preg_replace("/FLICKR_FILTER_EMAIL=.*/", "FLICKR_FILTER_EMAIL=$flickr_filter_email", $contents);
   $contents = preg_replace("/APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES=.*/", "APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES=$minimum_time_limit", $contents);
   $contents = preg_replace("/MODEL=.*/", "MODEL=$model", $contents);
+  $contents = preg_replace("/^CONFIDENCE=.*/m", "CONFIDENCE=$confidence", $contents);
+  $contents = preg_replace("/^SENSITIVITY=.*/m", "SENSITIVITY=$sensitivity", $contents);
+  $contents = preg_replace("/^OVERLAP=.*/m", "OVERLAP=$overlap", $contents);
   foreach (array('SHADOW_MODEL_NAME' => array($shadow_model, 'model that analyses the same recordings beside the official one, into scripts/birds_shadow.db only; empty = off'),
-                 'SHADOW_MIN_CONF' => array($shadow_min_conf, 'minimum confidence of a shadow model detection')) as $key => $pair) {
+                 'SHADOW_MIN_CONF' => array($shadow_min_conf, 'minimum confidence of a shadow model detection'),
+                 'SHADOW_SENS' => array($shadow_sens, 'sigmoid sensitivity of the shadow model'),
+                 'SHADOW_GEO_THRESH' => array($shadow_geo_thresh, 'location (species occurrence) threshold of the shadow model')) as $key => $pair) {
     list($val, $desc) = $pair;
     if(preg_match("/^$key=/m", $contents)) {
       $contents = preg_replace("/^$key=.*/m", "$key=$val", $contents);
@@ -361,25 +382,35 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
 }
 </script>
       <table class="settingstable"><tr><td>
-      <h2>Model</h2>
-
-      <label for="model">Select a Model: </label>
-      <select id="modelsel" name="model" class="testbtn">
+      <h2>Models</h2>
       <?php
+      // US-47: official and shadow model side by side, each with its own minimum confidence,
+      // sigmoid sensitivity and location threshold; the overlap is shared. Config keys unchanged.
       $models = array("BirdNET_GLOBAL_6K_V2.4_Model_FP16", "BirdNET_6K_GLOBAL_MODEL", "BirdNET-Plus_V3.0-preview3.1_Global_10K");
+      $model_defaults = array(
+        "BirdNET_GLOBAL_6K_V2.4_Model_FP16" => "upstream defaults: confidence 0.7, sensitivity 1.25, location 0.03",
+        "BirdNET_6K_GLOBAL_MODEL" => "legacy 6K model: confidence 0.7, sensitivity 1.25",
+        "BirdNET-Plus_V3.0-preview3.1_Global_10K" => "BirdNET Live recipe: confidence 0.35, sensitivity 1.0, location 0.03");
+      ?>
+      <table class="modelstable">
+        <tr><th></th><th>Model</th><th>Min. confidence<br><small>[0.01–0.99]</small></th><th>Sensitivity<br><small>[0.5–1.5]</small></th><th>Location threshold<br><small>[0.0005–0.99]</small></th></tr>
+        <tr>
+          <td><b>Official</b></td>
+          <td><select id="modelsel" name="model" class="testbtn">
+      <?php
       foreach($models as $modelName){
-          $isSelected = "";
-          if($config['MODEL'] == $modelName){
-            $isSelected = 'selected="selected"';
-          }
-
+          $isSelected = ($config['MODEL'] == $modelName) ? 'selected="selected"' : '';
           echo "<option value='{$modelName}' $isSelected>$modelName</option>";
         }
       ?>
-      </select>
-      <br>
-      <label for="shadow_model">Shadow model: </label>
-      <select name="shadow_model" class="testbtn">
+          </select></td>
+          <td><input name="confidence" type="number" style="width:5em;" min="0.01" max="0.99" step="0.01" value="<?php print($config['CONFIDENCE']);?>"/></td>
+          <td><input name="sensitivity" type="number" style="width:5em;" min="0.5" max="1.5" step="0.01" value="<?php print($config['SENSITIVITY']);?>"/></td>
+          <td><input name="sf_thresh" type="number" style="width:5em;" max="0.99" min="0.0005" step="any" value="<?php print($config['SF_THRESH']);?>"/></td>
+        </tr>
+        <tr>
+          <td><b>Shadow</b></td>
+          <td><select name="shadow_model" class="testbtn">
         <option value="">None</option>
       <?php
       foreach($models as $modelName){
@@ -387,17 +418,25 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
           echo "<option value='{$modelName}' $isSelected>$modelName</option>";
         }
       ?>
-      </select>
-      <label for="shadow_min_conf">min. confidence: </label>
-      <input name="shadow_min_conf" type="number" style="width:5em;" max="0.99" min="0.01" step="0.01" value="<?php print($config['SHADOW_MIN_CONF'] ?? '0.35');?>"/>
+          </select></td>
+          <td><input name="shadow_min_conf" type="number" style="width:5em;" max="0.99" min="0.01" step="0.01" value="<?php print($config['SHADOW_MIN_CONF'] ?? '0.35');?>"/></td>
+          <td><input name="shadow_sens" type="number" style="width:5em;" min="0.5" max="1.5" step="0.01" value="<?php print($config['SHADOW_SENS'] ?? '1.0');?>"/></td>
+          <td><input name="shadow_geo_thresh" type="number" style="width:5em;" max="0.99" min="0.0005" step="any" value="<?php print($config['SHADOW_GEO_THRESH'] ?? $config['SF_THRESH']);?>"/></td>
+        </tr>
+        <tr>
+          <td><b>Overlap</b></td>
+          <td colspan="4"><input name="overlap" type="number" style="width:5em;" min="0.0" max="2.9" step="0.1" value="<?php print($config['OVERLAP']);?>"/> s <small>[0.0–2.9] — shared: the recording is cut once, both models analyse the same 3 s windows</small></td>
+        </tr>
+      </table>
+      <button type="submit" name="swap_models" value="1" class="testbtn" onclick="return confirm('Swap the official and the shadow model (each keeps its own confidence, sensitivity and location threshold)? Services restart.');">Swap official ↔ shadow</button>
       <span onclick="document.getElementById('shadowhelp').style.display='unset'" style="text-decoration:underline;cursor:pointer">[more info]</span>
+      <p><small>Thresholds are NOT comparable between generations — <?php foreach($model_defaults as $m => $d) { echo "<b>" . str_replace("_", " ", preg_replace('/_Model_FP16|_Global_10K|-preview3\.1/', '', $m)) . "</b>: $d. "; } ?>Calibrate from a shadow period before judging false positives. The same three fields for the official model also appear in Advanced Settings (same keys).</small></p>
       <p id="shadowhelp" style='display:none'>A shadow model analyses every recording right after the model selected above and writes what it would have detected to a database of its own (<code>scripts/birds_shadow.db</code>). It never extracts audio, never notifies and never touches the detections of the station, so a new model can be compared with the current one for weeks before switching. <b>BirdNET-Plus_V3.0-preview3.1_Global_10K</b> is the developer preview model of the BirdNET Live app (32 kHz, about 10,000 classes including amphibians, mammals and insects, its own location filter). It needs ONNX Runtime and is downloaded (about 80 MB) the first time it is used. It has no human voice class yet, so the privacy filter does not work while it is the selected model.</p>
       <br>
       <span <?php if($config['MODEL'] == "BirdNET_6K_GLOBAL_MODEL") { ?>style="display: none"<?php } ?> id="soft">
       <input type="checkbox" name="data_model_version" <?php if($config['DATA_MODEL_VERSION'] == 2) { echo "checked"; };?> >
       <label for="data_model_version">Species range model V2.4 - V2</label>  [ <a target="_blank" href="https://github.com/kahst/BirdNET-Analyzer/discussions/234">Info here</a> ]<br>
-      <label for="sf_thresh">Species Occurrence Frequency Threshold [0.0005, 0.99]: </label>
-      <input name="sf_thresh" type="number" style="width:5em;" max="0.99" min="0.0005" step="any" value="<?php print($config['SF_THRESH']);?>"/> <span onclick="document.getElementById('sfhelp').style.display='unset'" style="text-decoration:underline;cursor:pointer">[more info]</span><br>
+      <label>Species Occurrence Frequency Threshold = the "Location threshold" column of the Models table above.</label> <span onclick="document.getElementById('sfhelp').style.display='unset'" style="text-decoration:underline;cursor:pointer">[more info]</span><br>
       <p id="sfhelp" style='display:none'>This value is used by the model to constrain the list of possible species that it will try to detect, given the minimum occurrence frequency. A 0.03 threshold means that for a species to be included in this list, it needs to, on average, be seen on at least 3% of historically submitted eBird checklists for your given lat/lon/current week of year. So, the lower the threshold, the rarer the species it will include.<br><img style='max-width:100%;padding-top:5px;padding-bottom:5px' alt="BirdNET-Pi new model detection flowchart" title="BirdNET-Pi new model detection flowchart" src="images/BirdNET-Pi_nm_flowchart.alpha.png">
         <br>If you'd like to tinker with this threshold value and see which species make it onto the list, <?php if($config['MODEL'] == "BirdNET_6K_GLOBAL_MODEL"){ ?>please click "Update Settings" at the very bottom of this page to install the appropriate label file, then come back here and you'll be able to use the Species List Tester.<?php } else { ?>you can use this tool: <button type="button" class="testbtn" id="openModal">Species List Tester</button><?php } ?></p>
       </span>
