@@ -37,6 +37,9 @@ def conf_float(conf, key, default):
 def shadow_settings():
     conf = get_settings()
     return {
+        # SHADOW_ENABLED=0 keeps the shadow model and its parameters configured but inactive
+        # (owner 2026-09-22: "flag que desativa o shadow e mantém só o principal"); absent = on
+        'enabled': (conf.get('SHADOW_ENABLED', fallback='1') or '1').strip() not in ('0', 'false', 'no', ''),
         'model': (conf.get('SHADOW_MODEL_NAME', fallback=None) or '').strip(),
         # the defaults are the ones the BirdNET Live app uses for BirdNET+ V3.0
         'confidence': conf_float(conf, 'SHADOW_MIN_CONF', 0.35),
@@ -62,7 +65,7 @@ def build_shadow_model(settings):
 def load_shadow_model():
     global SHADOW_MODEL, SHADOW_FAILED
     settings = shadow_settings()
-    if not settings['model'] or SHADOW_FAILED:
+    if not settings['model'] or not settings['enabled'] or SHADOW_FAILED:
         return None
     if settings['model'] == get_settings()['MODEL']:
         log.warning('SHADOW_MODEL_NAME is the official model: shadow mode is off')

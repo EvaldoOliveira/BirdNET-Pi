@@ -97,6 +97,9 @@ if(isset($_GET["latitude"])){
   $overlap = isset($_GET['overlap']) && is_numeric($_GET['overlap']) ? max(0.0, min(2.9, round(floatval($_GET['overlap']), 1))) : $config['OVERLAP'];
   $shadow_sens = isset($_GET['shadow_sens']) && is_numeric($_GET['shadow_sens']) ? max(0.5, min(1.5, round(floatval($_GET['shadow_sens']), 2))) : ($config['SHADOW_SENS'] ?? 1.0);
   $shadow_geo_thresh = isset($_GET['shadow_geo_thresh']) && is_numeric($_GET['shadow_geo_thresh']) ? max(0.0005, min(0.99, floatval($_GET['shadow_geo_thresh']))) : ($config['SHADOW_GEO_THRESH'] ?? 0.03);
+  // Shadow on/off flag: unchecked = the shadow model and its parameters stay configured
+  // but nothing is analysed by it (only the official model runs). Absent key = on.
+  $shadow_enabled = isset($_GET['shadow_enabled']) ? 1 : 0;
   // Swap: the shadow model becomes the official one and vice versa, each keeping its own
   // three parameters (what the owner did by hand on 2026-09-21). Only when a shadow is set.
   if(isset($_GET['swap_models']) && $shadow_model != '') {
@@ -241,7 +244,8 @@ if(isset($_GET["latitude"])){
   foreach (array('SHADOW_MODEL_NAME' => array($shadow_model, 'model that analyses the same recordings beside the official one, into scripts/birds_shadow.db only; empty = off'),
                  'SHADOW_MIN_CONF' => array($shadow_min_conf, 'minimum confidence of a shadow model detection'),
                  'SHADOW_SENS' => array($shadow_sens, 'sigmoid sensitivity of the shadow model'),
-                 'SHADOW_GEO_THRESH' => array($shadow_geo_thresh, 'location (species occurrence) threshold of the shadow model')) as $key => $pair) {
+                 'SHADOW_GEO_THRESH' => array($shadow_geo_thresh, 'location (species occurrence) threshold of the shadow model'),
+                 'SHADOW_ENABLED' => array($shadow_enabled, 'shadow switch: 1 = the shadow model analyses every recording, 0 = only the official model runs (shadow settings kept)')) as $key => $pair) {
     list($val, $desc) = $pair;
     if(preg_match("/^$key=/m", $contents)) {
       $contents = preg_replace("/^$key=.*/m", "$key=$val", $contents);
@@ -408,8 +412,8 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
           <td><input name="sensitivity" type="number" style="width:5em;" min="0.5" max="1.5" step="0.01" value="<?php print($config['SENSITIVITY']);?>"/></td>
           <td><input name="sf_thresh" type="number" style="width:5em;" max="0.99" min="0.0005" step="any" value="<?php print($config['SF_THRESH']);?>"/></td>
         </tr>
-        <tr>
-          <td><b>Shadow</b></td>
+        <tr id="shadowrow" class="<?php if((string)($config['SHADOW_ENABLED'] ?? '1') === '0') echo 'shadow-off'; ?>">
+          <td><b>Shadow</b><br><label style="font-weight:normal"><input type="checkbox" id="shadow_enabled" name="shadow_enabled" value="1" onchange="document.getElementById('shadowrow').classList.toggle('shadow-off', !this.checked)" <?php if((string)($config['SHADOW_ENABLED'] ?? '1') !== '0') echo 'checked'; ?>> active</label></td>
           <td><select name="shadow_model" class="testbtn">
         <option value="">None</option>
       <?php
@@ -430,7 +434,7 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
       </table>
       <button type="submit" name="swap_models" value="1" class="testbtn" onclick="return confirm('Swap the official and the shadow model (each keeps its own confidence, sensitivity and location threshold)? Services restart.');">Swap official ↔ shadow</button>
       <span onclick="document.getElementById('shadowhelp').style.display='unset'" style="text-decoration:underline;cursor:pointer">[more info]</span>
-      <p><small>Thresholds are NOT comparable between generations — <?php foreach($model_defaults as $m => $d) { echo "<b>" . str_replace("_", " ", preg_replace('/_Model_FP16|_Global_10K|-preview3\.1/', '', $m)) . "</b>: $d. "; } ?>Calibrate from a shadow period before judging false positives. The same three fields for the official model also appear in Advanced Settings (same keys).</small></p>
+      <p><small>Thresholds are NOT comparable between generations — <?php foreach($model_defaults as $m => $d) { echo "<b>" . str_replace("_", " ", preg_replace('/_Model_FP16|_Global_10K|-preview3\.1/', '', $m)) . "</b>: $d. "; } ?>Calibrate from a shadow period before judging false positives. Untick <b>active</b> to run only the official model while keeping the shadow settings; None removes the shadow model. The same three fields for the official model also appear in Advanced Settings (same keys).</small></p>
       <p id="shadowhelp" style='display:none'>A shadow model analyses every recording right after the model selected above and writes what it would have detected to a database of its own (<code>scripts/birds_shadow.db</code>). It never extracts audio, never notifies and never touches the detections of the station, so a new model can be compared with the current one for weeks before switching. <b>BirdNET-Plus_V3.0-preview3.1_Global_10K</b> is the developer preview model of the BirdNET Live app (32 kHz, about 10,000 classes including amphibians, mammals and insects, its own location filter). It needs ONNX Runtime and is downloaded (about 80 MB) the first time it is used. It has no human voice class yet, so the privacy filter does not work while it is the selected model.</p>
       <br>
       <span <?php if($config['MODEL'] == "BirdNET_6K_GLOBAL_MODEL") { ?>style="display: none"<?php } ?> id="soft">
