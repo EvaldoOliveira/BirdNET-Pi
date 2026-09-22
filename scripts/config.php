@@ -412,8 +412,12 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
           <td><input name="sensitivity" type="number" style="width:5em;" min="0.5" max="1.5" step="0.01" value="<?php print($config['SENSITIVITY']);?>"/></td>
           <td><input name="sf_thresh" type="number" style="width:5em;" max="0.99" min="0.0005" step="any" value="<?php print($config['SF_THRESH']);?>"/></td>
         </tr>
+        <tr>
+          <td><b>Shadow mode</b></td>
+          <td colspan="4"><label><input type="checkbox" id="shadow_enabled" name="shadow_enabled" value="1" onchange="document.getElementById('shadowrow').classList.toggle('shadow-off', !this.checked)" <?php if((string)($config['SHADOW_ENABLED'] ?? '1') !== '0') echo 'checked'; ?>> active</label> <small>— off: only the official model runs; the shadow settings below are kept (greyed)</small></td>
+        </tr>
         <tr id="shadowrow" class="<?php if((string)($config['SHADOW_ENABLED'] ?? '1') === '0') echo 'shadow-off'; ?>">
-          <td><b>Shadow</b><br><label style="font-weight:normal"><input type="checkbox" id="shadow_enabled" name="shadow_enabled" value="1" onchange="document.getElementById('shadowrow').classList.toggle('shadow-off', !this.checked)" <?php if((string)($config['SHADOW_ENABLED'] ?? '1') !== '0') echo 'checked'; ?>> active</label></td>
+          <td><b>Shadow</b></td>
           <td><select name="shadow_model" class="testbtn">
         <option value="">None</option>
       <?php
