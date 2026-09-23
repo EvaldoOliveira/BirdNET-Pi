@@ -130,6 +130,17 @@ if ! grep -E '^SOUND_REPO_LINK=' /etc/birdnet/birdnet.conf &>/dev/null;then
     echo 'SOUND_REPO_LINK=""' >> /etc/birdnet/birdnet.conf
 fi
 
+# US-40: station-side upload of the sound-repo spool
+if ! grep -E '^SOUND_REPO_REMOTE=' /etc/birdnet/birdnet.conf &>/dev/null;then
+    echo '## SOUND_REPO_REMOTE is the rclone destination of the central sound repository (remote:path; empty = deposits stay in SOUND_REPO_PATH)' >> /etc/birdnet/birdnet.conf
+    echo 'SOUND_REPO_REMOTE=""' >> /etc/birdnet/birdnet.conf
+fi
+
+if ! grep -E '^SOUND_REPO_UPLOAD_MINUTES=' /etc/birdnet/birdnet.conf &>/dev/null;then
+    echo '## SOUND_REPO_UPLOAD_MINUTES is the interval in minutes between uploads of SOUND_REPO_PATH to SOUND_REPO_REMOTE (0 = never)' >> /etc/birdnet/birdnet.conf
+    echo 'SOUND_REPO_UPLOAD_MINUTES=5' >> /etc/birdnet/birdnet.conf
+fi
+
 if ! grep -E '^BIRDNET_USER=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "## BIRDNET_USER is for scripts to easily find where BirdNET-Pi is installed" >> /etc/birdnet/birdnet.conf
   echo "## DO NOT EDIT!" >> /etc/birdnet/birdnet.conf
@@ -247,6 +258,14 @@ if ! [ -f "$HOME/BirdNET-Pi/templates/$TMP_MOUNT" ]; then
    install_birdnet_mount
    chown $USER:$USER "$HOME/BirdNET-Pi/templates/$TMP_MOUNT"
 fi
+
+# US-40: sound-repo upload timer (new unit on an existing station)
+if ! [ -f "$HOME/BirdNET-Pi/templates/sound_repo_upload.timer" ]; then
+  install_sound_repo_upload_service
+  chown $USER:$USER "$HOME/BirdNET-Pi/templates/sound_repo_upload.service" "$HOME/BirdNET-Pi/templates/sound_repo_upload.timer"
+  systemctl daemon-reload && systemctl start sound_repo_upload.timer
+fi
+[ -z "${SOUND_REPO_PATH}" ] || [ -d "${SOUND_REPO_PATH}" ] || sudo_with_user mkdir -p "${SOUND_REPO_PATH}"
 
 if grep -q -e '-P log' $HOME/BirdNET-Pi/templates/birdnet_log.service ; then
   sed -i "s/-P log/--path log/" ~/BirdNET-Pi/templates/birdnet_log.service

@@ -62,6 +62,40 @@ EOF
   ln -sf $HOME/BirdNET-Pi/templates/$TMP_MOUNT /usr/lib/systemd/system
 }
 
+# US-40: station-side upload of the sound-repo spool to the central repository.
+# The timer ticks every minute; the interval itself (SOUND_REPO_UPLOAD_MINUTES)
+# lives in birdnet.conf and is applied by the script, so a settings change
+# needs no unit reload.
+install_sound_repo_upload_service() {
+  cat << EOF > $HOME/BirdNET-Pi/templates/sound_repo_upload.service
+[Unit]
+Description=BirdNET sound repository upload (US-40)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=${USER}
+Environment=HOME=${HOME}
+ExecStart=$HOME/BirdNET-Pi/scripts/sound_repo_upload.sh
+EOF
+  cat << EOF > $HOME/BirdNET-Pi/templates/sound_repo_upload.timer
+[Unit]
+Description=BirdNET sound repository upload timer (US-40)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=10s
+Unit=sound_repo_upload.service
+
+[Install]
+WantedBy=timers.target
+EOF
+  ln -sf $HOME/BirdNET-Pi/templates/sound_repo_upload.service /usr/lib/systemd/system
+  ln -sf $HOME/BirdNET-Pi/templates/sound_repo_upload.timer /usr/lib/systemd/system
+  systemctl enable sound_repo_upload.timer
+}
+
 install_tmp_mount() {
   STATE=$(systemctl is-enabled tmp.mount 2>&1 | grep -E '(enabled|disabled|static)')
   ! [ -f /usr/share/systemd/tmp.mount ] && echo "Warning: no /usr/share/systemd/tmp.mount found"

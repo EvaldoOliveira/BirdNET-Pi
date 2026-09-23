@@ -123,6 +123,12 @@ if(isset($_GET["latitude"])){
       $notification_default_tier = 'normal';
     }
   }
+  // US-40: station-side transport to the central sound repository (rclone remote + upload interval)
+  if(isset($_GET['sound_repo_upload_minutes'])) {
+    $sound_repo_upload_minutes = is_numeric($_GET['sound_repo_upload_minutes']) ? max(0, min(1440, intval($_GET['sound_repo_upload_minutes']))) : 5;
+    $sound_repo_remote = isset($_GET['sound_repo_remote']) ? trim($_GET['sound_repo_remote']) : '';
+    if(!preg_match('/^[A-Za-z0-9_-]+:[^\s"\'`$\\]*$/', $sound_repo_remote)) { $sound_repo_remote = ''; }
+  }
   if(isset($_GET['apprise_notify_each_detection'])) {
     $apprise_notify_each_detection = 1;
   } else {
@@ -263,6 +269,17 @@ if(isset($_GET["latitude"])){
     } else {
       // Config written before this setting existed - append the new key
       $contents .= "\nNOTIFICATION_EMAIL=\"$notification_email\"\n";
+    }
+  }
+  if(isset($sound_repo_upload_minutes)) {
+    foreach (array('SOUND_REPO_REMOTE' => array("\"$sound_repo_remote\"", 'rclone destination of the central sound repository (remote:path; empty = deposits stay in SOUND_REPO_PATH)'),
+                   'SOUND_REPO_UPLOAD_MINUTES' => array($sound_repo_upload_minutes, 'interval in minutes between uploads of SOUND_REPO_PATH to SOUND_REPO_REMOTE (0 = never)')) as $key => $pair) {
+      list($val, $desc) = $pair;
+      if(preg_match("/^$key=/m", $contents)) {
+        $contents = preg_replace("/^$key=.*/m", "$key=$val", $contents);
+      } else {
+        $contents .= "\n## $key is the $desc\n$key=$val\n";
+      }
     }
   }
   if(isset($notification_default_tier)) {
@@ -597,6 +614,19 @@ function runProcess() {
       <?php $srl = $config['SOUND_REPO_LINK'] ?? ''; ?>
       <label>Central sound repository: </label>
       <?php if($srl != '') { echo "<a href='" . htmlspecialchars($srl, ENT_QUOTES) . "' target='_blank'>" . htmlspecialchars($srl) . "</a>"; } else { echo "<i>not configured on this station</i>"; } ?><br>
+      <?php $srm = $config['SOUND_REPO_REMOTE'] ?? ''; $sru = $config['SOUND_REPO_UPLOAD_MINUTES'] ?? '5'; ?>
+      <table class="settingstable plaintable">
+        <tr>
+          <td><label for="sound_repo_remote">rclone remote (remote:path):</label></td>
+          <td><input name="sound_repo_remote" type="text" style="width:14em;" value="<?php print(htmlspecialchars($srm, ENT_QUOTES));?>" pattern="[A-Za-z0-9_\-]+:.*" placeholder="birddb:"/></td>
+          <td>(empty = no upload, deposits stay in the local spool)</td>
+        </tr>
+        <tr>
+          <td><label for="sound_repo_upload_minutes">Upload every:</label></td>
+          <td><input name="sound_repo_upload_minutes" type="number" style="width:5em;" min="0" max="1440" step="1" value="<?php print(intval($sru));?>"/> minutes</td>
+          <td>(0 = never; the spool is moved to the remote at this interval)</td>
+        </tr>
+      </table>
       <p><b>How to contribute from your own station (one-time setup):</b></p>
       <ol>
         <li>Run <code>rclone config</code> on your station and create a remote named <code>birddb</code>
