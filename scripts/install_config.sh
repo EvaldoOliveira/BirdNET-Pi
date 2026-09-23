@@ -113,6 +113,12 @@ APPRISE_ONLY_NOTIFY_SPECIES_NAMES_2=""
 SOUND_REPO_PATH=""
 ## SOUND_REPO_LINK is the shareable URL of the central sound repository (informational)
 SOUND_REPO_LINK=""
+## SOUND_REPO_REMOTE is the rclone destination of the central sound repository (remote:path,
+## a remote the station owner configured with their own account; empty = deposits stay in SOUND_REPO_PATH)
+SOUND_REPO_REMOTE=""
+## SOUND_REPO_UPLOAD_MINUTES is the interval in minutes between uploads of SOUND_REPO_PATH
+## to SOUND_REPO_REMOTE (0 = never)
+SOUND_REPO_UPLOAD_MINUTES=5
 
 ## NOTIFICATION_EMAIL is the owner's e-mail, exposed as $email inside the Apprise boxes
 NOTIFICATION_EMAIL=""
