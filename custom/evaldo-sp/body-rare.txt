@@ -1,0 +1,9 @@
+$comname ($sciname) detected
+Confidence=$confidencepct% 
+Reason: $reason
+Minimum Confidence: $cutoff
+Sigmoid Sensitivity: $sens
+Overlap: $overlap
+Link to the detection: $listenurl
+$image
+$audio

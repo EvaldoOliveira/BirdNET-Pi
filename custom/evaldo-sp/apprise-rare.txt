@@ -1,0 +1,2 @@
+mailto://localhost:25?from=$user@$hostname.local&to=$email&secure=no&format=text
+tgram://$token3/$token4

@@ -7,3 +7,12 @@
 !.gitignore
 !evaldo-sp/
 !evaldo-sp/**
+
+# evaldo-sp: station-private and bulky files never enter git (2026-09-28):
+# the apprise token store (secrets, refreshed from tokens.txt by do-setup22)
+# and the BirdNET+ V3 model pack (fetched on first use — US-45 story doc)
+evaldo-sp/apprise-tokens.txt
+evaldo-sp/model/*.onnx
+evaldo-sp/model/*_Labels.csv
+evaldo-sp/model/*_Labels.txt
+evaldo-sp/model/*_ScoreBlacklist.json

@@ -1,9 +1,11 @@
 Amazona aestiva
 Brotogeris tirica
 Celeus flavescens
+Coereba flaveola
 Columba livia
 Cyclarhis gujanensis
 Empidonomus varius
+Falco femoralis
 Falco peregrinus
 Forpus xanthopterygius
 Hirundinea ferruginea
@@ -17,6 +19,7 @@ Penelope obscura
 Pitangus sulphuratus
 Psittacara leucophthalmus
 Pygochelidon cyanoleuca
+Ramphastos dicolorus
 Rupornis magnirostris
 Setophaga pitiayumi
 Sicalis flaveola
@@ -27,6 +30,8 @@ Thraupis palmarum
 Thraupis sayaca
 Troglodytes aedon
 Turdus albicollis
+Turdus amaurochalinus
 Turdus leucomelas
 Turdus rufiventris
+Tyrannus melancholicus
 Zonotrichia capensis

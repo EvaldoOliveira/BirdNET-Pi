@@ -34,6 +34,7 @@ Penelope obscura_Jacuguaçu
 Piaya cayana_Alma-de-gato
 Picumnus cirratus_Picapauzinho-barrado
 Pitangus sulphuratus_Bem-te-vi
+Progne chalybea_Andorinha-grande
 Ramphastos dicolorus_Tucano-de-bico-verde
 Ramphastos toco_Tucanuçu
 Ramphastos vitellinus_Tucano-de-bico-preto
