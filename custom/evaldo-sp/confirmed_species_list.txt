@@ -1,6 +1,8 @@
 Amazona aestiva
 Brotogeris tirica
+Camptostoma obsoletum
 Celeus flavescens
+Chaetura meridionalis
 Coereba flaveola
 Columba livia
 Cyclarhis gujanensis
@@ -12,10 +14,12 @@ Hirundinea ferruginea
 Legatus leucophaius
 Megarynchus pitangua
 Megascops choliba
+Melanerpes candidus
 Myiodynastes maculatus
 Myiozetetes similis
 Nyctidromus albicollis
 Penelope obscura
+Piaya cayana
 Pitangus sulphuratus
 Psittacara leucophthalmus
 Pygochelidon cyanoleuca

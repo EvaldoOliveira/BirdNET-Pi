@@ -3,6 +3,7 @@ Asio clamator_Coruja-orelhuda
 Athene cunicularia_Coruja-buraqueira
 Basileuterus culicivorus_Pula-pula
 Brotogeris tirica_Periquito-rico
+Camptostoma obsoletum_Risadinha
 Caracara plancus_Carcará
 Cathartes aura_Urubu-de-cabeça-vermelha
 Celeus flavescens_Pica-pau-de-cabeça-amarela
