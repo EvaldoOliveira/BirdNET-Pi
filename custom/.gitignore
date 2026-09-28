@@ -13,6 +13,7 @@
 # and the BirdNET+ V3 model pack (fetched on first use — US-45 story doc)
 evaldo-sp/apprise-tokens.txt
 evaldo-sp/model/*.onnx
+evaldo-sp/model/*.tflite
 evaldo-sp/model/*_Labels.csv
 evaldo-sp/model/*_Labels.txt
 evaldo-sp/model/*_ScoreBlacklist.json
