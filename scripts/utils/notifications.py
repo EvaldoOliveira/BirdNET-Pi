@@ -43,22 +43,32 @@ def _load_apprise_tokens():
     return tokens
 
 
+def _build_apobj(lines):
+    # One Apprise object for a list of service URLs (already token-resolved);
+    # None when the list is empty.
+    if not lines:
+        return None
+    asset = apprise.AppriseAsset(
+        plugin_paths=[
+            userDir + "/.apprise/plugins",
+            userDir + "/.config/apprise/plugins",
+        ]
+    )
+    apobj = apprise.Apprise(asset=asset)
+    config = apprise.AppriseConfig()
+    config.add_config("\n".join(lines) + "\n", format='text')
+    apobj.add(config)
+    return apobj
+
+
 def notify(body, title, attached="", tier='normal'):
     # Rare species use their own channel file when it is configured;
     # an empty/missing apprise-rare.txt falls back to the normal channels.
     config_path = APPRISE_CONFIG
     if tier == 'rare' and _has_config(APPRISE_CONFIG_RARE):
         config_path = APPRISE_CONFIG_RARE
-    apobj = apobjs.get(config_path)
-    if apobj is None:
-        asset = apprise.AppriseAsset(
-            plugin_paths=[
-                userDir + "/.apprise/plugins",
-                userDir + "/.config/apprise/plugins",
-            ]
-        )
-        apobj = apprise.Apprise(asset=asset)
-        config = apprise.AppriseConfig()
+    pair = apobjs.get(config_path)
+    if pair is None:
         try:
             with open(config_path) as f:
                 content = f.read()
@@ -77,21 +87,28 @@ def notify(body, title, attached="", tier='normal'):
         # $user/$hostname keep e.g. from=$user@$hostname.local generic per station
         content = content.replace('$hostname', socket.gethostname())
         content = content.replace('$user', os.path.basename(userDir))
-        config.add_config(content, format='text')
-        apobj.add(config)
-        apobjs[config_path] = apobj
+        # Telegram is driven apart from the other services (e-mail, ...): with
+        # attachments, apprise turns the text into the caption of the FIRST
+        # attachment and the last message in the chat is a bare photo, so the
+        # phone pop-up read "Photo" instead of the bird. Telegram therefore
+        # gets the media first and the text as its own LAST message, whose
+        # first line is the title (species + confidence). Owner 2026-09-30.
+        lines = [ln.rstrip() for ln in content.splitlines() if ln.strip() and not ln.lstrip().startswith('#')]
+        tg_lines = [ln for ln in lines if ln.lstrip().lower().startswith('tgram://')]
+        other_lines = [ln for ln in lines if ln not in tg_lines]
+        pair = (_build_apobj(other_lines), _build_apobj(tg_lines))
+        apobjs[config_path] = pair
 
-    if attached:
-        apobj.notify(
-            body=body,
-            title=title,
-            attach=attached,
-        )
-    else:
-        apobj.notify(
-            body=body,
-            title=title,
-        )
+    others, telegram = pair
+    if others is not None:
+        if attached:
+            others.notify(body=body, title=title, attach=attached)
+        else:
+            others.notify(body=body, title=title)
+    if telegram is not None:
+        if attached:
+            telegram.notify(body='', title='', attach=attached)
+        telegram.notify(body=body, title=title)
 
 
 def get_notification_tier(sci_name):
