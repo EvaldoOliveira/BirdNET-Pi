@@ -3,7 +3,6 @@ Asio clamator_Coruja-orelhuda
 Athene cunicularia_Coruja-buraqueira
 Basileuterus culicivorus_Pula-pula
 Brotogeris tirica_Periquito-rico
-Camptostoma obsoletum_Risadinha
 Caracara plancus_Carcará
 Cathartes aura_Urubu-de-cabeça-vermelha
 Celeus flavescens_Pica-pau-de-cabeça-amarela
@@ -35,7 +34,6 @@ Penelope obscura_Jacuguaçu
 Piaya cayana_Alma-de-gato
 Picumnus cirratus_Picapauzinho-barrado
 Pitangus sulphuratus_Bem-te-vi
-Progne chalybea_Andorinha-grande
 Ramphastos dicolorus_Tucano-de-bico-verde
 Ramphastos toco_Tucanuçu
 Ramphastos vitellinus_Tucano-de-bico-preto
@@ -60,3 +58,5 @@ Vanellus chilensis_Quero-quero
 Volatinia jacarina_Tiziu
 Zenaida auriculata_Avoante
 Zonotrichia capensis_Tico-tico
+Progne chalybea_Andorinha-grande
+Camptostoma obsoletum_Risadinha
