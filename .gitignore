@@ -48,10 +48,6 @@ include_species_list.txt
 whitelist_species_list.txt
 /nbproject/private/
 
-# Station layers under custom/<station>/ are versioned on purpose (2026-08-29):
-# they carry the same file names the patterns above ignore in the repo root.
-!custom/**
-
 # Station-private layer, docs and reference clones (owner 2026-10-07): custom/ lives in
 # ~/Documents/Birdnet/custom (symlinked here), backed up nightly to the NAS, never in git.
 # Installs without it run the plain fork (no station layer).
