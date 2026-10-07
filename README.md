@@ -7,10 +7,7 @@
 A realtime acoustic bird classification system for the Raspberry Pi 5, 4B, 400, 3B+, and 0W2
 </p>
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/60325264/140656397-bf76bad4-f110-467c-897d-992ff0f96476.png" />
-</p>
-<p align="center">
-Icon made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>
+  <img src="homepage/images/BirdNetBr.png" alt="BirdNetBr" width="200" />
 </p>
 
 ## About this edition (EvaldoOliveira/BirdNET-Pi)
