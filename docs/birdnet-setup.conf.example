@@ -6,6 +6,8 @@
 SITE_NAME=Minha estação
 LATITUDE=-23.5505
 LONGITUDE=-46.6333
+# timezone of the detections (a fresh Raspberry Pi OS is on Europe/London)
+TIMEZONE=America/Sao_Paulo
 # V3 (BirdNET+ V3.0, recommended) or V2.4
 MODEL=V3
 # en, pt_BR (Brazil, CBRO names), pt_PT (Portugal), es, de, fr, ... (model/l18n)

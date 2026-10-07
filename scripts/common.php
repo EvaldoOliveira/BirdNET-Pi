@@ -487,10 +487,17 @@ function get_info_url($sciname){
   $config = get_config();
   if ($config['INFO_SITE'] === 'EBIRD'){
     require 'scripts/ebird.php';
-    $ebird = $ebirds[$sciname];
+    $ebird = $ebirds[$sciname] ?? '';
     $language = $config['DATABASE_LANG'];
-    $url = "https://ebird.org/species/$ebird?siteLanguage=$language";
-    $url_title = "eBirds";
+    if ($ebird !== '') {
+      $url = "https://ebird.org/species/$ebird?siteLanguage=$language";
+      $url_title = "eBirds";
+    } else {
+      // not a bird on eBird (V3 also detects frogs, insects, mammals): Wikipedia in the station language
+      $wiki_lang = explode('_', $language)[0];
+      $url = "https://$wiki_lang.wikipedia.org/wiki/" . str_replace(' ', '_', $sciname);
+      $url_title = "Wikipedia";
+    }
   } else {
     $engname_url = str_replace("'", '', str_replace(' ', '_', $engname));
     $url = "https://allaboutbirds.org/guide/$engname_url";

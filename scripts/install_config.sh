@@ -101,8 +101,8 @@ RTSP_STREAM_TO_LIVESTREAM="0"
 
 #-----------------------  Apprise Miscellanous Configuration -------------------#
 
-APPRISE_NOTIFICATION_TITLE="BirdNET-Pi \$comname (\$sciname) \$confidencepct% confidence"
-APPRISE_NOTIFICATION_TITLE_RARE="RARE BirdNET-Pi \$comname (\$sciname) \$confidencepct% confidence"
+APPRISE_NOTIFICATION_TITLE="${FR_TITLE:-BirdNET-Pi \$comname (\$sciname) \$confidencepct% confidence}"
+APPRISE_NOTIFICATION_TITLE_RARE="${FR_TITLE_RARE:-RARE BirdNET-Pi \$comname (\$sciname) \$confidencepct% confidence}"
 APPRISE_NOTIFY_EACH_DETECTION=0
 APPRISE_NOTIFY_NEW_SPECIES=0
 APPRISE_WEEKLY_REPORT=1
@@ -144,7 +144,7 @@ FLICKR_FILTER_EMAIL=
 ## ALLABOUTBIRDS or EBIRD
 ## default ALLABOUTBIRDS, EBIRD better for eurasian locations
 
-INFO_SITE="ALLABOUTBIRDS"
+INFO_SITE="${FR_INFO_SITE:-ALLABOUTBIRDS}"
 
 #-------------------------------  Color scheme  --------------------------------#
 ## light or dark
@@ -341,7 +341,15 @@ EOF
 if ! [ -f ${birdnet_conf} ];then
   source $my_dir/scripts/install_firstrun.sh
   { set +x; } 2>/dev/null
+  case "${FR_LANGUAGE}" in
+    pt_*)
+      FR_TITLE='BirdNET-Pi $comname ($sciname) $confidencepct% de confiança'
+      FR_TITLE_RARE='RARO BirdNET-Pi $comname ($sciname) $confidencepct% de confiança' ;;
+  esac
   install_config
+  if [ -n "${FR_TIMEZONE}" ] && [ "${FR_TIMEZONE}" != "$(timedatectl show --value --property=Timezone 2>/dev/null || true)" ]; then
+    sudo timedatectl set-timezone "${FR_TIMEZONE}" && echo "Timezone set to ${FR_TIMEZONE}" || echo "Could not set the timezone - set it with: sudo timedatectl set-timezone ${FR_TIMEZONE}"
+  fi
   set -x
   if [ -n "${FR_APPRISE_URL}" ]; then
     { set +x; } 2>/dev/null
@@ -358,5 +366,17 @@ grep -ve '^#' -e '^$' /etc/birdnet/birdnet.conf > $my_dir/firstrun.ini
 { set +x; } 2>/dev/null
 source /etc/birdnet/birdnet.conf
 set -x
-echo 'A $comname ($sciname)  was just detected with a confidence of $confidence ($reason)' | sudo -u $BIRDNET_USER tee "$HOME/BirdNET-Pi/body.txt"
+# notification bodies in the station language (US-51d); kept when they exist (re-install)
+if ! [ -s "$HOME/BirdNET-Pi/body.txt" ]; then
+  case "${DATABASE_LANG}" in
+    pt_*)
+      body='$comname ($sciname) detectado com $confidencepct% de confiança\nMotivo: $reason\nLink da detecção: $listenurl\nConfiança mínima: $cutoff\nSensibilidade: $sens\nSobreposição: $overlap\n$image\n$audio'
+      body_rare='RARO: $comname ($sciname)\nConfiança: $confidencepct%\nMotivo: $reason\nLink da detecção: $listenurl\nConfiança mínima: $cutoff\nSensibilidade: $sens\nSobreposição: $overlap\n$image\n$audio' ;;
+    *)
+      body='A Normal $comname ($sciname) detected with $confidencepct% confidence\nReason: $reason\nLink to the detection: $listenurl\nMinimum Confidence: $cutoff\nSigmoid Sensitivity: $sens\nOverlap: $overlap\n$image\n$audio'
+      body_rare='$comname ($sciname) detected\nConfidence=$confidencepct%\nReason: $reason\nMinimum Confidence: $cutoff\nSigmoid Sensitivity: $sens\nOverlap: $overlap\nLink to the detection: $listenurl\n$image\n$audio' ;;
+  esac
+  printf '%b\n' "$body" | sudo -u $BIRDNET_USER tee "$HOME/BirdNET-Pi/body.txt" > /dev/null
+  printf '%b\n' "$body_rare" | sudo -u $BIRDNET_USER tee "$HOME/BirdNET-Pi/body-rare.txt" > /dev/null
+fi
 chmod g+w "$HOME/BirdNET-Pi/body.txt"

@@ -3,7 +3,7 @@
 # writes birdnet.conf, only when there is no birdnet.conf yet. Every answer comes from, in order:
 #   1. a seed file for unattended / batch installs, the first that exists of
 #      /boot/firmware/birdnet-setup.conf, /boot/birdnet-setup.conf, $HOME/birdnet-setup.conf
-#      (KEY=value lines: SITE_NAME LATITUDE LONGITUDE MODEL LANGUAGE STATE WEB_PASSWORD
+#      (KEY=value lines: SITE_NAME LATITUDE LONGITUDE TIMEZONE MODEL LANGUAGE STATE WEB_PASSWORD
 #       STREAM_PASSWORD BIRDWEATHER_ID APPRISE_URL — see docs/birdnet-setup.conf.example)
 #   2. a question on the terminal (read from /dev/tty, so `curl ... | bash` works too),
 #      skipped when BIRDNET_UNATTENDED=1 or there is no terminal
@@ -26,7 +26,7 @@ for f in /boot/firmware/birdnet-setup.conf /boot/birdnet-setup.conf "$HOME/birdn
   while IFS='=' read -r key value; do
     key=$(echo "$key" | tr -d '[:space:]')
     case "$key" in
-      SITE_NAME|LATITUDE|LONGITUDE|MODEL|LANGUAGE|STATE|WEB_PASSWORD|STREAM_PASSWORD|BIRDWEATHER_ID|APPRISE_URL)
+      SITE_NAME|LATITUDE|LONGITUDE|TIMEZONE|MODEL|LANGUAGE|STATE|WEB_PASSWORD|STREAM_PASSWORD|BIRDWEATHER_ID|APPRISE_URL)
         value="${value%$'\r'}"; value="${value#\"}"; value="${value%\"}"
         fr_seed[$key]="$value"
         ;;
@@ -52,10 +52,11 @@ fr_ask() {
   printf -v "$var" '%s' "${answer:-$default}"
 }
 
-fr_country=; fr_region=
+fr_country=; fr_region=; fr_tz=
 if [ -n "$json" ] && [ "$(echo "$json" | jq -r .status 2>/dev/null)" = "success" ]; then
   fr_country=$(echo "$json" | jq -r .countryCode)
   fr_region=$(echo "$json" | jq -r .region)
+  fr_tz=$(echo "$json" | jq -r .timezone)
 fi
 
 [ -n "$fr_interactive" ] && echo -e "\n=== BirdNET-Pi first-run settings (Enter keeps the value in brackets) ===" > /dev/tty
@@ -70,6 +71,17 @@ while :; do
   echo "Latitude/longitude must be numbers" >&2
   [ -n "$fr_interactive" ] || { FR_LATITUDE=$LATITUDE; FR_LONGITUDE=$LONGITUDE; break; }
   unset 'fr_seed[LATITUDE]' 'fr_seed[LONGITUDE]'
+done
+
+# timezone: detections are stamped with the system clock — a fresh Raspberry Pi OS is on
+# Europe/London (US-51d)
+fr_tz_now=$(timedatectl show --value --property=Timezone 2>/dev/null || cat /etc/timezone 2>/dev/null || true)
+while :; do
+  fr_ask FR_TIMEZONE "Timezone" "${fr_tz:-$fr_tz_now}" "" TIMEZONE
+  [ -z "$FR_TIMEZONE" ] || [ -e "/usr/share/zoneinfo/$FR_TIMEZONE" ] && break
+  echo "Unknown timezone '$FR_TIMEZONE' (e.g. America/Sao_Paulo)" >&2
+  [ -n "$fr_interactive" ] || { FR_TIMEZONE=; break; }
+  unset 'fr_seed[TIMEZONE]'
 done
 
 fr_ask fr_model "Model: V3 (BirdNET+ V3.0, recommended) or V2.4" "V3" "" MODEL
@@ -118,6 +130,13 @@ if [ "$fr_country" = "BR" ] || [ "$FR_LANGUAGE" = "pt_BR" ] || [ -n "${fr_seed[S
   done
 fi
 
+# species info links: eBird has every species and pages in Portuguese; All About Birds (the
+# upstream default) is a North American guide without most neotropical species
+case "$fr_country:$FR_LANGUAGE" in
+  US:*|CA:*) FR_INFO_SITE=ALLABOUTBIRDS ;;
+  *) FR_INFO_SITE=EBIRD ;;
+esac
+
 fr_ask FR_CADDY_PWD "Web password for Tools / Settings (empty = no password)" "" secret WEB_PASSWORD
 [ -z "$FR_CADDY_PWD" ] && echo -e "\033[33mNo web password: anyone on your network can change the settings. Set one later in Tools -> Settings -> Advanced.\033[0m"
 fr_ask FR_ICE_PWD "Live stream (icecast) password (empty = random)" "" secret STREAM_PASSWORD
@@ -125,7 +144,7 @@ fr_ask FR_ICE_PWD "Live stream (icecast) password (empty = random)" "" secret ST
 fr_ask FR_BIRDWEATHER_ID "BirdWeather ID (empty = none)" "" "" BIRDWEATHER_ID
 fr_ask FR_APPRISE_URL "Notification URL for Apprise, e.g. tgram://token/chat (empty = none)" "" "" APPRISE_URL
 
-echo "First-run settings: site '${FR_SITE_NAME}', ${FR_LATITUDE}/${FR_LONGITUDE}, model ${FR_MODEL}, language ${FR_LANGUAGE}, state list ${FR_REGION:-none}, web password $([ -n "$FR_CADDY_PWD" ] && echo set || echo none), BirdWeather $([ -n "$FR_BIRDWEATHER_ID" ] && echo set || echo none), notifications $([ -n "$FR_APPRISE_URL" ] && echo set || echo none)"
+echo "First-run settings: site '${FR_SITE_NAME}', ${FR_LATITUDE}/${FR_LONGITUDE}, timezone ${FR_TIMEZONE:-unchanged}, info ${FR_INFO_SITE}, model ${FR_MODEL}, language ${FR_LANGUAGE}, state list ${FR_REGION:-none}, web password $([ -n "$FR_CADDY_PWD" ] && echo set || echo none), BirdWeather $([ -n "$FR_BIRDWEATHER_ID" ] && echo set || echo none), notifications $([ -n "$FR_APPRISE_URL" ] && echo set || echo none)"
 
 unset fr_seed
 [ -n "$fr_xtrace" ] && set -x
