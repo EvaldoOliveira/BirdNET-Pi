@@ -400,6 +400,28 @@ install_automatic_update_cron() {
   sed "s/\$USER/$USER/g" $my_dir/templates/automatic_update.cron >> /etc/crontab
 }
 
+install_mic_hotplug() {
+  # USB microphone hot-plug (US-51b): udev restarts a state-driven oneshot on every USB sound
+  # card add/remove; mic_hotplug.sh stops or (re)configures and starts the station. The rule
+  # sorts after 78-sound-card.rules, which sets ID_BUS (needed on "remove", sysfs is gone then).
+  cat << EOF > $HOME/BirdNET-Pi/templates/birdnet_mic_hotplug.service
+[Unit]
+Description=BirdNET-Pi USB microphone hot-plug (state-driven)
+After=sound.target
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/mic_hotplug.sh
+EOF
+  ln -sf $HOME/BirdNET-Pi/templates/birdnet_mic_hotplug.service /usr/lib/systemd/system
+  cat << EOF > /etc/udev/rules.d/79-birdnet-mic.rules
+# BirdNET-Pi USB microphone hot-plug (install_services.sh)
+ACTION=="add",    SUBSYSTEM=="sound", KERNEL=="card[0-9]*", SUBSYSTEMS=="usb", RUN+="/usr/bin/systemctl --no-block restart birdnet_mic_hotplug.service"
+ACTION=="remove", SUBSYSTEM=="sound", KERNEL=="card[0-9]*", ENV{ID_BUS}=="usb", RUN+="/usr/bin/systemctl --no-block restart birdnet_mic_hotplug.service"
+EOF
+  systemctl daemon-reload
+  udevadm control --reload-rules
+}
+
 chown_things() {
   chown -R $USER:$USER $HOME/Bird*
 }
@@ -434,6 +456,7 @@ install_services() {
   install_livestream_service
   install_birdnet_mount
   install_sound_repo_upload_service
+  install_mic_hotplug
   install_cleanup_cron
   install_weekly_cron
   install_automatic_update_cron
@@ -447,7 +470,9 @@ install_services() {
 }
 
 if [ -f ${config_file} ];then
+  { set +x; } 2>/dev/null # not traced: birdnet.conf carries the web / stream passwords
   source ${config_file}
+  set -x
   source install_helpers.sh
   install_services
   chown_things

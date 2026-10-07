@@ -46,7 +46,11 @@ if [ -n "${RTSP_STREAM}" ];then
   done
   wait
 else
-  if ! pulseaudio --check;then pulseaudio --start;fi
+  # PulseAudio only for the PulseAudio route; an ALSA device (e.g. the shared USB microphone
+  # set up by install_audio.sh) must not be grabbed by a daemon started here
+  if [ "${REC_CARD}" = "default" ] || [ -z "${REC_CARD}" ];then
+    if ! pulseaudio --check;then pulseaudio --start;fi
+  fi
   if pgrep arecord &> /dev/null ;then
     echo "Recording"
   else

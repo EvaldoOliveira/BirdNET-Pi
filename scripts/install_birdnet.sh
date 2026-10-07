@@ -59,6 +59,10 @@ cd $my_dir/scripts || exit 1
 CURRENT_TIMEZONE=$(timedatectl show --value --property=Timezone)
 [ -f /etc/timezone ] && echo "$CURRENT_TIMEZONE" | sudo tee /etc/timezone > /dev/null
 
+# USB microphone: shared ALSA device + REC_CARD, PulseAudio kept off the card (US-51b);
+# without a USB microphone the PulseAudio default stays
+./install_audio.sh || echo "Microphone setup failed - check Tools -> Settings -> Advanced (audio card)"
+
 ./install_language_label.sh || exit 1
 
 exit 0
