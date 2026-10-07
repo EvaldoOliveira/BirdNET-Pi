@@ -112,8 +112,17 @@ while :; do
 done
 
 FR_REGION=
-if [ "$fr_country" = "BR" ] || [ "$FR_LANGUAGE" = "pt_BR" ] || [ -n "${fr_seed[STATE]+set}" ]; then
-  [ "$fr_country" = "BR" ] && fr_state_default=$fr_region || fr_state_default=none
+# the state of the CONFIRMED coordinates (OpenStreetMap online, the shipped IBGE boundaries
+# offline) — the network's guess (ip-api region) only when that finds nothing
+fr_located=$(python3 "$my_dir/scripts/locate_state.py" "$FR_LATITUDE" "$FR_LONGITUDE" 2>/dev/null || true)
+if [ -n "$fr_located" ] || [ "$fr_country" = "BR" ] || [ "$FR_LANGUAGE" = "pt_BR" ] || [ -n "${fr_seed[STATE]+set}" ]; then
+  if [ -n "$fr_located" ]; then
+    fr_state_default=$fr_located
+  elif [ "$fr_country" = "BR" ] && [ "$FR_LATITUDE" = "$LATITUDE" ] && [ "$FR_LONGITUDE" = "$LONGITUDE" ]; then
+    fr_state_default=$fr_region
+  else
+    fr_state_default=none
+  fi
   while :; do
     fr_ask fr_state "Brazilian state for the include list (UF, e.g. SP; none = no list)" "$fr_state_default" "" STATE
     fr_state=$(echo "$fr_state" | tr '[:lower:]' '[:upper:]' | tr -d ' ')
@@ -146,6 +155,10 @@ fr_ask FR_APPRISE_URL "Notification URL for Apprise, e.g. tgram://token/chat (em
 
 echo "First-run settings: site '${FR_SITE_NAME}', ${FR_LATITUDE}/${FR_LONGITUDE}, timezone ${FR_TIMEZONE:-unchanged}, info ${FR_INFO_SITE}, model ${FR_MODEL}, language ${FR_LANGUAGE}, state list ${FR_REGION:-none}, web password $([ -n "$FR_CADDY_PWD" ] && echo set || echo none), BirdWeather $([ -n "$FR_BIRDWEATHER_ID" ] && echo set || echo none), notifications $([ -n "$FR_APPRISE_URL" ] && echo set || echo none)"
 
+# nobody answered (no terminal, no seed file): the web interface opens on the setup wizard
+# until it is saved (scripts/setup_wizard.php, US-51c part 2)
+FR_WIZARD=
+[ -z "$fr_interactive" ] && [ ${#fr_seed[@]} -eq 0 ] && FR_WIZARD=1
 unset fr_seed
 [ -n "$fr_xtrace" ] && set -x
 true

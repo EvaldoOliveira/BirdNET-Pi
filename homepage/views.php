@@ -139,7 +139,12 @@ function update_species_list($filename, $species, $add) {
     }
 }
 
+// First-run setup wizard (US-51c): an installation nobody answered opens on the wizard
+if(file_exists($home.'/BirdNET-Pi/firstrun_pending') && (!isset($_GET['view']) || $_GET['view'] == "Overview")){
+  $_GET['view'] = "Setup";
+}
 if(isset($_GET['view'])){
+  if($_GET['view'] == "Setup"){include('scripts/setup_wizard.php');}
   if($_GET['view'] == "System Info"){echo "<iframe src='phpsysinfo/index.php'></iframe>";}
   if($_GET['view'] == "System Controls"){
     ensure_authenticated();
@@ -174,6 +179,7 @@ if(isset($_GET['view'])){
       <button type=\"submit\" name=\"view\" value=\"Excluded\" form=\"views\">Excluded Species List</button>
       <button type=\"submit\" name=\"view\" value=\"Whitelisted\" form=\"views\">Whitelist Species List</button>
       <button type=\"submit\" name=\"view\" value=\"Species Management\" form=\"views\">Species Management</button>
+      <button type=\"submit\" name=\"view\" value=\"Setup\" form=\"views\">Setup Wizard</button>
       </form>
       </div>";
   }

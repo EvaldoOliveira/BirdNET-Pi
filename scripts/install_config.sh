@@ -347,6 +347,7 @@ if ! [ -f ${birdnet_conf} ];then
       FR_TITLE_RARE='RARO BirdNET-Pi $comname ($sciname) $confidencepct% de confiança' ;;
   esac
   install_config
+  [ -n "${FR_WIZARD}" ] && touch $my_dir/firstrun_pending
   if [ -n "${FR_TIMEZONE}" ] && [ "${FR_TIMEZONE}" != "$(timedatectl show --value --property=Timezone 2>/dev/null || true)" ]; then
     sudo timedatectl set-timezone "${FR_TIMEZONE}" && echo "Timezone set to ${FR_TIMEZONE}" || echo "Could not set the timezone - set it with: sudo timedatectl set-timezone ${FR_TIMEZONE}"
   fi
@@ -380,3 +381,4 @@ if ! [ -s "$HOME/BirdNET-Pi/body.txt" ]; then
   printf '%b\n' "$body_rare" | sudo -u $BIRDNET_USER tee "$HOME/BirdNET-Pi/body-rare.txt" > /dev/null
 fi
 chmod g+w "$HOME/BirdNET-Pi/body.txt"
+[ -f "$HOME/BirdNET-Pi/body-rare.txt" ] && chmod g+w "$HOME/BirdNET-Pi/body-rare.txt"

@@ -52,3 +52,4 @@ whitelist_species_list.txt
 # ~/Documents/Birdnet/custom (symlinked here), backed up nightly to the NAS, never in git.
 # Installs without it run the plain fork (no station layer).
 /custom
+/firstrun_pending
