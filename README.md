@@ -34,8 +34,12 @@ review its results:
 3. **Sound from detection sent in notification.** Detections are announced by Telegram, e-mail or any other messaging
    channel supported by Apprise, **with the recording attached**, so that a detection can be heard and confirmed on a
    telephone within moments. Species are assigned to notification tiers, each with its own policy.
+   
 5. **A configurable live spectrogram.** Colour palettes and colour sensitivity (floor, range, contrast) are adjustable
    while the display runs.
+6. **Custom Bird by bird Confidence Override.** Adjust levels for common incorrect detections so that a real bird is detected, instead of being always ignored or blacklisted
+7. **Normal and Prio Notification.** Separation of notifications so that if for e.g. in Telegram they can be sent to separate channels, so
+   that a Normal is muted and Prio is noisy.
 
 ### How to get this edition
 
