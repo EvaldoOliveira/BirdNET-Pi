@@ -17,8 +17,7 @@ This repository is an independent edition of BirdNET-Pi, maintained as a hard fo
 [mcguirepr89/BirdNET-Pi](https://github.com/mcguirepr89/BirdNET-Pi) — from upstream commit `88985a3` (v0.11 line,
 forked on 2026-08-29).
 
-This edition extends BirdNET-Pi with capabilities intended for long-term acoustic monitoring and for the people who
-review its results:
+This edition extends BirdNET-Pi with capabilities intended for long-term acoustic monitoring.
 
 1. **Support for V3 model, and pararel use of shadow models.** Additional classifiers can be selected
    beside the BirdNET models shipped upstream — currently BirdNET+ V3.0, the developer-preview model of the BirdNET
@@ -31,12 +30,13 @@ review its results:
 3. **Sound from detection sent in notification.** Detections are announced by Telegram, e-mail or any other messaging
    channel supported by Apprise, **with the recording attached**, so that a detection can be heard and confirmed on a
    telephone within moments. Species are assigned to notification tiers, each with its own policy.
-   
-5. **A configurable live spectrogram.** Colour palettes and colour sensitivity (floor, range, contrast) are adjustable
+4. **A configurable live spectrogram.** Colour palettes and colour sensitivity (floor, range, contrast) are adjustable
    while the display runs.
-6. **Custom Bird by bird Confidence Override.** Adjust levels for common incorrect detections so that a real bird is detected, instead of being always ignored or blacklisted
-7. **Normal and Prio Notification.** Separation of notifications so that if for e.g. in Telegram they can be sent to separate channels, so
+5. **Custom Bird by bird Confidence Override.** Adjust levels for common incorrect detections so that a real bird is detected, instead of being always ignored or blacklisted
+6. **Normal and Prio Notification.** Separation of notifications so that if for e.g. in Telegram they can be sent to separate channels, so
    that a Normal is muted and Prio is noisy.
+7. **Auto stop/restore services when microphone is removed/inserted.** Recording and analysis stop when the USB
+   microphone is unplugged and start again, with the microphone reconfigured, as soon as it is plugged back in.
 
 ### How to get this edition
 
