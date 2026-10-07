@@ -18,8 +18,7 @@ Icon made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from 
 This repository is an independent edition of BirdNET-Pi, maintained as a hard fork of
 [Nachtzuster/BirdNET-Pi](https://github.com/Nachtzuster/BirdNET-Pi) — itself the maintained continuation of
 [mcguirepr89/BirdNET-Pi](https://github.com/mcguirepr89/BirdNET-Pi) — from upstream commit `88985a3` (v0.11 line,
-forked on 2026-08-29). It is developed against a permanently operated field station and released as tagged,
-documented versions.
+forked on 2026-08-29).
 
 ### Objectives
 
@@ -39,13 +38,6 @@ review its results:
    telephone within moments. Species are assigned to notification tiers, each with its own policy.
 5. **A configurable live spectrogram.** Colour palettes and colour sensitivity (floor, range, contrast) are adjustable
    while the display runs.
-
-Three principles govern the work. The product remains **generic**: no script is tied to a particular station, and
-site-specific material (species lists, labels, thresholds, notification channels, credentials) is confined to a
-*station layer* (`custom/<station>/`) or to the configuration. Every change is a **user story with acceptance
-criteria**, verified on a pilot station under continuous operation before it is merged and tagged. Upstream changes
-are adopted individually, and corrections of general interest are **returned upstream** as pull requests (the first:
-[Nachtzuster#650](https://github.com/Nachtzuster/BirdNET-Pi/pull/650)).
 
 ### How to get this edition
 
