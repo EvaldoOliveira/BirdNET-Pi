@@ -45,9 +45,13 @@ done
 shift $((OPTIND-1))
 
 sudo_with_user () {
+  local ret_val
   set -x
   sudo -u $USER "$@"
-  set +x
+  # keep the exit status of the command: a trailing "set +x" made this function always succeed,
+  # so none of the "|| exit 1" guards below could ever fire
+  { ret_val=$?; set +x; } 2> /dev/null
+  return $ret_val
 }
 
 can_auto_update () {
@@ -72,7 +76,15 @@ commit_hash=$(sudo_with_user git -C $HOME/BirdNET-Pi rev-parse HEAD)
 sudo_with_user git -C $HOME/BirdNET-Pi reset --hard
 
 # Fetches latest changes
-sudo_with_user git -C $HOME/BirdNET-Pi fetch $remote $branch || { echo "Error: fetch of '$remote $branch' failed"; exit 1; }
+# a single-branch clone only follows its own branch: "switch --track" refuses any other one until the
+# clone is told to follow it too (a tag or a commit is not a branch and is simply fetched by name)
+if sudo_with_user git -C $HOME/BirdNET-Pi ls-remote --exit-code --heads $remote $branch > /dev/null 2>&1; then
+  fetch_specs=$(git -C $HOME/BirdNET-Pi config --get-all remote.$remote.fetch)
+  if [[ "$fetch_specs" != *"refs/heads/*"* && "$fetch_specs" != *"refs/heads/$branch:"* ]]; then
+    sudo_with_user git -C $HOME/BirdNET-Pi remote set-branches --add $remote $branch || { echo "Error: could not follow '$remote/$branch'"; exit 1; }
+  fi
+fi
+sudo_with_user git -C $HOME/BirdNET-Pi fetch --tags $remote $branch || { echo "Error: fetch of '$remote $branch' failed"; exit 1; }
 
 # Switches git to specified branch (or checks out a tag/commit detached)
 if sudo_with_user git -C $HOME/BirdNET-Pi show-ref --verify --quiet refs/remotes/$remote/$branch; then

@@ -1,17 +1,21 @@
+import csv
 import logging
 import os
+import re
 import time
 
 import librosa
 import numpy as np
 
 from .classes import Detection, ParseFileName
-from .helpers import get_settings, get_language
+from .helpers import get_settings, get_language, MODEL_PATH
 from .models import get_model
 
 log = logging.getLogger(__name__)
 
 MODEL = None
+# time slots of the last analysed file that the privacy filter blanked (start, end)
+LAST_HUMAN_SLOTS = []
 
 
 def loadCustomSpeciesList(path):
@@ -21,6 +25,43 @@ def loadCustomSpeciesList(path):
             species_list = [line.strip().split('_')[0] for line in csfile.readlines()]
 
     return species_list
+
+
+def loadRegionIncludeList(region):
+    # Regional include list shipped with the code: model/include_lists/<INCLUDE_REGION>.txt
+    # (e.g. BR-SP = species with WikiAves records in the State of Sao Paulo). Empty = none.
+    if not region or not re.fullmatch(r'[A-Z]{2}-[A-Z]{2}', region):
+        return set()
+    return set(loadCustomSpeciesList(os.path.join(MODEL_PATH, 'include_lists', f'{region}.txt')))
+
+
+def loadNonBirdClasses(model):
+    # Regional lists cover birds only: the non-bird classes of a model that says so (V3 labels csv) stay allowed
+    path = os.path.join(MODEL_PATH, f'{model}_Labels.csv')
+    non_birds = set()
+    if os.path.isfile(path):
+        with open(path, encoding='utf-8-sig') as f:
+            for row in csv.DictReader(f, delimiter=';'):
+                if row.get('class') and row['class'] != 'Aves':
+                    non_birds.add(row['sci_name'])
+    return non_birds
+
+
+def loadSpeciesConfidence(path):
+    # US-48: per-species minimum confidence, one 'Sci_Name=0.60' per line
+    # (written by the Species Management page); unlisted species use CONFIDENCE
+    thresholds = {}
+    if os.path.isfile(path):
+        with open(path, 'r') as f:
+            for line in f:
+                sci_name, _, value = line.strip().partition('=')
+                try:
+                    value = float(value)
+                except ValueError:
+                    continue
+                if sci_name and 0.0 < value < 1.0:
+                    thresholds[sci_name] = value
+    return thresholds
 
 
 def splitSignal(sig, rate, overlap, seconds=3.0, minlen=1.5):
@@ -48,7 +89,8 @@ def readAudioData(path, overlap, sample_rate, chunk_duration):
     log.info('READING AUDIO DATA...')
 
     # Open file with librosa (uses ffmpeg or libav)
-    sig, rate = librosa.load(path, sr=sample_rate, mono=True, res_type='kaiser_fast')
+    # soxr ships with librosa; 'kaiser_fast' needs resampy, which is only missed once a model is not 48 kHz
+    sig, rate = librosa.load(path, sr=sample_rate, mono=True, res_type='soxr_hq')
 
     # Split audio into chunks
     chunks = splitSignal(sig, rate, overlap, seconds=chunk_duration)
@@ -76,10 +118,14 @@ def analyzeAudioData(chunks, overlap, lat, lon, week):
 
     labeled = {}
     pred_start = 0.0
+    LAST_HUMAN_SLOTS.clear()
     for p in filter_humans(detections):
         # Save timestamp and result
         pred_end = pred_start + model.chunk_duration
         labeled[str(pred_start) + ';' + str(pred_end)] = p
+        if p[0][0] == 'Human_Human':
+            # the shadow model (utils/shadow.py) has to drop the same windows
+            LAST_HUMAN_SLOTS.append((pred_start, pred_end))
 
         pred_start = pred_end - overlap
 
@@ -141,8 +187,17 @@ def run_analysis(file):
     include_list = loadCustomSpeciesList(os.path.expanduser("~/BirdNET-Pi/include_species_list.txt"))
     exclude_list = loadCustomSpeciesList(os.path.expanduser("~/BirdNET-Pi/exclude_species_list.txt"))
     whitelist_list = loadCustomSpeciesList(os.path.expanduser("~/BirdNET-Pi/whitelist_species_list.txt"))
+    species_confidence = loadSpeciesConfidence(os.path.expanduser("~/BirdNET-Pi/species_confidence.txt"))
 
     conf = get_settings()
+    min_confidence = conf.getfloat('CONFIDENCE')
+    # INCLUDE_REGION (Basic Settings > Location): the regional list joins the user's include list
+    region_list = loadRegionIncludeList(conf.get('INCLUDE_REGION', ''))
+    if region_list:
+        include_list = set(include_list) | region_list
+        region_free = loadNonBirdClasses(conf['MODEL'])
+    else:
+        region_free = set()
     model = load_global_model()
     names = get_language(conf['DATABASE_LANG'])
 
@@ -161,9 +216,9 @@ def run_analysis(file):
         sci_name, confidence = entries[0]
         log.info('%s-(%s_%s, %s)', time_slot, sci_name, names.get(sci_name, sci_name), confidence)
         for sci_name, confidence in entries:
-            if confidence >= conf.getfloat('CONFIDENCE'):
+            if confidence >= species_confidence.get(sci_name, min_confidence):
                 com_name = names.get(sci_name, sci_name)
-                if sci_name not in include_list and len(include_list) != 0:
+                if sci_name not in include_list and len(include_list) != 0 and sci_name not in region_free:
                     log.warning("Excluded as INCLUDE_LIST is active but this species is not in it: %s %s", sci_name, com_name)
                 elif sci_name in exclude_list and len(exclude_list) != 0:
                     log.warning("Excluded as species in EXCLUDE_LIST: %s %s", sci_name, com_name)

@@ -204,15 +204,24 @@ def apprise(file: ParseFileName, detections: [Detection]):
             species_apprised_this_run.append(detection.species)
 
 
+def sound_repo_upload_active(conf):
+    # Same gate as scripts/sound_repo_upload.sh: a remote and a cadence > 0
+    minutes = str(conf.get('SOUND_REPO_UPLOAD_MINUTES') or '0').strip()
+    return bool(conf.get('SOUND_REPO_REMOTE')) and minutes.isdigit() and int(minutes) > 0
+
+
 def sound_repo(file: ParseFileName, detections: [Detection]):
     # US-38: beside the BirdWeather upload, write every detection to the
     # owner's central sound repository (SOUND_REPO_PATH, empty = off) as the
     # extracted clip plus a sidecar JSON in a training-ready layout:
     # <repo>/<station>/<yyyy-mm-dd>/<Sci_name>/<clip> . Failures are logged,
     # never raised - this must not block the reporting queue.
-    conf = get_settings()
+    # The spool only exists to feed the upload: nothing is written while the
+    # upload is off (no remote, or interval 0 = paused). Re-read the file so a
+    # pause in the settings page applies without restarting the analysis.
+    conf = get_settings(force_reload=True)
     repo = conf.get('SOUND_REPO_PATH')
-    if not repo:
+    if not repo or not sound_repo_upload_active(conf):
         return
     for detection in detections:
         try:

@@ -62,6 +62,8 @@ create_necessary_dirs() {
   [ -d ${EXTRACTED}/Charts ] || sudo -u ${USER} mkdir -p ${EXTRACTED}/Charts
   [ -d ${PROCESSED} ] || sudo -u ${USER} mkdir -p ${PROCESSED}
   [ -d $RECS_DIR/StreamData ] || sudo -u ${USER} mkdir -p $RECS_DIR/StreamData
+  # US-40: local spool of the central sound repository (empty = feature off)
+  [ -z "${SOUND_REPO_PATH}" ] || [ -d "${SOUND_REPO_PATH}" ] || sudo -u ${USER} mkdir -p "${SOUND_REPO_PATH}"
   [ -L ${EXTRACTED}/spectrogram.png ] || sudo -u ${USER} ln -sf ${RECS_DIR}/StreamData/spectrogram.png ${EXTRACTED}/spectrogram.png
 
   sudo -u ${USER} ln -fs $my_dir/exclude_species_list.txt $my_dir/scripts
@@ -427,6 +429,7 @@ install_services() {
   install_phpsysinfo
   install_livestream_service
   install_birdnet_mount
+  install_sound_repo_upload_service
   install_cleanup_cron
   install_weekly_cron
   install_automatic_update_cron

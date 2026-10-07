@@ -85,3 +85,6 @@ while read -r species; do
         -not -name "*.png" | wc -l)) remaining" || echo "failed ($?)"
 # rm to be changed to touch or echo if you want to test without deletion
 done <<<"$sanitized_names"
+
+# The sound-repo spool (US-38) only holds clips waiting for the upload: empty it while the upload is off
+[ -n "${SOUND_REPO_PATH:-}" ] && "$HOME"/BirdNET-Pi/scripts/sound_repo_clean.sh

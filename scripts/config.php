@@ -74,6 +74,11 @@ if(isset($_GET["latitude"])){
   $flickr_api_key = $_GET['flickr_api_key'];
   $flickr_filter_email = $_GET["flickr_filter_email"];
   $language = $_GET["language"];
+  // Portuguese has two name sets (owner 2026-10-07): pt_BR = CBRO (Brazil), pt_PT = the upstream
+  // Portugal names. The page asks which one when Portuguese is chosen; plain 'pt' is never stored.
+  if($language === 'pt') {
+    $language = (isset($_GET['language_pt']) && $_GET['language_pt'] === 'PT') ? 'pt_PT' : 'pt_BR';
+  }
   $info_site = $_GET["info_site"];
   $color_scheme = $_GET["color_scheme"];
   // US-41 follow-up (owner 2026-09-17): spectrogram height + palette live here, under "Spectrogram and colours"
@@ -85,7 +90,29 @@ if(isset($_GET["latitude"])){
   $spectrogram_contrast = isset($_GET['spectrogram_contrast']) && is_numeric($_GET['spectrogram_contrast']) ? max(0.5, min(2.0, round(floatval($_GET['spectrogram_contrast']), 2))) : null;
   $timezone = $_GET["timezone"];
   $model = $_GET["model"];
+  $known_models = array("BirdNET_GLOBAL_6K_V2.4_Model_FP16", "BirdNET_6K_GLOBAL_MODEL", "BirdNET-Plus_V3.0-preview3.1_Global_10K");
+  $shadow_model = isset($_GET['shadow_model']) && in_array($_GET['shadow_model'], $known_models) && $_GET['shadow_model'] != $model ? $_GET['shadow_model'] : '';
+  $shadow_min_conf = isset($_GET['shadow_min_conf']) && is_numeric($_GET['shadow_min_conf']) ? max(0.01, min(0.99, round(floatval($_GET['shadow_min_conf']), 2))) : 0.35;
   $sf_thresh = $_GET["sf_thresh"];
+  // US-47 (owner 2026-09-22): both models and their parameters live in one "Models" block.
+  // Official: CONFIDENCE / SENSITIVITY / SF_THRESH; shadow: SHADOW_MIN_CONF / SHADOW_SENS /
+  // SHADOW_GEO_THRESH; OVERLAP is shared (one recording pipeline, both models see the same windows).
+  $confidence = isset($_GET['confidence']) && is_numeric($_GET['confidence']) ? max(0.01, min(0.99, round(floatval($_GET['confidence']), 2))) : $config['CONFIDENCE'];
+  $sensitivity = isset($_GET['sensitivity']) && is_numeric($_GET['sensitivity']) ? max(0.5, min(1.5, round(floatval($_GET['sensitivity']), 2))) : $config['SENSITIVITY'];
+  $overlap = isset($_GET['overlap']) && is_numeric($_GET['overlap']) ? max(0.0, min(2.9, round(floatval($_GET['overlap']), 1))) : $config['OVERLAP'];
+  $shadow_sens = isset($_GET['shadow_sens']) && is_numeric($_GET['shadow_sens']) ? max(0.5, min(1.5, round(floatval($_GET['shadow_sens']), 2))) : ($config['SHADOW_SENS'] ?? 1.0);
+  $shadow_geo_thresh = isset($_GET['shadow_geo_thresh']) && is_numeric($_GET['shadow_geo_thresh']) ? max(0.0005, min(0.99, floatval($_GET['shadow_geo_thresh']))) : ($config['SHADOW_GEO_THRESH'] ?? 0.03);
+  // Shadow on/off flag: unchecked = the shadow model and its parameters stay configured
+  // but nothing is analysed by it (only the official model runs). Absent key = on.
+  $shadow_enabled = isset($_GET['shadow_enabled']) ? 1 : 0;
+  // Swap: the shadow model becomes the official one and vice versa, each keeping its own
+  // three parameters (what the owner did by hand on 2026-09-21). Only when a shadow is set.
+  if(isset($_GET['swap_models']) && $shadow_model != '') {
+    list($model, $shadow_model) = array($shadow_model, $model);
+    list($confidence, $shadow_min_conf) = array($shadow_min_conf, $confidence);
+    list($sensitivity, $shadow_sens) = array($shadow_sens, $sensitivity);
+    list($sf_thresh, $shadow_geo_thresh) = array($shadow_geo_thresh, $sf_thresh);
+  }
   if(isset($_GET['data_model_version'])) {
     $data_model_version = 2;
   } else {
@@ -100,6 +127,20 @@ if(isset($_GET["latitude"])){
     if(!in_array($notification_default_tier, ['muted', 'normal', 'rare'], true)) {
       $notification_default_tier = 'normal';
     }
+  }
+  // Regional include list (owner 2026-10-07): '' = none (default, outside Brazil) or one shipped list
+  // model/include_lists/<region>.txt, e.g. BR-SP; joins the user's include_species_list.txt
+  if(isset($_GET['include_region'])) {
+    $include_region = $_GET['include_region'];
+    if($include_region !== '' && !(preg_match('/^[A-Z]{2}-[A-Z]{2}$/', $include_region) && is_file($home."/BirdNET-Pi/model/include_lists/".$include_region.".txt"))) {
+      $include_region = '';
+    }
+  }
+  // US-40: station-side transport to the central sound repository (rclone remote + upload interval)
+  if(isset($_GET['sound_repo_upload_minutes'])) {
+    $sound_repo_upload_minutes = is_numeric($_GET['sound_repo_upload_minutes']) ? max(0, min(1440, intval($_GET['sound_repo_upload_minutes']))) : 5;
+    $sound_repo_remote = isset($_GET['sound_repo_remote']) ? trim($_GET['sound_repo_remote']) : '';
+    if(!preg_match('/^[A-Za-z0-9_-]+:[^\s"\'`$\\]*$/', $sound_repo_remote)) { $sound_repo_remote = ''; }
   }
   if(isset($_GET['apprise_notify_each_detection'])) {
     $apprise_notify_each_detection = 1;
@@ -216,6 +257,21 @@ if(isset($_GET["latitude"])){
   $contents = preg_replace("/FLICKR_FILTER_EMAIL=.*/", "FLICKR_FILTER_EMAIL=$flickr_filter_email", $contents);
   $contents = preg_replace("/APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES=.*/", "APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES=$minimum_time_limit", $contents);
   $contents = preg_replace("/MODEL=.*/", "MODEL=$model", $contents);
+  $contents = preg_replace("/^CONFIDENCE=.*/m", "CONFIDENCE=$confidence", $contents);
+  $contents = preg_replace("/^SENSITIVITY=.*/m", "SENSITIVITY=$sensitivity", $contents);
+  $contents = preg_replace("/^OVERLAP=.*/m", "OVERLAP=$overlap", $contents);
+  foreach (array('SHADOW_MODEL_NAME' => array($shadow_model, 'model that analyses the same recordings beside the official one, into scripts/birds_shadow.db only; empty = off'),
+                 'SHADOW_MIN_CONF' => array($shadow_min_conf, 'minimum confidence of a shadow model detection'),
+                 'SHADOW_SENS' => array($shadow_sens, 'sigmoid sensitivity of the shadow model'),
+                 'SHADOW_GEO_THRESH' => array($shadow_geo_thresh, 'location (species occurrence) threshold of the shadow model'),
+                 'SHADOW_ENABLED' => array($shadow_enabled, 'shadow switch: 1 = the shadow model analyses every recording, 0 = only the official model runs (shadow settings kept)')) as $key => $pair) {
+    list($val, $desc) = $pair;
+    if(preg_match("/^$key=/m", $contents)) {
+      $contents = preg_replace("/^$key=.*/m", "$key=$val", $contents);
+    } else {
+      $contents .= "\n## $key is the $desc\n$key=$val\n";
+    }
+  }
   $contents = preg_replace("/SF_THRESH=.*/", "SF_THRESH=$sf_thresh", $contents);
   $contents = preg_replace("/DATA_MODEL_VERSION=.*/", "DATA_MODEL_VERSION=$data_model_version", $contents);
   if(isset($only_notify_species_names)) { $contents = preg_replace("/APPRISE_ONLY_NOTIFY_SPECIES_NAMES=.*/", "APPRISE_ONLY_NOTIFY_SPECIES_NAMES=\"$only_notify_species_names\"", $contents); }
@@ -226,6 +282,24 @@ if(isset($_GET["latitude"])){
     } else {
       // Config written before this setting existed - append the new key
       $contents .= "\nNOTIFICATION_EMAIL=\"$notification_email\"\n";
+    }
+  }
+  if(isset($sound_repo_upload_minutes)) {
+    foreach (array('SOUND_REPO_REMOTE' => array("\"$sound_repo_remote\"", 'rclone destination of the central sound repository (remote:path; empty = deposits stay in SOUND_REPO_PATH)'),
+                   'SOUND_REPO_UPLOAD_MINUTES' => array($sound_repo_upload_minutes, 'interval in minutes between uploads of SOUND_REPO_PATH to SOUND_REPO_REMOTE (0 = never)')) as $key => $pair) {
+      list($val, $desc) = $pair;
+      if(preg_match("/^$key=/m", $contents)) {
+        $contents = preg_replace("/^$key=.*/m", "$key=$val", $contents);
+      } else {
+        $contents .= "\n## $key is the $desc\n$key=$val\n";
+      }
+    }
+  }
+  if(isset($include_region)) {
+    if(preg_match("/^INCLUDE_REGION=/m", $contents)) {
+      $contents = preg_replace("/^INCLUDE_REGION=.*/m", "INCLUDE_REGION=$include_region", $contents);
+    } else {
+      $contents .= "\n## INCLUDE_REGION is the regional include list (model/include_lists/<region>.txt, e.g. BR-SP); empty = none\nINCLUDE_REGION=$include_region\n";
     }
   }
   if(isset($notification_default_tier)) {
@@ -270,7 +344,7 @@ if(isset($_GET["latitude"])){
     fwrite($apprisebodyrare, $apprise_notification_body_rare);
   }
   if ($model != $config['MODEL'] || $language != $config['DATABASE_LANG']){
-    if(strlen($language) == 2){
+    if(strlen($language) == 2 || strlen($language) == 5){
       syslog_shell_exec("$home/BirdNET-Pi/scripts/install_language_label.sh", $user);
       syslog(LOG_INFO, "Successfully changed language to '$language' and model to '$model'");
     }
@@ -318,7 +392,7 @@ $config = get_config($force_reload=true);
 <script>
   document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('modelsel').addEventListener('change', function() {
-    if(this.value == "BirdNET_GLOBAL_6K_V2.4_Model_FP16"){ 
+    if(this.value == "BirdNET_GLOBAL_6K_V2.4_Model_FP16" || this.value == "BirdNET-Plus_V3.0-preview3.1_Global_10K"){ 
       document.getElementById("soft").style.display="unset";
     } else {
       document.getElementById("soft").style.display="none";
@@ -349,28 +423,65 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
 }
 </script>
       <table class="settingstable"><tr><td>
-      <h2>Model</h2>
-
-      <label for="model">Select a Model: </label>
-      <select id="modelsel" name="model" class="testbtn">
+      <h2>Models</h2>
       <?php
-      $models = array("BirdNET_GLOBAL_6K_V2.4_Model_FP16", "BirdNET_6K_GLOBAL_MODEL");
+      // US-47: official and shadow model side by side, each with its own minimum confidence,
+      // sigmoid sensitivity and location threshold; the overlap is shared. Config keys unchanged.
+      $models = array("BirdNET_GLOBAL_6K_V2.4_Model_FP16", "BirdNET_6K_GLOBAL_MODEL", "BirdNET-Plus_V3.0-preview3.1_Global_10K");
+      $model_defaults = array(
+        "BirdNET_GLOBAL_6K_V2.4_Model_FP16" => "upstream defaults: confidence 0.7, sensitivity 1.25, location 0.03",
+        "BirdNET_6K_GLOBAL_MODEL" => "legacy 6K model: confidence 0.7, sensitivity 1.25",
+        "BirdNET-Plus_V3.0-preview3.1_Global_10K" => "BirdNET Live recipe: confidence 0.35, sensitivity 1.0, location 0.03");
+      ?>
+      <table class="modelstable">
+        <tr><th></th><th>Model</th><th>Min. confidence<br><small>[0.01–0.99]</small></th><th>Sensitivity<br><small>[0.5–1.5]</small></th><th>Location threshold<br><small>[0.0005–0.99]</small></th></tr>
+        <tr>
+          <td><b>Official</b></td>
+          <td><select id="modelsel" name="model" class="testbtn">
+      <?php
       foreach($models as $modelName){
-          $isSelected = "";
-          if($config['MODEL'] == $modelName){
-            $isSelected = 'selected="selected"';
-          }
-
+          $isSelected = ($config['MODEL'] == $modelName) ? 'selected="selected"' : '';
           echo "<option value='{$modelName}' $isSelected>$modelName</option>";
         }
       ?>
-      </select>
+          </select></td>
+          <td><input name="confidence" type="number" style="width:5em;" min="0.01" max="0.99" step="0.01" value="<?php print($config['CONFIDENCE']);?>"/></td>
+          <td><input name="sensitivity" type="number" style="width:5em;" min="0.5" max="1.5" step="0.01" value="<?php print($config['SENSITIVITY']);?>"/></td>
+          <td><input name="sf_thresh" type="number" style="width:5em;" max="0.99" min="0.0005" step="any" value="<?php print($config['SF_THRESH']);?>"/></td>
+        </tr>
+        <tr>
+          <td><b>Shadow mode</b></td>
+          <td colspan="4"><label><input type="checkbox" id="shadow_enabled" name="shadow_enabled" value="1" onchange="document.getElementById('shadowrow').classList.toggle('shadow-off', !this.checked)" <?php if((string)($config['SHADOW_ENABLED'] ?? '1') !== '0') echo 'checked'; ?>> active</label> <small>— off: only the official model runs; the shadow settings below are kept (greyed)</small></td>
+        </tr>
+        <tr id="shadowrow" class="<?php if((string)($config['SHADOW_ENABLED'] ?? '1') === '0') echo 'shadow-off'; ?>">
+          <td><b>Shadow</b></td>
+          <td><select name="shadow_model" class="testbtn">
+        <option value="">None</option>
+      <?php
+      foreach($models as $modelName){
+          $isSelected = (($config['SHADOW_MODEL_NAME'] ?? '') == $modelName) ? 'selected="selected"' : '';
+          echo "<option value='{$modelName}' $isSelected>$modelName</option>";
+        }
+      ?>
+          </select></td>
+          <td><input name="shadow_min_conf" type="number" style="width:5em;" max="0.99" min="0.01" step="0.01" value="<?php print($config['SHADOW_MIN_CONF'] ?? '0.35');?>"/></td>
+          <td><input name="shadow_sens" type="number" style="width:5em;" min="0.5" max="1.5" step="0.01" value="<?php print($config['SHADOW_SENS'] ?? '1.0');?>"/></td>
+          <td><input name="shadow_geo_thresh" type="number" style="width:5em;" max="0.99" min="0.0005" step="any" value="<?php print($config['SHADOW_GEO_THRESH'] ?? $config['SF_THRESH']);?>"/></td>
+        </tr>
+        <tr>
+          <td><b>Overlap</b></td>
+          <td colspan="4"><input name="overlap" type="number" style="width:5em;" min="0.0" max="2.9" step="0.1" value="<?php print($config['OVERLAP']);?>"/> s <small>[0.0–2.9] — shared: the recording is cut once, both models analyse the same 3 s windows</small></td>
+        </tr>
+      </table>
+      <button type="submit" name="swap_models" value="1" class="testbtn" onclick="return confirm('Swap the official and the shadow model (each keeps its own confidence, sensitivity and location threshold)? Services restart.');">Swap official ↔ shadow</button>
+      <span onclick="document.getElementById('shadowhelp').style.display='unset'" style="text-decoration:underline;cursor:pointer">[more info]</span>
+      <p><small>Thresholds are NOT comparable between generations — <?php foreach($model_defaults as $m => $d) { echo "<b>" . str_replace("_", " ", preg_replace('/_Model_FP16|_Global_10K|-preview3\.1/', '', $m)) . "</b>: $d. "; } ?>Calibrate from a shadow period before judging false positives. Untick <b>active</b> to run only the official model while keeping the shadow settings; None removes the shadow model. The same three fields for the official model also appear in Advanced Settings (same keys).</small></p>
+      <p id="shadowhelp" style='display:none'>A shadow model analyses every recording right after the model selected above and writes what it would have detected to a database of its own (<code>scripts/birds_shadow.db</code>). It never extracts audio, never notifies and never touches the detections of the station, so a new model can be compared with the current one for weeks before switching. <b>BirdNET-Plus_V3.0-preview3.1_Global_10K</b> is the developer preview model of the BirdNET Live app (32 kHz, about 10,000 classes including amphibians, mammals and insects, its own location filter). It needs ONNX Runtime and is downloaded (about 80 MB) the first time it is used. It has no human voice class yet, so the privacy filter does not work while it is the selected model.</p>
       <br>
       <span <?php if($config['MODEL'] == "BirdNET_6K_GLOBAL_MODEL") { ?>style="display: none"<?php } ?> id="soft">
       <input type="checkbox" name="data_model_version" <?php if($config['DATA_MODEL_VERSION'] == 2) { echo "checked"; };?> >
       <label for="data_model_version">Species range model V2.4 - V2</label>  [ <a target="_blank" href="https://github.com/kahst/BirdNET-Analyzer/discussions/234">Info here</a> ]<br>
-      <label for="sf_thresh">Species Occurrence Frequency Threshold [0.0005, 0.99]: </label>
-      <input name="sf_thresh" type="number" style="width:5em;" max="0.99" min="0.0005" step="any" value="<?php print($config['SF_THRESH']);?>"/> <span onclick="document.getElementById('sfhelp').style.display='unset'" style="text-decoration:underline;cursor:pointer">[more info]</span><br>
+      <label>Species Occurrence Frequency Threshold = the "Location threshold" column of the Models table above.</label> <span onclick="document.getElementById('sfhelp').style.display='unset'" style="text-decoration:underline;cursor:pointer">[more info]</span><br>
       <p id="sfhelp" style='display:none'>This value is used by the model to constrain the list of possible species that it will try to detect, given the minimum occurrence frequency. A 0.03 threshold means that for a species to be included in this list, it needs to, on average, be seen on at least 3% of historically submitted eBird checklists for your given lat/lon/current week of year. So, the lower the threshold, the rarer the species it will include.<br><img style='max-width:100%;padding-top:5px;padding-bottom:5px' alt="BirdNET-Pi new model detection flowchart" title="BirdNET-Pi new model detection flowchart" src="images/BirdNET-Pi_nm_flowchart.alpha.png">
         <br>If you'd like to tinker with this threshold value and see which species make it onto the list, <?php if($config['MODEL'] == "BirdNET_6K_GLOBAL_MODEL"){ ?>please click "Update Settings" at the very bottom of this page to install the appropriate label file, then come back here and you'll be able to use the Species List Tester.<?php } else { ?>you can use this tool: <button type="button" class="testbtn" id="openModal">Species List Tester</button><?php } ?></p>
       </span>
@@ -470,6 +581,8 @@ function runProcess() {
 </script>
 
       <dl>
+      <dt>BirdNET-Plus_V3.0-preview3.1_Global_10K (2026)</dt>
+      <dd id="ddnewline">Developer preview of the next BirdNET generation, the model of the BirdNET Live app. Try it as a shadow model first.</dd><br>
       <dt>BirdNET_GLOBAL_6K_V2.4_Model_FP16 (2023)</dt>
       <br>
       <dd id="ddnewline">This is the BirdNET-Analyzer model, the most advanced BirdNET model to date. Currently it  supports over 6,000 species worldwide, giving quite good species coverage for people in most of the world.</dd>
@@ -499,8 +612,31 @@ function runProcess() {
           <td><input name="longitude" type="number" style="width:6em;" max="180" min="-180" step="0.0001" value="<?php print($config['LONGITUDE']);?>" required/></td>
           <td></td>
         </tr>
+        <tr>
+          <td><label for="include_region">Brazilian states include list:</label></td>
+          <td><select name="include_region" id="include_region">
+            <option value="">None (default)</option>
+            <?php
+            $br_states = ['AC' => 'Acre', 'AL' => 'Alagoas', 'AP' => 'Amapá', 'AM' => 'Amazonas', 'BA' => 'Bahia', 'CE' => 'Ceará',
+                          'DF' => 'Distrito Federal', 'ES' => 'Espírito Santo', 'GO' => 'Goiás', 'MA' => 'Maranhão', 'MT' => 'Mato Grosso',
+                          'MS' => 'Mato Grosso do Sul', 'MG' => 'Minas Gerais', 'PA' => 'Pará', 'PB' => 'Paraíba', 'PR' => 'Paraná',
+                          'PE' => 'Pernambuco', 'PI' => 'Piauí', 'RJ' => 'Rio de Janeiro', 'RN' => 'Rio Grande do Norte',
+                          'RS' => 'Rio Grande do Sul', 'RO' => 'Rondônia', 'RR' => 'Roraima', 'SC' => 'Santa Catarina', 'SP' => 'São Paulo',
+                          'SE' => 'Sergipe', 'TO' => 'Tocantins'];
+            $cur_region = $config['INCLUDE_REGION'] ?? '';
+            foreach ($br_states as $uf => $uf_name) {
+              $region = "BR-$uf";
+              if (!is_file($home."/BirdNET-Pi/model/include_lists/$region.txt")) continue;
+              $sel = $cur_region === $region ? ' selected' : '';
+              echo "<option value='$region'$sel>$uf_name ($uf)</option>";
+            }
+            ?>
+          </select></td>
+          <td>(Optional)</td>
+        </tr>
       </table>
       <p>Set your Latitude and Longitude to 4 decimal places. Get your coordinates <a href="https://latlong.net" target="_blank">here</a>.</p>
+      <p>Brazilian states include list: only the bird species with WikiAves records in the chosen state are accepted (names per CBRO; non-bird classes are not filtered). It adds to your own Included Species list. Leave <i>None</i> outside Brazil.</p>
       </td></tr></table><br>
       <table class="settingstable"><tr><td>
       <h2>BirdWeather</h2>
@@ -521,6 +657,19 @@ function runProcess() {
       <?php $srl = $config['SOUND_REPO_LINK'] ?? ''; ?>
       <label>Central sound repository: </label>
       <?php if($srl != '') { echo "<a href='" . htmlspecialchars($srl, ENT_QUOTES) . "' target='_blank'>" . htmlspecialchars($srl) . "</a>"; } else { echo "<i>not configured on this station</i>"; } ?><br>
+      <?php $srm = $config['SOUND_REPO_REMOTE'] ?? ''; $sru = $config['SOUND_REPO_UPLOAD_MINUTES'] ?? '5'; ?>
+      <table class="settingstable plaintable">
+        <tr>
+          <td><label for="sound_repo_remote">rclone remote (remote:path):</label></td>
+          <td><input name="sound_repo_remote" type="text" style="width:14em;" value="<?php print(htmlspecialchars($srm, ENT_QUOTES));?>" pattern="[A-Za-z0-9_\-]+:.*" placeholder="birddb:"/></td>
+          <td>(empty = no upload, deposits stay in the local spool)</td>
+        </tr>
+        <tr>
+          <td><label for="sound_repo_upload_minutes">Upload every:</label></td>
+          <td><input name="sound_repo_upload_minutes" type="number" style="width:5em;" min="0" max="1440" step="1" value="<?php print(intval($sru));?>"/> minutes</td>
+          <td>(0 = never; the spool is moved to the remote at this interval)</td>
+        </tr>
+      </table>
       <p><b>How to contribute from your own station (one-time setup):</b></p>
       <ol>
         <li>Run <code>rclone config</code> on your station and create a remote named <code>birddb</code>
@@ -740,7 +889,7 @@ mailto://{user}:{password}@gmail.com
         // Create options for each language
         foreach($langs as $langTag => $langName){
           $isSelected = "";
-          if($config['DATABASE_LANG'] == $langTag){
+          if($config['DATABASE_LANG'] == $langTag || ($langTag == 'pt' && in_array($config['DATABASE_LANG'], array('pt', 'pt_BR', 'pt_PT')))){
             $isSelected = 'selected="selected"';
           }
 
@@ -749,6 +898,19 @@ mailto://{user}:{password}@gmail.com
       ?>
 
       </select>
+      <?php $pt_variant = ($config['DATABASE_LANG'] ?? '') === 'pt_PT' ? 'PT' : 'BR'; ?>
+      <span id="language_pt_box" style="<?php echo in_array($config['DATABASE_LANG'] ?? '', array('pt', 'pt_BR', 'pt_PT')) ? '' : 'display:none'; ?>">
+        <label for="language_pt">&nbsp;Portuguese names: </label>
+        <select name="language_pt" id="language_pt" class="testbtn">
+          <option value="BR"<?php echo $pt_variant === 'BR' ? ' selected' : ''; ?>>Brazil (CBRO)</option>
+          <option value="PT"<?php echo $pt_variant === 'PT' ? ' selected' : ''; ?>>Portugal</option>
+        </select>
+      </span>
+      <script>
+        document.querySelector('select[name="language"]').addEventListener('change', function () {
+          document.getElementById('language_pt_box').style.display = this.value === 'pt' ? '' : 'none';
+        });
+      </script>
       <p>! Only modify this at initial setup !</p>
       </td></tr></table>
       <br>

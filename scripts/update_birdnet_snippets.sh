@@ -130,6 +130,17 @@ if ! grep -E '^SOUND_REPO_LINK=' /etc/birdnet/birdnet.conf &>/dev/null;then
     echo 'SOUND_REPO_LINK=""' >> /etc/birdnet/birdnet.conf
 fi
 
+# US-40: station-side upload of the sound-repo spool
+if ! grep -E '^SOUND_REPO_REMOTE=' /etc/birdnet/birdnet.conf &>/dev/null;then
+    echo '## SOUND_REPO_REMOTE is the rclone destination of the central sound repository (remote:path; empty = deposits stay in SOUND_REPO_PATH)' >> /etc/birdnet/birdnet.conf
+    echo 'SOUND_REPO_REMOTE=""' >> /etc/birdnet/birdnet.conf
+fi
+
+if ! grep -E '^SOUND_REPO_UPLOAD_MINUTES=' /etc/birdnet/birdnet.conf &>/dev/null;then
+    echo '## SOUND_REPO_UPLOAD_MINUTES is the interval in minutes between uploads of SOUND_REPO_PATH to SOUND_REPO_REMOTE (0 = never)' >> /etc/birdnet/birdnet.conf
+    echo 'SOUND_REPO_UPLOAD_MINUTES=5' >> /etc/birdnet/birdnet.conf
+fi
+
 if ! grep -E '^BIRDNET_USER=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "## BIRDNET_USER is for scripts to easily find where BirdNET-Pi is installed" >> /etc/birdnet/birdnet.conf
   echo "## DO NOT EDIT!" >> /etc/birdnet/birdnet.conf
@@ -189,6 +200,12 @@ if grep -E '^DATABASE_LANG=zh$' /etc/birdnet/birdnet.conf &>/dev/null;then
   sed -i --follow-symlinks -E 's/^DATABASE_LANG=zh/DATABASE_LANG=zh_CN/' /etc/birdnet/birdnet.conf
   install_language_label.sh
 fi
+# Portuguese split in two name sets (2026-10-07): labels_pt.json (upstream, Portugal names)
+# became labels_pt_PT.json and labels_pt_BR.json carries the CBRO names. A station on the
+# old 'pt' keeps exactly the names it had.
+if grep -E '^DATABASE_LANG=pt$' /etc/birdnet/birdnet.conf &>/dev/null;then
+  sed -i --follow-symlinks -E 's/^DATABASE_LANG=pt$/DATABASE_LANG=pt_PT/' /etc/birdnet/birdnet.conf
+fi
 
 [ -d $RECS_DIR/StreamData ] || sudo_with_user mkdir -p $RECS_DIR/StreamData
 [ -L ${EXTRACTED}/spectrogram.png ] || sudo_with_user ln -sf ${RECS_DIR}/StreamData/spectrogram.png ${EXTRACTED}/spectrogram.png
@@ -247,6 +264,14 @@ if ! [ -f "$HOME/BirdNET-Pi/templates/$TMP_MOUNT" ]; then
    install_birdnet_mount
    chown $USER:$USER "$HOME/BirdNET-Pi/templates/$TMP_MOUNT"
 fi
+
+# US-40: sound-repo upload timer (new unit on an existing station)
+if ! [ -f "$HOME/BirdNET-Pi/templates/sound_repo_upload.timer" ]; then
+  install_sound_repo_upload_service
+  chown $USER:$USER "$HOME/BirdNET-Pi/templates/sound_repo_upload.service" "$HOME/BirdNET-Pi/templates/sound_repo_upload.timer"
+  systemctl daemon-reload && systemctl start sound_repo_upload.timer
+fi
+[ -z "${SOUND_REPO_PATH}" ] || [ -d "${SOUND_REPO_PATH}" ] || sudo_with_user mkdir -p "${SOUND_REPO_PATH}"
 
 if grep -q -e '-P log' $HOME/BirdNET-Pi/templates/birdnet_log.service ; then
   sed -i "s/-P log/--path log/" ~/BirdNET-Pi/templates/birdnet_log.service
