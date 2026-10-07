@@ -43,8 +43,9 @@ $confirm_file   = __DIR__ . '/confirmed_species_list.txt';
 $exclude_file   = __DIR__ . '/exclude_species_list.txt';
 $whitelist_file = __DIR__ . '/whitelist_species_list.txt';
 $tiers_file     = dirname(__DIR__) . '/notification_tiers.txt';
+$conf_file      = dirname(__DIR__) . '/species_confidence.txt';
 
-foreach ([$confirm_file, $exclude_file, $whitelist_file, $tiers_file] as $file) {
+foreach ([$confirm_file, $exclude_file, $whitelist_file, $tiers_file, $conf_file] as $file) {
     if (!file_exists($file)) touch($file);
 }
 
@@ -55,12 +56,20 @@ foreach (file_exists($tiers_file) ? file($tiers_file, FILE_IGNORE_NEW_LINES | FI
     if ($t_sci !== '' && $t_tier !== '') $species_tiers[$t_sci] = strtolower($t_tier);
 }
 
+/* US-48: per-species minimum confidence, 'Sci_Name=0.60' per listed species */
+$species_conf = [];
+foreach (file_exists($conf_file) ? file($conf_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [] as $l) {
+    [$c_sci, $c_val] = array_pad(explode('=', trim($l), 2), 2, '');
+    if ($c_sci !== '' && is_numeric($c_val)) $species_conf[$c_sci] = (float)$c_val;
+}
+
 $confirmed_species   = file_exists($confirm_file)   ? file($confirm_file,   FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
 $excluded_species = file_exists($exclude_file) ? array_map(fn($l) => explode('_', trim($l), 2)[0], file($exclude_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : [];
 $whitelisted_species = file_exists($whitelist_file) ? array_map(fn($l) => explode('_', trim($l), 2)[0], file($whitelist_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : [];
 
 $config    = get_config();
 $sf_thresh = isset($config['SF_THRESH']) ? (float)$config['SF_THRESH'] : 0.0;
+$global_conf = isset($config['CONFIDENCE']) ? (float)$config['CONFIDENCE'] : 0.7;
 
 /* ---------- helpers ---------- */
 function join_path(...$parts): string { return preg_replace('#/+#', '/', implode('/', $parts)); }
@@ -105,6 +114,21 @@ if (isset($_GET['settier'], $_GET['species'], $_GET['tier'])) {
   sort($lines, SORT_STRING);
   file_put_contents($tiers_file, implode("\n", $lines) . (empty($lines) ? "" : "\n"), LOCK_EX);
   header('Content-Type: text/plain'); echo 'OK'; exit;
+}
+
+/* ---------- set per-species minimum confidence (US-48) ---------- */
+if (isset($_GET['setconf'], $_GET['species'], $_GET['value'])) {
+  header('Content-Type: text/plain');
+  $species = htmlspecialchars_decode($_GET['species'], ENT_QUOTES);
+  if ($species === '' || strpbrk($species, "=\n\r") !== false) { echo 'Invalid species'; exit; }
+  $value = trim(str_replace(',', '.', $_GET['value']));
+  if ($value !== '' && (!is_numeric($value) || (float)$value < 0.01 || (float)$value > 0.99)) { echo 'Invalid value (0.01 - 0.99, empty = global)'; exit; }
+  $lines = file_exists($conf_file) ? file($conf_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
+  $lines = array_values(array_filter($lines, fn($l) => explode('=', trim($l), 2)[0] !== $species));
+  if ($value !== '') $lines[] = $species . '=' . sprintf('%.2f', round((float)$value, 2));
+  sort($lines, SORT_STRING);
+  file_put_contents($conf_file, implode("\n", $lines) . (empty($lines) ? "" : "\n"), LOCK_EX);
+  echo 'OK'; exit;
 }
 
 /* ---------- toggle exclude/whitelist/confirmed ---------- */
@@ -169,6 +193,13 @@ if (isset($_GET['delete'])) {
     file_put_contents($tiers_file, implode("\n", $t_lines) . (empty($t_lines) ? "" : "\n"), LOCK_EX);
   }
 
+  if ($info['sci'] !== null && file_exists($conf_file)) {
+    $identifier = $info['sci'];
+    $c_lines = file($conf_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $c_lines = array_values(array_filter($c_lines, fn($l) => explode('=', trim($l), 2)[0] !== $identifier));
+    file_put_contents($conf_file, implode("\n", $c_lines) . (empty($c_lines) ? "" : "\n"), LOCK_EX);
+  }
+
   echo json_encode(['lines' => $lines_deleted, 'files' => $deleted]); exit;
 }
 
@@ -215,6 +246,7 @@ $result = $db->query($sql);
         <th onclick="sortTable(8)">Excluded</th>
         <th onclick="sortTable(9)">Whitelisted</th>
         <th onclick="sortTable(10)">Notification</th>
+        <th onclick="sortTable(11)" title="Minimum confidence for this species; empty = the global Minimum Confidence (<?php echo htmlspecialchars(sprintf('%.2f', $global_conf)); ?>)">Min. Confidence</th>
         <th>Delete</th>
       </tr>
     </thead>
@@ -262,6 +294,14 @@ $result = $db->query($sql);
   }
   $tier_cell .= "</select>";
 
+  $own_conf  = $species_conf[$identifier_sci] ?? null;
+  $conf_sort = sprintf('%.2f', $own_conf ?? $global_conf);
+  $conf_val  = $own_conf === null ? '' : sprintf('%.2f', $own_conf);
+  $conf_cell = "<input type='number' class='minconf' min='0.01' max='0.99' step='0.01' style='width:5em'"
+             . " placeholder='" . sprintf('%.2f', $global_conf) . "' value='{$conf_val}'"
+             . " title='Empty = global " . sprintf('%.2f', $global_conf) . "'"
+             . " onchange=\"setConf('{$identifier_sci_js}', this)\">";
+
   $sciname_raw = $row['Sci_Name'];
     $info_url = get_info_url($sciname_raw);
     if (!empty($info_url)) {
@@ -283,6 +323,7 @@ $result = $db->query($sql);
      . "<td data-sort='".($is_excluded?0:1)."'>".$excl_cell."</td>"
      . "<td data-sort='".($is_whitelisted?0:1)."'>".$white_cell."</td>"
      . "<td data-sort='{$species_tier}'>".$tier_cell."</td>"
+     . "<td data-sort='{$conf_sort}'>".$conf_cell."</td>"
      . "<td><img style='cursor:pointer;max-width:20px' src='images/delete.svg' onclick=\"deleteSpecies('".addslashes($row['Sci_Name'])." + ".addslashes($row['Com_Name'])."')\"></td>"
      . "</tr>";
 } ?>
@@ -372,6 +413,17 @@ window.addEventListener('scroll', function() {
 /* ---------- toggles / delete ---------- */
 function setTier(species, tier) {
   get(scriptsBase + 'species_tools.php?settier=1&species=' + encodeURIComponent(species) + '&tier=' + encodeURIComponent(tier));
+}
+function setConf(species, input) {
+  const value = input.value.trim();
+  get(scriptsBase + 'species_tools.php?setconf=1&species=' + encodeURIComponent(species) + '&value=' + encodeURIComponent(value))
+    .then(t => {
+      const ok = t.trim() === 'OK';
+      input.style.outline = ok ? '2px solid green' : '2px solid red';
+      input.title = ok ? (value === '' ? 'Global value in use' : 'Saved: ' + value) : t.trim();
+      if (ok) input.parentElement.dataset.sort = value === '' ? input.placeholder : parseFloat(value).toFixed(2);
+      setTimeout(() => { input.style.outline = ''; }, 1500);
+    });
 }
 function toggleSpecies(list, species, action) {
   get(scriptsBase + 'species_tools.php?toggle=' + list + '&species=' + encodeURIComponent(species) + '&action=' + action)

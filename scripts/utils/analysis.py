@@ -25,6 +25,23 @@ def loadCustomSpeciesList(path):
     return species_list
 
 
+def loadSpeciesConfidence(path):
+    # US-48: per-species minimum confidence, one 'Sci_Name=0.60' per line
+    # (written by the Species Management page); unlisted species use CONFIDENCE
+    thresholds = {}
+    if os.path.isfile(path):
+        with open(path, 'r') as f:
+            for line in f:
+                sci_name, _, value = line.strip().partition('=')
+                try:
+                    value = float(value)
+                except ValueError:
+                    continue
+                if sci_name and 0.0 < value < 1.0:
+                    thresholds[sci_name] = value
+    return thresholds
+
+
 def splitSignal(sig, rate, overlap, seconds=3.0, minlen=1.5):
     # Split signal with overlap
     sig_splits = []
@@ -148,8 +165,10 @@ def run_analysis(file):
     include_list = loadCustomSpeciesList(os.path.expanduser("~/BirdNET-Pi/include_species_list.txt"))
     exclude_list = loadCustomSpeciesList(os.path.expanduser("~/BirdNET-Pi/exclude_species_list.txt"))
     whitelist_list = loadCustomSpeciesList(os.path.expanduser("~/BirdNET-Pi/whitelist_species_list.txt"))
+    species_confidence = loadSpeciesConfidence(os.path.expanduser("~/BirdNET-Pi/species_confidence.txt"))
 
     conf = get_settings()
+    min_confidence = conf.getfloat('CONFIDENCE')
     model = load_global_model()
     names = get_language(conf['DATABASE_LANG'])
 
@@ -168,7 +187,7 @@ def run_analysis(file):
         sci_name, confidence = entries[0]
         log.info('%s-(%s_%s, %s)', time_slot, sci_name, names.get(sci_name, sci_name), confidence)
         for sci_name, confidence in entries:
-            if confidence >= conf.getfloat('CONFIDENCE'):
+            if confidence >= species_confidence.get(sci_name, min_confidence):
                 com_name = names.get(sci_name, sci_name)
                 if sci_name not in include_list and len(include_list) != 0:
                     log.warning("Excluded as INCLUDE_LIST is active but this species is not in it: %s %s", sci_name, com_name)
