@@ -43,28 +43,78 @@ review its results:
 
 ### How to get this edition
 
-**1. Upgrade package over a standard installation (the verified procedure).** Each
-[release](https://github.com/EvaldoOliveira/BirdNET-Pi/releases) ships a zip of full-replacement files for a
-Nachtzuster installation of the v0.11 line (base `88985a3`), its `sha256` and a README with the steps: back up,
-`unzip -o` over `~/BirdNET-Pi`, run `update_birdnet_snippets.sh` (append-only backfill of the new configuration
-keys), `restart_services.sh`. No service units, no database changes, no model changes. A later update against
-upstream overwrites these files — re-apply the pack, or use option 2.
+There are two ways:
 
-**2. Run this repository directly.** On an installed BirdNET-Pi:
+- **Option 1 — New installation:** you start from a blank microSD card. Recommended.
+- **Option 2 — Upgrade:** you already run Nachtzuster's BirdNET-Pi and want to switch it to this edition.
+
+---
+
+#### Option 1 — New installation (blank microSD card)
+
+**You need:** a Raspberry Pi 5 or 4B, a microSD card of 32 GB or more, the official power supply, a USB microphone,
+internet access (Ethernet or Wi-Fi) and a computer to prepare the card. It takes about 30–45 minutes.
+
+**1. Prepare the card.**
+Install [Raspberry Pi Imager](https://www.raspberrypi.com/software/) on your computer, insert the card and choose:
+- **Device:** your Raspberry Pi model.
+- **Operating system:** *Raspberry Pi OS (64-bit)* — the *Lite* version (under *Raspberry Pi OS (other)*) is enough.
+- **Storage:** your microSD card.
+
+When the Imager asks about **OS customisation**, click **Edit settings** and set:
+- a **hostname**, e.g. `birdnetpi` (the station will be at `http://birdnetpi.local`);
+- a **username and password** (remember the password);
+- your **Wi-Fi** name, password and country (skip if you use a cable);
+- your **time zone**;
+- in the **Services** tab: **Enable SSH**.
+
+Write the card.
+
+**2. Start the Raspberry Pi.**
+Put the card in the Pi, plug in the USB microphone, then the power. Wait 2–3 minutes.
+
+**3. Connect to it** from your computer's terminal (Windows: *Terminal* or *PowerShell*):
 ```
-cd ~/BirdNET-Pi
-git remote add evaldo https://github.com/EvaldoOliveira/BirdNET-Pi.git
-./scripts/update_birdnet.sh -r evaldo -b main        # or -b v0.3.0 for a fixed release
+ssh <username>@birdnetpi.local
 ```
-Rollback is the same command with the previous tag (or with your original remote).
+If that name does not work, use the Pi's IP address (look it up in your router).
 
-**3. New installation.** The installer described below clones Nachtzuster's repository; complete that installation,
-then follow option 1 or 2.
+**4. Install.** Copy and run this command:
+```
+curl -fsSL https://raw.githubusercontent.com/EvaldoOliveira/BirdNET-Pi/stable/newinstaller.sh | bash
+```
+> Until version 0.5.0 is released, use this command instead:
+> `curl -fsSL https://raw.githubusercontent.com/EvaldoOliveira/BirdNET-Pi/main/newinstaller.sh | BIRDNET_BRANCH=main bash`
 
-Back up first (`Tools` > `System Controls` > `Backup`). The optional **Brazilian species base (BR-SP)** published
-with [v0.2.0](https://github.com/EvaldoOliveira/BirdNET-Pi/releases/tag/v0.2.0) — regional include/exclude/whitelist
-lists and CBRO Portuguese labels for the V2.4 model — overwrites your lists and labels: read its README before
-applying it.
+The installer asks your password once, then a few questions. Press **Enter** to accept each suggested answer:
+station name, location (check the latitude/longitude — get yours at [latlong.net](https://www.latlong.net)),
+time zone, model (**V3** recommended), language of the bird names, web password, and optionally a BirdWeather ID
+and a notification address. The microphone is set up automatically. At the end the Pi restarts by itself.
+
+**5. Open the station** in a browser on the same network: **`http://birdnetpi.local`**.
+If the installer did not ask the questions, a setup page asks them now. Detections appear on the *Overview*
+within a few minutes.
+
+**Updates:** *Tools › System Controls › Update* installs new released versions.
+
+*Optional, to prepare several stations without typing:* copy
+[`docs/birdnet-setup.conf.example`](https://raw.githubusercontent.com/EvaldoOliveira/BirdNET-Pi/main/docs/birdnet-setup.conf.example)
+to the card's *bootfs* drive as `birdnet-setup.conf`, fill in the answers, then do steps 2–5.
+
+---
+
+#### Option 2 — Upgrade an existing Nachtzuster installation
+
+1. Make a backup: *Tools › System Controls › Backup*.
+2. Connect to the station (`ssh <username>@<station address>`) and run:
+   ```
+   cd ~/BirdNET-Pi
+   git remote add evaldo https://github.com/EvaldoOliveira/BirdNET-Pi.git
+   ./scripts/update_birdnet.sh -r evaldo -b stable
+   ```
+3. Open the station in the browser. Your detections and settings are kept.
+
+To go back to Nachtzuster's version: `./scripts/update_birdnet.sh -r origin -b main`.
 
 ### Reporting issues
 
@@ -152,8 +202,8 @@ The installer takes care of any and all necessary updates, so you can run that a
 
 The installation creates a log in `$HOME/installation-$(date "+%F").txt`.
 
-> **Note for this edition:** the command above installs Nachtzuster's BirdNET-Pi. To move the installation to this
-> edition afterwards, see [How to get this edition](#how-to-get-this-edition).
+> **Note for this edition:** the command above installs Nachtzuster's BirdNET-Pi. To install this edition from a
+> blank card, or to move an existing installation to it, see [How to get this edition](#how-to-get-this-edition).
 
 ## Access
 The BirdNET-Pi can be accessed from any web browser on the same network:
@@ -176,9 +226,9 @@ Please take a look at the [wiki](https://github.com/mcguirepr89/BirdNET-Pi/wiki)
 
 Use the web interface and go to "Tools" > "System Controls" > "Update". If you encounter any issues with that, or suspect that the update did not work for some reason, please save its output and post it in an issue where we can help.
 
-> **Note for this edition:** the web updater follows the `origin` remote of the installation. An installation that
-> uses the upgrade pack still updates from Nachtzuster (and loses the pack's files on update); one switched with
-> `update_birdnet.sh -r evaldo -b main` is updated by running that same command again.
+> **Note for this edition:** the web updater follows the release channel set by `UPDATE_BRANCH` in `birdnet.conf`
+> (`stable` by default) on the `origin` remote of the installation; an installation switched with
+> `update_birdnet.sh -r evaldo -b stable` is updated by running that same command again.
 
 ## Backup and Restore
 Use the web interface and go to "Tools" > "System Controls" > "Backup" or "Restore". Backup/Restore is primary meant for migrating your data for one system to another. Since the time required to create or restore a backup depends on the size of the data set and the speed of the storage, this could take quite a while.
