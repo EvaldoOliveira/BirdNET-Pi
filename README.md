@@ -26,26 +26,19 @@ documented versions.
 This edition extends BirdNET-Pi with capabilities intended for long-term acoustic monitoring and for the people who
 review its results:
 
-1. **Support for new model generations, and models operated in parallel.** Additional classifiers can be selected
+1. **Support for V3 model, and pararel use of shadow models.** Additional classifiers can be selected
    beside the BirdNET models shipped upstream — currently BirdNET+ V3.0, the developer-preview model of the BirdNET
    Live application, running on ONNX Runtime. A second model may analyse every recording in parallel with the official
-   one (*shadow mode*), so that two model generations are compared on identical field audio before any change of the
+   one (*shadow mode*), if the Pi Hardware supports, so that two model generations are compared on identical field audio before any change of the
    official model. *(In verification on the pilot station — see below.)*
-2. **Collection of sounds into an external database.** Each detection can be deposited, at detection time, in an
-   external repository as an audio clip with a machine-readable record (station, location, time, species, model and
-   analysis parameters, checksum), in a form suitable for validation and for the training of future models.
-3. **Continuous raw recording of the dawn chorus.** Long, unprocessed recordings covering the whole dawn period are
+2. **Support for paralel Continuous raw recording of the dawn chorus.** Long, unprocessed recordings covering the whole dawn period are
    made while the analysis keeps running on the same microphone, so that the complete soundscape is preserved for
    later study and not only the detected segments and also to be processed by Raven.
-4. **Identification from a mobile device.** Detections are announced by Telegram, e-mail or any other messaging
+3. **Sound from detection sent in notification.** Detections are announced by Telegram, e-mail or any other messaging
    channel supported by Apprise, **with the recording attached**, so that a detection can be heard and confirmed on a
    telephone within moments. Species are assigned to notification tiers, each with its own policy.
 5. **A configurable live spectrogram.** Colour palettes and colour sensitivity (floor, range, contrast) are adjustable
    while the display runs.
-6. **Regional fine-tuning of the species list.** Station lists and common names can be curated per region. The first
-   curated base follows the checklist of the *Comitê Brasileiro de Registros Ornitológicos* (**CBRO**), with Portuguese
-   names; the reference list is to become selectable, with the **eBird/Clements Checklist** and **AviList** supported
-   as well, followed by IOC and SACC.
 
 Three principles govern the work. The product remains **generic**: no script is tied to a particular station, and
 site-specific material (species lists, labels, thresholds, notification channels, credentials) is confined to a
@@ -53,78 +46,6 @@ site-specific material (species lists, labels, thresholds, notification channels
 criteria**, verified on a pilot station under continuous operation before it is merged and tagged. Upstream changes
 are adopted individually, and corrections of general interest are **returned upstream** as pull requests (the first:
 [Nachtzuster#650](https://github.com/Nachtzuster/BirdNET-Pi/pull/650)).
-
-**Pilot station.** *SaoPaulo*, São Paulo, Brazil: Raspberry Pi 4 Model B, USB microphone, Debian 13, Python 3.13,
-recording and analysing continuously.
-
-**Status.** Versions `v0.x` are published as GitHub pre-releases. They operate the pilot station daily but have not yet
-been evaluated by third parties; reports are welcome through the issue tracker. Support is provided on a best-effort
-basis.
-
-**Project record.** Requirements, defects and their history are kept in the
-[issue tracker](https://github.com/EvaldoOliveira/BirdNET-Pi/issues) (issue `#nn` = user story `US-nn`) and on the
-[project board](https://github.com/users/EvaldoOliveira/projects/7); each release carries its notes, an upgrade
-package and a checksum.
-
-### Delivered user stories
-
-| Story | Title | Outcome, as verified on the pilot station | Release |
-|---|---|---|---|
-| **Collection of sounds and raw recording** | | | |
-| [US-38](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/38) | Sound repository fed at detection time, in a training-ready format | Optional and disabled by default. Each detection is written, beside the BirdWeather upload, as an audio clip with a sidecar JSON record — unique identifier, station and location, timestamp, species, model and analysis parameters, tier, checksum — under contributor terms. A collector validates every deposit (format, duration, record, checksum) before archiving it. | v0.1.0 |
-| [US-34](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/34) | Simultaneous capture by BirdNET-Pi and a field recorder | The microphone is shared through an ALSA `dsnoop` device, so that long unattended recordings are made while the analysis continues; verified over a six-hour dawn session with uninterrupted detection. *Station integration.* | — |
-| **Notification with audio, for identification on a mobile device** | | | |
-| [US-32](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/32) | Notification with the recording attached | A notification may carry the detection clip (`$audio`) and the species image (`$image`); attachments receive a stable, ASCII-safe name. Generic placeholders (`$email`, `$user`, `$hostname`, `$token1..$token20` from a private store) keep personal data out of the configuration shipped with the product. | v0.1.0 |
-| [US-37](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/37) | Species tiers, each with its own notification policy | Every species is assigned to a tier — *Muted*, *Normal* or *Rare* — in Species Management. Each tier has its own channels, title and body; *Rare* reports every recording, independently of the filters and of the rate limit. | v0.1.0 |
-| [US-17](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/17) | Notifications through Telegram | Telegram delivery through Apprise, with the credentials held outside the repository; first-detection-of-the-day and rare-in-the-week triggers, per-species rate limit, weekly report. | v0.1.0 |
-| [US-10](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/10) | Alert for a species new to the station | Satisfied by US-17 and US-37: a first detection of the year is reported, and a species of the *Rare* tier is reported with its recording. | v0.1.0 |
-| **Live spectrogram** | | | |
-| [US-01](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/1) | Live spectrogram fits the page, with configurable height | The live spectrogram occupies a configurable share of the page and gains a frequency axis; the live species overlay, previously inoperative on stations with a USB microphone (non-RTSP), was corrected and the correction offered upstream (Nachtzuster#650). | v0.1.0 |
-| [US-41](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/41) | Spectrogram palette and height on the Spectrogram page | Six named colour palettes for the live display and a height control, available on the page itself and in the settings. | v0.3.0 |
-| [US-42](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/42) | Spectrogram colour sensitivity | Floor, range and contrast of the colour scale adjustable while the display runs; a silent mode that renders the display without audio output; species labels legible on every palette. | v0.3.0 |
-| **Regional species lists and names** | | | |
-| — | Curated regional species base with CBRO names | An optional package for São Paulo state, Brazil: include, exclude and whitelist lists, and Portuguese common names following the CBRO checklist for the BirdNET V2.4 classes. It is the content of the pilot's station layer, published for other stations of the region. | v0.2.0 |
-| [#43](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/43) | Defect: an update discarded the station labels | `update_birdnet.sh` restored the upstream label files, after which detections were stored under the upstream (European Portuguese) names. The station layer is now re-applied after every update. | v0.3.0 |
-| **Operation and reliability** | | | |
-| — | Self-describing, colon-free file names | Recordings `<date>_<HHhMMmSSs>-birdnet.wav` and extractions `<Species>-<date>_<HHhMMmSSs>-birdnet-conf-<NN>.<ext>`: valid on SMB/Windows file systems, with the confidence readable by programs; all earlier naming generations remain readable. | v0.2.0 |
-| [US-44](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/44) | Microphone hot-plug | Recording, analysis and live stream stop when the USB microphone is removed and resume, with the audio configuration refreshed, when it returns; the operator is notified. *Station integration.* | — |
-| — | Code review of the inherited code base | More than 25 defects corrected, among them: `disk_species_clean.sh` deleting the recordings of the **wrong species** when a name contains more than one hyphen; `update_birdnet.sh -b <tag>` silently failing to roll back; controls on the Spectrogram page resetting four advanced settings; File Manager authentication never matching; `disk_check.sh` failing precisely when the disk is full; species deletion reporting success after a failure. | v0.1.0 |
-
-*Station integration* denotes stories delivered in the deployment scripts of the pilot station rather than in this
-repository; a product-native implementation is tracked separately
-([US-14](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/14),
-[US-35](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/35)).
-
-### In verification
-
-[US-45](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/45) — **BirdNET+ V3.0**, the developer-preview model
-distributed with the BirdNET Live application (32 kHz input, approximately 10,000 classes including amphibians,
-mammals and insects, with its own location model), as a selectable model running on ONNX Runtime; and a **shadow
-mode**, in which a second model analyses every recording beside the official one and writes exclusively to a database
-of its own, without extraction or notification. The purpose is a side-by-side evaluation of two model generations on
-identical field audio before any change of the official model. Branch `feat/US-45`, on the pilot station since
-2026-09-21; scheduled for the release following v0.3.0.
-
-### Planned work
-
-A selectable reference list — CBRO, eBird/Clements, AviList, IOC, SACC
-([US-25](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/25)) and the CBRO names as a language of their own, with a `pt_BR` / `pt_PT` distinction
-([US-12](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/12),
-[US-33](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/33),
-[US-39](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/39)); a recorder for long raw sessions built into the product
-([US-35](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/35)); transport of external stations' deposits to the
-central sound repository ([US-40](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/40)) and its consolidation by
-state and biome ([US-27](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/27)); built-in regional species lists
-([US-13](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/13)); internationalisation of the whole product
-([US-31](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/31)); validation of records and curation of the recordings
-before they enter a reference collection ([US-26](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/26),
-[US-29](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/29),
-[US-36](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/36)); export of checklists to eBird
-([US-22](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/22)); installation on Debian 13 / Python 3.13 and USB
-microphones without PulseAudio ([US-15](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/15),
-[US-14](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/14)); objective post-deployment verification
-([US-23](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/23)). The complete backlog is the
-[list of open issues](https://github.com/EvaldoOliveira/BirdNET-Pi/issues).
 
 ### How to get this edition
 
