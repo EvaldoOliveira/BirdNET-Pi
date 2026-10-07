@@ -39,10 +39,10 @@ def shadow_settings():
     return {
         # SHADOW_ENABLED=0 keeps the shadow model and its parameters configured but inactive
         # (owner 2026-09-22: "flag que desativa o shadow e mantém só o principal"); absent = on
-        'enabled': (conf.get('SHADOW_ENABLED', fallback='1') or '1').strip() not in ('0', 'false', 'no', ''),
+        'enabled': (conf.get('SHADOW_ENABLED', fallback='0') or '0').strip() not in ('0', 'false', 'no', ''),
         'model': (conf.get('SHADOW_MODEL_NAME', fallback=None) or '').strip(),
         # the defaults are the ones the BirdNET Live app uses for BirdNET+ V3.0
-        'confidence': conf_float(conf, 'SHADOW_MIN_CONF', 0.35),
+        'confidence': conf_float(conf, 'SHADOW_MIN_CONF', 0.25),
         'sensitivity': conf_float(conf, 'SHADOW_SENS', 1.0),
         # the location threshold is the station's own unless the shadow model gets one of its own
         'sf_thresh': conf_float(conf, 'SHADOW_GEO_THRESH', conf_float(conf, 'SF_THRESH', 0.03)),

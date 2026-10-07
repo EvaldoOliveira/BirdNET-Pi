@@ -75,8 +75,8 @@ if (isset($_POST['wizard_save'])) {
     $contents = wizard_set_key($contents, 'LONGITUDE', round((float)$lon, 4));
     $contents = wizard_set_key($contents, 'MODEL', $model);
     if ($model !== $old_model) {
-      // per-generation recipe (V3 = BirdNET Live 0.35 / 1.0, V2.4 = upstream 0.7 / 1.25)
-      $contents = wizard_set_key($contents, 'CONFIDENCE', $model === $model_v3 ? '0.35' : '0.7');
+      // per-generation defaults (V3 = 0.25 / 1.0, V2.4 = upstream 0.7 / 1.25)
+      $contents = wizard_set_key($contents, 'CONFIDENCE', $model === $model_v3 ? '0.25' : '0.7');
       $contents = wizard_set_key($contents, 'SENSITIVITY', $model === $model_v3 ? '1.0' : '1.25');
     }
     $contents = wizard_set_key($contents, 'DATABASE_LANG', $lang);
@@ -88,17 +88,7 @@ if (isset($_POST['wizard_save'])) {
       $contents = wizard_set_key($contents, 'CADDY_PWD', "\"$pwd\"");
       $update_caddy = true;
     }
-    // notification texts follow the language while they are still the installer's defaults
-    $pt = strpos($lang, 'pt') === 0;
-    if ($pt && strpos($config['APPRISE_NOTIFICATION_TITLE'] ?? '', 'confidence') !== false) {
-      $contents = wizard_set_key($contents, 'APPRISE_NOTIFICATION_TITLE', '"BirdNET-Pi $comname ($sciname) $confidencepct% de confiança"');
-      $contents = wizard_set_key($contents, 'APPRISE_NOTIFICATION_TITLE_RARE', '"RARO BirdNET-Pi $comname ($sciname) $confidencepct% de confiança"');
-    }
-    $body_file = $home . '/BirdNET-Pi/body.txt';
-    if ($pt && strpos((string)@file_get_contents($body_file), 'detected with') !== false) {
-      file_put_contents($body_file, "\$comname (\$sciname) detectado com \$confidencepct% de confiança\nMotivo: \$reason\nLink da detecção: \$listenurl\nConfiança mínima: \$cutoff\nSensibilidade: \$sens\nSobreposição: \$overlap\n\$image\n\$audio\n");
-      file_put_contents($home . '/BirdNET-Pi/body-rare.txt', "RARO: \$comname (\$sciname)\nConfiança: \$confidencepct%\nMotivo: \$reason\nLink da detecção: \$listenurl\nConfiança mínima: \$cutoff\nSensibilidade: \$sens\nSobreposição: \$overlap\n\$image\n\$audio\n");
-    }
+    // notification titles and bodies stay English (owner 2026-10-07)
     file_put_contents('/etc/birdnet/birdnet.conf', $contents);
     if ($apprise !== '') file_put_contents($home . '/BirdNET-Pi/apprise.txt', $apprise . "\n");
 

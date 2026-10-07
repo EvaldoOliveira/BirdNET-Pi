@@ -309,6 +309,33 @@ if (isset($_GET["max_files_species"])) {
 	}
   }
 
+  // BirdDB-Br (moved from Basic Settings, owner 2026-10-07)
+  // US-40: station-side transport to the central sound repository (rclone remote + upload interval)
+  if(isset($_GET['sound_repo_upload_minutes'])) {
+    $sound_repo_upload_minutes = is_numeric($_GET['sound_repo_upload_minutes']) ? max(0, min(1440, intval($_GET['sound_repo_upload_minutes']))) : 5;
+    $sound_repo_remote = isset($_GET['sound_repo_remote']) ? trim($_GET['sound_repo_remote']) : '';
+    // remote:path — no blanks, quotes, backticks, $ or backslashes (the value is written into birdnet.conf;
+    // the old class ended in an escaped ']' and never compiled, so every remote was dropped)
+    if(!preg_match('/^[A-Za-z0-9_-]+:[^\s"\'`$\\\\]*$/', $sound_repo_remote)) { $sound_repo_remote = ''; }
+  }
+  // BirdDB-Br switch (default off): the spool, the upload and the clean-up all follow it
+  $birddb_enabled = isset($_GET['birddb_enabled']) ? 1 : 0;
+  if(preg_match("/^BIRDDB_ENABLED=/m", $contents)) {
+    $contents = preg_replace("/^BIRDDB_ENABLED=.*/m", "BIRDDB_ENABLED=$birddb_enabled", $contents);
+  } else {
+    $contents .= "\n## BIRDDB_ENABLED: 1 = contribute this station's clips to BirdDB-Br (sound repository), 0 = off (default)\nBIRDDB_ENABLED=$birddb_enabled\n";
+  }
+  if(isset($sound_repo_upload_minutes)) {
+    foreach (array('SOUND_REPO_REMOTE' => array("\"$sound_repo_remote\"", 'rclone destination of the central sound repository (remote:path; empty = deposits stay in SOUND_REPO_PATH)'),
+                   'SOUND_REPO_UPLOAD_MINUTES' => array($sound_repo_upload_minutes, 'interval in minutes between uploads of SOUND_REPO_PATH to SOUND_REPO_REMOTE (0 = never)')) as $key => $pair) {
+      list($val, $desc) = $pair;
+      if(preg_match("/^$key=/m", $contents)) {
+        $contents = preg_replace("/^$key=.*/m", "$key=$val", $contents);
+      } else {
+        $contents .= "\n## $key is the $desc\n$key=$val\n";
+      }
+    }
+  }
   //Finally write the data out. some sections do this themselves in order to have the new settings ready for the services that will be restarted
   //but will doubly ensure the settings are saved after any modification
   $fh = fopen('/etc/birdnet/birdnet.conf', "w");
@@ -683,6 +710,38 @@ foreach($formats as $format){
                 </td>
             </tr>
         </table>
+      <br>
+      <table class="settingstable" style="width:100%"><tr><td>
+      <h2>BirdDB-Br</h2>
+      <?php $bde = (string)($config['BIRDDB_ENABLED'] ?? '0') === '1'; ?>
+      <label><input type="checkbox" name="birddb_enabled" id="birddb_enabled" value="1" <?php echo $bde ? 'checked' : ''; ?>
+        onchange="birddbToggle(this.checked)"> Contribute to BirdDB-Br (central sound repository)</label>
+      <small>— off (default): no clip is copied, uploaded or kept for the repository</small><br>
+      <div id="birddb_box" style="<?php echo $bde ? '' : 'opacity:0.45;'; ?>">
+      <?php $srl = $config['SOUND_REPO_LINK'] ?? ''; ?>
+      <label>Central sound repository: </label>
+      <?php if($srl != '') { echo "<a href='" . htmlspecialchars($srl, ENT_QUOTES) . "' target='_blank'>" . htmlspecialchars($srl) . "</a>"; } else { echo "<i>not configured on this station</i>"; } ?><br>
+      <?php $srm = $config['SOUND_REPO_REMOTE'] ?? ''; $sru = $config['SOUND_REPO_UPLOAD_MINUTES'] ?? '5'; ?>
+      <table class="settingstable plaintable">
+        <tr>
+          <td><label for="sound_repo_remote">rclone remote (remote:path):</label></td>
+          <td><input name="sound_repo_remote" class="birddb_field" type="text" style="width:14em;" value="<?php print(htmlspecialchars($srm, ENT_QUOTES));?>" pattern="[A-Za-z0-9_\-]+:.*" placeholder="birddb:" <?php echo $bde ? '' : 'disabled'; ?>/></td>
+          <td>(empty = no upload, deposits stay in the local spool)</td>
+        </tr>
+        <tr>
+          <td><label for="sound_repo_upload_minutes">Upload every:</label></td>
+          <td><input name="sound_repo_upload_minutes" class="birddb_field" type="number" style="width:5em;" min="0" max="1440" step="1" value="<?php print(intval($sru));?>" <?php echo $bde ? '' : 'disabled'; ?>/> minutes</td>
+          <td>(0 = never; the spool is moved to the remote at this interval)</td>
+        </tr>
+      </table>
+      </div>
+      <script>
+        function birddbToggle(on) {
+          document.getElementById('birddb_box').style.opacity = on ? '' : '0.45';
+          document.querySelectorAll('.birddb_field').forEach(function (f) { f.disabled = !on; });
+        }
+      </script>
+      </td></tr></table><br>
       <br><br>
       <input type="hidden" name="view" value="Advanced">
       <input type="hidden" name="advanced_form" value="1">

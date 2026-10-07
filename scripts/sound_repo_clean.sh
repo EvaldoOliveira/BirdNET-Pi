@@ -11,7 +11,7 @@ remote="${SOUND_REPO_REMOTE:-}"
 minutes="${SOUND_REPO_UPLOAD_MINUTES:-0}"
 
 [ -n "$spool" ] && [ -d "$spool" ] || exit 0
-if [ -n "$remote" ] && [[ "$minutes" =~ ^[0-9]+$ ]] && [ "$minutes" -gt 0 ]; then
+if [ "${BIRDDB_ENABLED:-0}" = "1" ] && [ -n "$remote" ] && [[ "$minutes" =~ ^[0-9]+$ ]] && [ "$minutes" -gt 0 ]; then
   exit 0
 fi
 count=$(find "$spool" -type f | wc -l)

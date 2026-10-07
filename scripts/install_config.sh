@@ -46,6 +46,10 @@ LONGITUDE=${FR_LONGITUDE:-$LONGITUDE}
 MODEL=${FR_MODEL:-BirdNET_GLOBAL_6K_V2.4_Model_FP16}
 SF_THRESH=0.03
 DATA_MODEL_VERSION=1
+## SHADOW_MODEL_NAME is a second model analysing the same audio into birds_shadow.db (empty = none)
+## and SHADOW_ENABLED its switch (0 = off, the default) — Basic Settings > Models
+SHADOW_MODEL_NAME=
+SHADOW_ENABLED=0
 ## INCLUDE_REGION is the regional include list (model/include_lists/<region>.txt, e.g. BR-SP); empty = none
 INCLUDE_REGION=${FR_REGION}
 
@@ -101,8 +105,8 @@ RTSP_STREAM_TO_LIVESTREAM="0"
 
 #-----------------------  Apprise Miscellanous Configuration -------------------#
 
-APPRISE_NOTIFICATION_TITLE="${FR_TITLE:-BirdNET-Pi \$comname (\$sciname) \$confidencepct% confidence}"
-APPRISE_NOTIFICATION_TITLE_RARE="${FR_TITLE_RARE:-RARE BirdNET-Pi \$comname (\$sciname) \$confidencepct% confidence}"
+APPRISE_NOTIFICATION_TITLE="BirdNET-Pi \$comname (\$sciname) \$confidencepct% confidence"
+APPRISE_NOTIFICATION_TITLE_RARE="RARE BirdNET-Pi \$comname (\$sciname) \$confidencepct% confidence"
 APPRISE_NOTIFY_EACH_DETECTION=0
 APPRISE_NOTIFY_NEW_SPECIES=0
 APPRISE_WEEKLY_REPORT=1
@@ -112,6 +116,8 @@ APPRISE_ONLY_NOTIFY_SPECIES_NAMES=""
 APPRISE_ONLY_NOTIFY_SPECIES_NAMES_2=""
 ## SOUND_REPO_PATH is the local root of the central sound repository (empty = off):
 ## every detection is stored there as clip + sidecar JSON, beside the BirdWeather upload
+## BIRDDB_ENABLED: 1 = contribute this station's clips to BirdDB-Br, 0 = off (default)
+BIRDDB_ENABLED=0
 SOUND_REPO_PATH=""
 ## SOUND_REPO_LINK is the shareable URL of the central sound repository (informational)
 SOUND_REPO_LINK=""
@@ -209,7 +215,7 @@ OVERLAP=0.0
 ## should reach before creating an entry in the BirdNET.selection.txt file.
 ## Don't set this to 1.0 or you won't have any results.
 
-CONFIDENCE=${FR_CONFIDENCE:-0.7}
+CONFIDENCE=${FR_CONFIDENCE:-0.25}
 
 ## SENSITIVITY is the detection sensitivity from 0.5-1.5.
 
@@ -284,7 +290,7 @@ EXTRACTION_LENGTH=
 ## ub ul uw vms voc vorbis vox w64 wav wavpcm wv wve xa xi
 ## Note: Most have not been tested.
 
-AUDIOFMT=mp3
+AUDIOFMT=flac
 
 ## DATABASE_LANG is the language used for the bird species database
 DATABASE_LANG=${FR_LANGUAGE:-en}
@@ -298,7 +304,7 @@ HEARTBEAT_URL=
 ## UPDATE_BRANCH is the release channel the updater follows: stable = the last released
 ## version (recommended), main = the development line (test stations only)
 
-UPDATE_BRANCH=stable
+UPDATE_BRANCH=${BIRDNET_BRANCH:-stable}
 
 ## SILENCE_UPDATE_INDICATOR is for quieting the display of how many commits
 ## your installation is behind by, relative to the Github repo. This number
@@ -341,11 +347,6 @@ EOF
 if ! [ -f ${birdnet_conf} ];then
   source $my_dir/scripts/install_firstrun.sh
   { set +x; } 2>/dev/null
-  case "${FR_LANGUAGE}" in
-    pt_*)
-      FR_TITLE='BirdNET-Pi $comname ($sciname) $confidencepct% de confiança'
-      FR_TITLE_RARE='RARO BirdNET-Pi $comname ($sciname) $confidencepct% de confiança' ;;
-  esac
   install_config
   [ -n "${FR_WIZARD}" ] && touch $my_dir/firstrun_pending
   if [ -n "${FR_TIMEZONE}" ] && [ "${FR_TIMEZONE}" != "$(timedatectl show --value --property=Timezone 2>/dev/null || true)" ]; then
@@ -367,16 +368,10 @@ grep -ve '^#' -e '^$' /etc/birdnet/birdnet.conf > $my_dir/firstrun.ini
 { set +x; } 2>/dev/null
 source /etc/birdnet/birdnet.conf
 set -x
-# notification bodies in the station language (US-51d); kept when they exist (re-install)
+# notification bodies (English, whatever the species-names language — owner 2026-10-07); kept on a re-install
 if ! [ -s "$HOME/BirdNET-Pi/body.txt" ]; then
-  case "${DATABASE_LANG}" in
-    pt_*)
-      body='$comname ($sciname) detectado com $confidencepct% de confiança\nMotivo: $reason\nLink da detecção: $listenurl\nConfiança mínima: $cutoff\nSensibilidade: $sens\nSobreposição: $overlap\n$image\n$audio'
-      body_rare='RARO: $comname ($sciname)\nConfiança: $confidencepct%\nMotivo: $reason\nLink da detecção: $listenurl\nConfiança mínima: $cutoff\nSensibilidade: $sens\nSobreposição: $overlap\n$image\n$audio' ;;
-    *)
-      body='A Normal $comname ($sciname) detected with $confidencepct% confidence\nReason: $reason\nLink to the detection: $listenurl\nMinimum Confidence: $cutoff\nSigmoid Sensitivity: $sens\nOverlap: $overlap\n$image\n$audio'
-      body_rare='$comname ($sciname) detected\nConfidence=$confidencepct%\nReason: $reason\nMinimum Confidence: $cutoff\nSigmoid Sensitivity: $sens\nOverlap: $overlap\nLink to the detection: $listenurl\n$image\n$audio' ;;
-  esac
+  body='A Normal $comname ($sciname) detected with $confidencepct% confidence\nReason: $reason\nLink to the detection: $listenurl\nMinimum Confidence: $cutoff\nSigmoid Sensitivity: $sens\nOverlap: $overlap\n$image\n$audio'
+  body_rare='$comname ($sciname) detected\nConfidence=$confidencepct%\nReason: $reason\nMinimum Confidence: $cutoff\nSigmoid Sensitivity: $sens\nOverlap: $overlap\nLink to the detection: $listenurl\n$image\n$audio'
   printf '%b\n' "$body" | sudo -u $BIRDNET_USER tee "$HOME/BirdNET-Pi/body.txt" > /dev/null
   printf '%b\n' "$body_rare" | sudo -u $BIRDNET_USER tee "$HOME/BirdNET-Pi/body-rare.txt" > /dev/null
 fi

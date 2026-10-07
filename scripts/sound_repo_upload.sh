@@ -18,6 +18,7 @@ stamp="$HOME/.sound_repo_last_upload"
 # The writer refuses to store when the spool root is missing: keep it present.
 [ -d "$spool" ] || mkdir -p "$spool"
 [ -n "$remote" ] || exit 0
+[ "${BIRDDB_ENABLED:-0}" = "1" ] || exit 0  # BirdDB-Br switched off (Basic Settings, default)
 [[ "$minutes" =~ ^[0-9]+$ ]] && [ "$minutes" -gt 0 ] || exit 0
 
 # Interval gate: the timer ticks every minute, the setting decides the cadence.

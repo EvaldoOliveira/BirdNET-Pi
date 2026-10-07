@@ -92,7 +92,7 @@ if(isset($_GET["latitude"])){
   $model = $_GET["model"];
   $known_models = array("BirdNET_GLOBAL_6K_V2.4_Model_FP16", "BirdNET_6K_GLOBAL_MODEL", "BirdNET-Plus_V3.0-preview3.1_Global_10K");
   $shadow_model = isset($_GET['shadow_model']) && in_array($_GET['shadow_model'], $known_models) && $_GET['shadow_model'] != $model ? $_GET['shadow_model'] : '';
-  $shadow_min_conf = isset($_GET['shadow_min_conf']) && is_numeric($_GET['shadow_min_conf']) ? max(0.01, min(0.99, round(floatval($_GET['shadow_min_conf']), 2))) : 0.35;
+  $shadow_min_conf = isset($_GET['shadow_min_conf']) && is_numeric($_GET['shadow_min_conf']) ? max(0.01, min(0.99, round(floatval($_GET['shadow_min_conf']), 2))) : 0.25;
   $sf_thresh = $_GET["sf_thresh"];
   // US-47 (owner 2026-09-22): both models and their parameters live in one "Models" block.
   // Official: CONFIDENCE / SENSITIVITY / SF_THRESH; shadow: SHADOW_MIN_CONF / SHADOW_SENS /
@@ -135,12 +135,6 @@ if(isset($_GET["latitude"])){
     if($include_region !== '' && !(preg_match('/^[A-Z]{2}-[A-Z]{2}$/', $include_region) && is_file($home."/BirdNET-Pi/model/include_lists/".$include_region.".txt"))) {
       $include_region = '';
     }
-  }
-  // US-40: station-side transport to the central sound repository (rclone remote + upload interval)
-  if(isset($_GET['sound_repo_upload_minutes'])) {
-    $sound_repo_upload_minutes = is_numeric($_GET['sound_repo_upload_minutes']) ? max(0, min(1440, intval($_GET['sound_repo_upload_minutes']))) : 5;
-    $sound_repo_remote = isset($_GET['sound_repo_remote']) ? trim($_GET['sound_repo_remote']) : '';
-    if(!preg_match('/^[A-Za-z0-9_-]+:[^\s"\'`$\\]*$/', $sound_repo_remote)) { $sound_repo_remote = ''; }
   }
   if(isset($_GET['apprise_notify_each_detection'])) {
     $apprise_notify_each_detection = 1;
@@ -284,17 +278,6 @@ if(isset($_GET["latitude"])){
       $contents .= "\nNOTIFICATION_EMAIL=\"$notification_email\"\n";
     }
   }
-  if(isset($sound_repo_upload_minutes)) {
-    foreach (array('SOUND_REPO_REMOTE' => array("\"$sound_repo_remote\"", 'rclone destination of the central sound repository (remote:path; empty = deposits stay in SOUND_REPO_PATH)'),
-                   'SOUND_REPO_UPLOAD_MINUTES' => array($sound_repo_upload_minutes, 'interval in minutes between uploads of SOUND_REPO_PATH to SOUND_REPO_REMOTE (0 = never)')) as $key => $pair) {
-      list($val, $desc) = $pair;
-      if(preg_match("/^$key=/m", $contents)) {
-        $contents = preg_replace("/^$key=.*/m", "$key=$val", $contents);
-      } else {
-        $contents .= "\n## $key is the $desc\n$key=$val\n";
-      }
-    }
-  }
   if(isset($include_region)) {
     if(preg_match("/^INCLUDE_REGION=/m", $contents)) {
       $contents = preg_replace("/^INCLUDE_REGION=.*/m", "INCLUDE_REGION=$include_region", $contents);
@@ -431,7 +414,7 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
       $model_defaults = array(
         "BirdNET_GLOBAL_6K_V2.4_Model_FP16" => "upstream defaults: confidence 0.7, sensitivity 1.25, location 0.03",
         "BirdNET_6K_GLOBAL_MODEL" => "legacy 6K model: confidence 0.7, sensitivity 1.25",
-        "BirdNET-Plus_V3.0-preview3.1_Global_10K" => "BirdNET Live recipe: confidence 0.35, sensitivity 1.0, location 0.03");
+        "BirdNET-Plus_V3.0-preview3.1_Global_10K" => "defaults: confidence 0.25, sensitivity 1.0, location 0.03");
       ?>
       <table class="modelstable">
         <tr><th></th><th>Model</th><th>Min. confidence<br><small>[0.01–0.99]</small></th><th>Sensitivity<br><small>[0.5–1.5]</small></th><th>Location threshold<br><small>[0.0005–0.99]</small></th></tr>
@@ -451,9 +434,9 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
         </tr>
         <tr>
           <td><b>Shadow mode</b></td>
-          <td colspan="4"><label><input type="checkbox" id="shadow_enabled" name="shadow_enabled" value="1" onchange="document.getElementById('shadowrow').classList.toggle('shadow-off', !this.checked)" <?php if((string)($config['SHADOW_ENABLED'] ?? '1') !== '0') echo 'checked'; ?>> active</label> <small>— off: only the official model runs; the shadow settings below are kept (greyed)</small></td>
+          <td colspan="4"><label><input type="checkbox" id="shadow_enabled" name="shadow_enabled" value="1" onchange="document.getElementById('shadowrow').classList.toggle('shadow-off', !this.checked)" <?php if((string)($config['SHADOW_ENABLED'] ?? '0') !== '0') echo 'checked'; ?>> active</label> <small>— off: only the official model runs; the shadow settings below are kept (greyed)</small></td>
         </tr>
-        <tr id="shadowrow" class="<?php if((string)($config['SHADOW_ENABLED'] ?? '1') === '0') echo 'shadow-off'; ?>">
+        <tr id="shadowrow" class="<?php if((string)($config['SHADOW_ENABLED'] ?? '0') === '0') echo 'shadow-off'; ?>">
           <td><b>Shadow</b></td>
           <td><select name="shadow_model" class="testbtn">
         <option value="">None</option>
@@ -464,7 +447,7 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
         }
       ?>
           </select></td>
-          <td><input name="shadow_min_conf" type="number" style="width:5em;" max="0.99" min="0.01" step="0.01" value="<?php print($config['SHADOW_MIN_CONF'] ?? '0.35');?>"/></td>
+          <td><input name="shadow_min_conf" type="number" style="width:5em;" max="0.99" min="0.01" step="0.01" value="<?php print($config['SHADOW_MIN_CONF'] ?? '0.25');?>"/></td>
           <td><input name="shadow_sens" type="number" style="width:5em;" min="0.5" max="1.5" step="0.01" value="<?php print($config['SHADOW_SENS'] ?? '1.0');?>"/></td>
           <td><input name="shadow_geo_thresh" type="number" style="width:5em;" max="0.99" min="0.0005" step="any" value="<?php print($config['SHADOW_GEO_THRESH'] ?? $config['SF_THRESH']);?>"/></td>
         </tr>
@@ -651,65 +634,6 @@ function runProcess() {
         Make sure that the Latitude and Longitude match what is in your BirdNET-Pi configuration.
         <br><br>
         <dt>NOTE - by using your BirdWeather Token - you are consenting to sharing your soundscapes and detections with BirdWeather</dt></p>
-      </td></tr></table><br>
-      <table class="settingstable" style="width:100%"><tr><td>
-      <h2>BirdDB-Br</h2>
-      <?php $srl = $config['SOUND_REPO_LINK'] ?? ''; ?>
-      <label>Central sound repository: </label>
-      <?php if($srl != '') { echo "<a href='" . htmlspecialchars($srl, ENT_QUOTES) . "' target='_blank'>" . htmlspecialchars($srl) . "</a>"; } else { echo "<i>not configured on this station</i>"; } ?><br>
-      <?php $srm = $config['SOUND_REPO_REMOTE'] ?? ''; $sru = $config['SOUND_REPO_UPLOAD_MINUTES'] ?? '5'; ?>
-      <table class="settingstable plaintable">
-        <tr>
-          <td><label for="sound_repo_remote">rclone remote (remote:path):</label></td>
-          <td><input name="sound_repo_remote" type="text" style="width:14em;" value="<?php print(htmlspecialchars($srm, ENT_QUOTES));?>" pattern="[A-Za-z0-9_\-]+:.*" placeholder="birddb:"/></td>
-          <td>(empty = no upload, deposits stay in the local spool)</td>
-        </tr>
-        <tr>
-          <td><label for="sound_repo_upload_minutes">Upload every:</label></td>
-          <td><input name="sound_repo_upload_minutes" type="number" style="width:5em;" min="0" max="1440" step="1" value="<?php print(intval($sru));?>"/> minutes</td>
-          <td>(0 = never; the spool is moved to the remote at this interval)</td>
-        </tr>
-      </table>
-      <p><b>How to contribute from your own station (one-time setup):</b></p>
-      <ol>
-        <li>Run <code>rclone config</code> on your station and create a remote named <code>birddb</code>
-          of type <code>drive</code>. Leave client_id/client_secret empty and set
-          <code>root_folder_id</code> to the ID at the end of the repository URL above
-          (the part after <code>/folders/</code>).</li>
-        <li>When rclone opens the browser, <b>log in with your own Google account</b> and authorize
-          it — that creates your personal OAuth token. Uploads are attributed to this account.</li>
-        <li>The token is stored locally on your station in <code>~/.config/rclone/rclone.conf</code>.
-          Keep that file private (permissions 600): it grants access with your account. It never
-          leaves the station, renews itself automatically, and must never be shared or committed
-          to any repository.</li>
-        <li>Contributions must be FLAC: set <code>AUDIOFMT=flac</code> in your station's
-          <code>birdnet.conf</code> (Advanced Settings), otherwise deposits are rejected
-          on ingestion.</li>
-        <li>Every deposit is validated on ingestion: a real FLAC clip (30 s max) with its metadata
-          sidecar and a matching sha256 — anything else is deleted and reported.</li>
-      </ol>
-      <p>BirdDB-Br is a community sound repository: every detection of this station
-        (the audio clip plus its metadata sidecar — station name, GPS coordinates, date/time,
-        species, confidence and model parameters) is contributed to the central repository
-        linked above.<br><br>
-        <dt>By running this station you contribute your recordings voluntarily, in the spirit of
-        community collections — with one important difference: contributed sounds are
-        <b>NOT publicly available</b>.<br>
-        They are used exclusively to build and train bird-identification models for the
-        BirdDB-Br project.</dt><br><br>
-        <b>Contributor terms (summary):</b> you declare you are the rightful producer of the
-        recordings your station contributes and that they contain no third-party copyrighted
-        material.<br>
-        You keep all rights over your recordings; by contributing you grant the BirdDB-Br
-        project a <b>non-exclusive, perpetual, worldwide, royalty-free licence</b> to store,
-        process and use the recordings and their metadata to build, train, evaluate and
-        distribute bird-identification models and derived works, including commercially.
-        Each contribution is attributed to the Google account that uploaded it, and the
-        repository maintainer validates every deposit (integrity, format, metadata) before it
-        enters the base. Recordings containing intelligible human speech must not be
-        contributed. You may request removal of your material from the repository at any time;
-        removal applies to the stored recordings and future use.<br>
-        Models already trained are not reversible.</p>
       </td></tr></table><br>
       <table class="settingstable" style="width:100%"><tr><td>
       <h2>Notifications - Global</h2>

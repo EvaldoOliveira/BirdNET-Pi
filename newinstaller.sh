@@ -18,11 +18,30 @@ if [ "${PY_VERSION}" == "39" ] ;then
   [ -z "${FORCE_BULLSEYE}" ] && exit
 fi
 
-# we require passwordless sudo
+# we require passwordless sudo: the installer and the running station call sudo without a
+# terminal. Recent Raspberry Pi OS images (Trixie) ask the first user's password, so set it up
+# once here (US-51a): a sudoers.d rule named zz-* so it is the last one to match, checked by visudo
 sudo -K
-if ! sudo -n true; then
+if ! sudo -n true 2>/dev/null; then
+  rule_file=/etc/sudoers.d/zz-birdnet-${USER}-nopasswd
+  if (: < /dev/tty) 2>/dev/null; then
+    echo "BirdNET-Pi needs passwordless sudo for '${USER}' (the station runs system commands unattended)."
+    echo "Enter the password of '${USER}' once to set it up (${rule_file}):"
+    if sudo -v < /dev/tty; then
+      echo "${USER} ALL=(ALL) NOPASSWD: ALL" | sudo tee "${rule_file}.new" > /dev/null
+      if sudo visudo -cf "${rule_file}.new" > /dev/null; then
+        sudo chmod u=r,g=r,o= "${rule_file}.new" && sudo mv "${rule_file}.new" "${rule_file}"
+      else
+        sudo rm -f "${rule_file}.new"
+      fi
+    fi
+    sudo -K
+  fi
+  if ! sudo -n true 2>/dev/null; then
     echo "Passwordless sudo is not working. Aborting"
-    exit
+    echo "Set it up with: echo \"${USER} ALL=(ALL) NOPASSWD: ALL\" | sudo tee ${rule_file}"
+    exit 1
+  fi
 fi
 
 # Simple new installer
@@ -46,6 +65,7 @@ fi
 # This edition: the fork, release channel 'stable' (the last released version, validated on the
 # pilot first). BIRDNET_BRANCH=main installs the development line instead (owner 2026-10-07, US-51e).
 branch=${BIRDNET_BRANCH:-stable}
+export BIRDNET_BRANCH=$branch  # install_config.sh writes it as UPDATE_BRANCH
 git clone -b $branch --depth=1 https://github.com/EvaldoOliveira/BirdNET-Pi.git ${HOME}/BirdNET-Pi &&
 
 $HOME/BirdNET-Pi/scripts/install_birdnet.sh

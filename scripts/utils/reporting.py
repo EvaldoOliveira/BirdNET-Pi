@@ -205,7 +205,9 @@ def apprise(file: ParseFileName, detections: [Detection]):
 
 
 def sound_repo_upload_active(conf):
-    # Same gate as scripts/sound_repo_upload.sh: a remote and a cadence > 0
+    # Same gate as scripts/sound_repo_upload.sh: BirdDB-Br switched on (default off), a remote and a cadence > 0
+    if str(conf.get('BIRDDB_ENABLED') or '0').strip() != '1':
+        return False
     minutes = str(conf.get('SOUND_REPO_UPLOAD_MINUTES') or '0').strip()
     return bool(conf.get('SOUND_REPO_REMOTE')) and minutes.isdigit() and int(minutes) > 0
 
