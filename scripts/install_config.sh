@@ -295,6 +295,11 @@ DATABASE_LANG=en
 
 HEARTBEAT_URL=
 
+## UPDATE_BRANCH is the release channel the updater follows: stable = the last released
+## version (recommended), main = the development line (test stations only)
+
+UPDATE_BRANCH=stable
+
 ## SILENCE_UPDATE_INDICATOR is for quieting the display of how many commits
 ## your installation is behind by, relative to the Github repo. This number
 ## appears next to "Tools" when you're 50 or more commits behind.

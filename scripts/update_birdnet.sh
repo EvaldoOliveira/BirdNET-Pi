@@ -16,7 +16,9 @@ my_dir=$HOME/BirdNET-Pi/scripts
 
 # Defaults
 remote="origin"
-branch="main"
+# Release channel (US-51e): 'stable' = the last released version (what installed stations follow),
+# 'main' = the development line (the pilot). UPDATE_BRANCH in birdnet.conf; -b overrides it.
+branch="${UPDATE_BRANCH:-stable}"
 auto_update=""
 
 while getopts ":r:b:a" o; do
