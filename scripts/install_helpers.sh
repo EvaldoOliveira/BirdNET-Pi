@@ -1,7 +1,10 @@
 # this should only contain functions and assignments, ie source install.sh should not have side effects.
 
 get_tf_whl () {
-  BASE_URL=https://github.com/Nachtzuster/BirdNET-Pi/releases/download/v0.1/
+  # this edition hosts the wheels in its own release (identical to upstream's v0.1 assets),
+  # upstream stays as the fallback; SHA256SUMS of the release is checked when reachable
+  BASE_URL=https://github.com/EvaldoOliveira/BirdNET-Pi/releases/download/wheels-1/
+  FALLBACK_URL=https://github.com/Nachtzuster/BirdNET-Pi/releases/download/v0.1/
 
   ARCH=$(uname -m)
   PY_VERSION=$(python3 -c "import sys; print(f'{sys.version_info[0]}{sys.version_info[1]}')")
@@ -36,10 +39,20 @@ get_tf_whl () {
       ;;
   esac
   if [ -n "$WHL" ]; then
-    {
-      curl -L -o $HOME/BirdNET-Pi/$WHL $BASE_URL$WHL
-      sed "s/tensorflow.*/$WHL/" $HOME/BirdNET-Pi/requirements.txt > requirements_custom.txt
-    }
+    # -f: an HTTP error must fail here, not leave an HTML page behind as the wheel
+    if ! curl -fsSL -o $HOME/BirdNET-Pi/$WHL $BASE_URL$WHL && ! curl -fsSL -o $HOME/BirdNET-Pi/$WHL $FALLBACK_URL$WHL; then
+      echo "Could not download $WHL"
+      return 1
+    fi
+    SUMS=$(curl -fsSL ${BASE_URL}SHA256SUMS 2>/dev/null | grep " ${WHL}\$")
+    if [ -n "$SUMS" ] && ! (cd $HOME/BirdNET-Pi && echo "$SUMS" | sha256sum -c --quiet -); then
+      echo "Checksum mismatch for $WHL"
+      return 1
+    fi
+    sed "s/tensorflow.*/$WHL/" $HOME/BirdNET-Pi/requirements.txt > requirements_custom.txt
+  else
+    # no prebuilt tflite_runtime for this platform: fall back to the full tensorflow package
+    cp $HOME/BirdNET-Pi/requirements.txt requirements_custom.txt
   fi
 }
 
