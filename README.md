@@ -20,8 +20,6 @@ This repository is an independent edition of BirdNET-Pi, maintained as a hard fo
 [mcguirepr89/BirdNET-Pi](https://github.com/mcguirepr89/BirdNET-Pi) — from upstream commit `88985a3` (v0.11 line,
 forked on 2026-08-29).
 
-### Objectives
-
 This edition extends BirdNET-Pi with capabilities intended for long-term acoustic monitoring and for the people who
 review its results:
 
