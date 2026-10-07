@@ -1,0 +1,21 @@
+# birdnet-setup.conf — answers for an unattended installation (US-51c)
+# Copy to the SD card's boot partition as birdnet-setup.conf (/boot/firmware/birdnet-setup.conf
+# on Raspberry Pi OS Bookworm/Trixie) before the first boot, then run the installer with
+# BIRDNET_UNATTENDED=1 (or answer only the questions missing here). Missing keys = the
+# installer's default (location and state from the network, model V3, no password).
+SITE_NAME=Minha estação
+LATITUDE=-23.5505
+LONGITUDE=-46.6333
+# V3 (BirdNET+ V3.0, recommended) or V2.4
+MODEL=V3
+# en, pt_BR (Brazil, CBRO names), pt_PT (Portugal), es, de, fr, ... (model/l18n)
+LANGUAGE=pt_BR
+# Brazilian state for the include list (UF), or none
+STATE=SP
+# web password for Tools / Settings (empty = no password)
+WEB_PASSWORD=
+# live stream password (empty = random)
+STREAM_PASSWORD=
+BIRDWEATHER_ID=
+# Apprise notification URL, e.g. tgram://<bot token>/<chat id>  (empty = none)
+APPRISE_URL=

@@ -26,7 +26,7 @@ install_config() {
 
 # Optional: Site Title for banner
 
-SITE_NAME="$HOSTNAME"
+SITE_NAME="${FR_SITE_NAME:-$HOSTNAME}"
 
 #--------------------- Required: Latitude, and Longitude ----------------------#
 
@@ -35,25 +35,25 @@ SITE_NAME="$HOSTNAME"
 ## Please only go to 4 decimal places. Example:43.3984
 
 
-LATITUDE=$LATITUDE
-LONGITUDE=$LONGITUDE
+LATITUDE=${FR_LATITUDE:-$LATITUDE}
+LONGITUDE=${FR_LONGITUDE:-$LONGITUDE}
 
 #--------------------------------- Model --------------------------------------#
 #_____________The variable below configures which BirdNET model is_____________#
 #______________________used for detecting bird audio.__________________________#
 #_It's recommended that you only change these values through the web interface.#
 
-MODEL=BirdNET_GLOBAL_6K_V2.4_Model_FP16
+MODEL=${FR_MODEL:-BirdNET_GLOBAL_6K_V2.4_Model_FP16}
 SF_THRESH=0.03
 DATA_MODEL_VERSION=1
 ## INCLUDE_REGION is the regional include list (model/include_lists/<region>.txt, e.g. BR-SP); empty = none
-INCLUDE_REGION=
+INCLUDE_REGION=${FR_REGION}
 
 #---------------------  BirdWeather Station Information -----------------------#
 #_____________The variable below can be set to have your BirdNET-Pi____________#
 #__________________also act as a BirdWeather listening station_________________#
 
-BIRDWEATHER_ID=
+BIRDWEATHER_ID=${FR_BIRDWEATHER_ID}
 
 #-----------------------  Web Interface User Password  ------------------------#
 #____________________The variable below sets the 'birdnet'_____________________#
@@ -63,7 +63,7 @@ BIRDWEATHER_ID=
 ## CADDY_PWD is the plaintext password (that will be hashed) and used to access
 ## certain parts of the web interface
 
-CADDY_PWD=
+CADDY_PWD=${FR_CADDY_PWD}
 
 #-------------------------  Live Audio Stream  --------------------------------#
 #_____________The variable below configures/enables the live___________________#
@@ -74,7 +74,7 @@ CADDY_PWD=
 ## trusted source for the stream. You will never need to enter this manually
 ## anywhere other than here and it stays on 'localhost.'
 
-ICE_PWD=birdnetpi
+ICE_PWD=${FR_ICE_PWD:-birdnetpi}
 
 #-----------------------  Web-hosting/Caddy File-server -----------------------#
 #_______The three variables below can be set to enable internet access_________#
@@ -209,11 +209,11 @@ OVERLAP=0.0
 ## should reach before creating an entry in the BirdNET.selection.txt file.
 ## Don't set this to 1.0 or you won't have any results.
 
-CONFIDENCE=0.7
+CONFIDENCE=${FR_CONFIDENCE:-0.7}
 
 ## SENSITIVITY is the detection sensitivity from 0.5-1.5.
 
-SENSITIVITY=1.25
+SENSITIVITY=${FR_SENSITIVITY:-1.25}
 
 ## Configuration of the frequency shifting feature, useful for earing impaired people.
 
@@ -287,7 +287,7 @@ EXTRACTION_LENGTH=
 AUDIOFMT=mp3
 
 ## DATABASE_LANG is the language used for the bird species database
-DATABASE_LANG=en
+DATABASE_LANG=${FR_LANGUAGE:-en}
 
 ## HEARTBEAT_URL is a location to ping every time some analysis is done
 ## no information is sent to the the URL, its a heart beat to show that the
@@ -337,15 +337,26 @@ LogLevel_SpectrogramViewerService="error"
 EOF
 }
 
-# Checks for a birdnet.conf file
+# Checks for a birdnet.conf file; a new installation answers the first-run questions first (US-51c)
 if ! [ -f ${birdnet_conf} ];then
+  source $my_dir/scripts/install_firstrun.sh
+  { set +x; } 2>/dev/null
   install_config
+  set -x
+  if [ -n "${FR_APPRISE_URL}" ]; then
+    { set +x; } 2>/dev/null
+    printf '%s\n' "${FR_APPRISE_URL}" > $my_dir/apprise.txt
+    set -x
+  fi
 fi
 chmod g+w ${birdnet_conf}
 [ -d /etc/birdnet ] || sudo mkdir /etc/birdnet
 sudo ln -sf $birdnet_conf /etc/birdnet/birdnet.conf
 grep -ve '^#' -e '^$' /etc/birdnet/birdnet.conf > $my_dir/firstrun.ini
 
+# not traced: birdnet.conf carries the web / stream passwords
+{ set +x; } 2>/dev/null
 source /etc/birdnet/birdnet.conf
+set -x
 echo 'A $comname ($sciname)  was just detected with a confidence of $confidence ($reason)' | sudo -u $BIRDNET_USER tee "$HOME/BirdNET-Pi/body.txt"
 chmod g+w "$HOME/BirdNET-Pi/body.txt"

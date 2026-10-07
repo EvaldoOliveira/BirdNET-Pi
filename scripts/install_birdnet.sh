@@ -22,7 +22,9 @@ fi
 #Install/Configure /etc/birdnet/birdnet.conf
 ./install_config.sh || exit 1
 sudo -E HOME=$HOME USER=$USER ./install_services.sh || exit 1
+{ set +x; } 2>/dev/null # not traced: birdnet.conf carries the passwords
 source /etc/birdnet/birdnet.conf
+set -x
 
 install_birdnet() {
   TMP_SIZE=$(df --output=avail /tmp | tail -n 1)
