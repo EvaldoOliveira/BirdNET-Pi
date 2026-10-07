@@ -123,6 +123,14 @@ if(isset($_GET["latitude"])){
       $notification_default_tier = 'normal';
     }
   }
+  // Regional include list (owner 2026-10-07): '' = none (default, outside Brazil) or one shipped list
+  // model/include_lists/<region>.txt, e.g. BR-SP; joins the user's include_species_list.txt
+  if(isset($_GET['include_region'])) {
+    $include_region = $_GET['include_region'];
+    if($include_region !== '' && !(preg_match('/^[A-Z]{2}-[A-Z]{2}$/', $include_region) && is_file($home."/BirdNET-Pi/model/include_lists/".$include_region.".txt"))) {
+      $include_region = '';
+    }
+  }
   // US-40: station-side transport to the central sound repository (rclone remote + upload interval)
   if(isset($_GET['sound_repo_upload_minutes'])) {
     $sound_repo_upload_minutes = is_numeric($_GET['sound_repo_upload_minutes']) ? max(0, min(1440, intval($_GET['sound_repo_upload_minutes']))) : 5;
@@ -280,6 +288,13 @@ if(isset($_GET["latitude"])){
       } else {
         $contents .= "\n## $key is the $desc\n$key=$val\n";
       }
+    }
+  }
+  if(isset($include_region)) {
+    if(preg_match("/^INCLUDE_REGION=/m", $contents)) {
+      $contents = preg_replace("/^INCLUDE_REGION=.*/m", "INCLUDE_REGION=$include_region", $contents);
+    } else {
+      $contents .= "\n## INCLUDE_REGION is the regional include list (model/include_lists/<region>.txt, e.g. BR-SP); empty = none\nINCLUDE_REGION=$include_region\n";
     }
   }
   if(isset($notification_default_tier)) {
@@ -592,8 +607,31 @@ function runProcess() {
           <td><input name="longitude" type="number" style="width:6em;" max="180" min="-180" step="0.0001" value="<?php print($config['LONGITUDE']);?>" required/></td>
           <td></td>
         </tr>
+        <tr>
+          <td><label for="include_region">Brazilian states include list:</label></td>
+          <td><select name="include_region" id="include_region">
+            <option value="">None (default)</option>
+            <?php
+            $br_states = ['AC' => 'Acre', 'AL' => 'Alagoas', 'AP' => 'Amapá', 'AM' => 'Amazonas', 'BA' => 'Bahia', 'CE' => 'Ceará',
+                          'DF' => 'Distrito Federal', 'ES' => 'Espírito Santo', 'GO' => 'Goiás', 'MA' => 'Maranhão', 'MT' => 'Mato Grosso',
+                          'MS' => 'Mato Grosso do Sul', 'MG' => 'Minas Gerais', 'PA' => 'Pará', 'PB' => 'Paraíba', 'PR' => 'Paraná',
+                          'PE' => 'Pernambuco', 'PI' => 'Piauí', 'RJ' => 'Rio de Janeiro', 'RN' => 'Rio Grande do Norte',
+                          'RS' => 'Rio Grande do Sul', 'RO' => 'Rondônia', 'RR' => 'Roraima', 'SC' => 'Santa Catarina', 'SP' => 'São Paulo',
+                          'SE' => 'Sergipe', 'TO' => 'Tocantins'];
+            $cur_region = $config['INCLUDE_REGION'] ?? '';
+            foreach ($br_states as $uf => $uf_name) {
+              $region = "BR-$uf";
+              if (!is_file($home."/BirdNET-Pi/model/include_lists/$region.txt")) continue;
+              $sel = $cur_region === $region ? ' selected' : '';
+              echo "<option value='$region'$sel>$uf_name ($uf)</option>";
+            }
+            ?>
+          </select></td>
+          <td>(Optional)</td>
+        </tr>
       </table>
       <p>Set your Latitude and Longitude to 4 decimal places. Get your coordinates <a href="https://latlong.net" target="_blank">here</a>.</p>
+      <p>Brazilian states include list: only the bird species with WikiAves records in the chosen state are accepted (names per CBRO; non-bird classes are not filtered). It adds to your own Included Species list. Leave <i>None</i> outside Brazil.</p>
       </td></tr></table><br>
       <table class="settingstable"><tr><td>
       <h2>BirdWeather</h2>

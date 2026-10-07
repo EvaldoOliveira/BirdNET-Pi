@@ -46,6 +46,8 @@ LONGITUDE=$LONGITUDE
 MODEL=BirdNET_GLOBAL_6K_V2.4_Model_FP16
 SF_THRESH=0.03
 DATA_MODEL_VERSION=1
+## INCLUDE_REGION is the regional include list (model/include_lists/<region>.txt, e.g. BR-SP); empty = none
+INCLUDE_REGION=
 
 #---------------------  BirdWeather Station Information -----------------------#
 #_____________The variable below can be set to have your BirdNET-Pi____________#
