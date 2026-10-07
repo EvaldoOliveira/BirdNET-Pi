@@ -200,6 +200,12 @@ if grep -E '^DATABASE_LANG=zh$' /etc/birdnet/birdnet.conf &>/dev/null;then
   sed -i --follow-symlinks -E 's/^DATABASE_LANG=zh/DATABASE_LANG=zh_CN/' /etc/birdnet/birdnet.conf
   install_language_label.sh
 fi
+# Portuguese split in two name sets (2026-10-07): labels_pt.json (upstream, Portugal names)
+# became labels_pt_PT.json and labels_pt_BR.json carries the CBRO names. A station on the
+# old 'pt' keeps exactly the names it had.
+if grep -E '^DATABASE_LANG=pt$' /etc/birdnet/birdnet.conf &>/dev/null;then
+  sed -i --follow-symlinks -E 's/^DATABASE_LANG=pt$/DATABASE_LANG=pt_PT/' /etc/birdnet/birdnet.conf
+fi
 
 [ -d $RECS_DIR/StreamData ] || sudo_with_user mkdir -p $RECS_DIR/StreamData
 [ -L ${EXTRACTED}/spectrogram.png ] || sudo_with_user ln -sf ${RECS_DIR}/StreamData/spectrogram.png ${EXTRACTED}/spectrogram.png
