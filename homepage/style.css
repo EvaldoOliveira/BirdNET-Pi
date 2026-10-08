@@ -1046,3 +1046,4 @@ pre#timer.bash {
 .sidenav ~ .views .overview-stats .left-column { float: none; display: flex; justify-content: center; max-width: none; }
 .sidenav ~ .views .overview-stats table.totals { margin-left: auto !important; margin-right: auto !important; }
 .overview-stats table.totals th, .overview-stats table.totals td { padding-top: 1.5px; padding-bottom: 1.5px; }
+.sidenav ~ .views .overview-stats table.totals { width: auto; }
