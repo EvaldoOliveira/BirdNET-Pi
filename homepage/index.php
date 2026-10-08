@@ -61,7 +61,8 @@ echo "
 } elseif(isset($_GET['view'])) {
   // a page's own address (/?view=...): the side menu links and the address bar point here
   echo "
-<iframe src=\"views.php?view=" . rawurlencode($_GET['view']) . "\"></iframe>";
+<iframe src=\"views.php?view=" . rawurlencode($_GET['view'])
+  . (isset($_GET['sci']) ? '&sci=' . rawurlencode($_GET['sci']) : '') . "\"></iframe>";
 } else {
   echo "
 <iframe src=\"views.php\"></iframe>";

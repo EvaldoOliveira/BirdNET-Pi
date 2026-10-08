@@ -162,7 +162,8 @@ window.onload = function() {
 // keep the address bar of the station page on the page shown here (/?view=...), so reload and bookmarks work
 try {
   if (window.top !== window && window.top.location.host === window.location.host) {
-    window.top.history.replaceState(null, '', '/?view=' + encodeURIComponent(<?php echo json_encode($current_view); ?>));
+    window.top.history.replaceState(null, '', '/?view=' + encodeURIComponent(<?php echo json_encode($current_view); ?>)
+      + <?php echo json_encode(isset($_GET['sci']) ? '&sci=' . rawurlencode(html_entity_decode($_GET['sci'], ENT_QUOTES)) : ''); ?>);
   }
 } catch (e) {}
 function copyOutput(elem) {

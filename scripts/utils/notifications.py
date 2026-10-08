@@ -135,6 +135,15 @@ def in_quiet_hours(tier, now=None):
     return s_min <= cur < e_min if s_min < e_min else (cur >= s_min or cur < e_min)
 
 
+def tier_listed(sci_name):
+    # True when the species has its own line in the tiers file (an explicit choice on Species Management)
+    try:
+        with open(NOTIFICATION_TIERS) as f:
+            return any(line.strip().partition('=')[0] == sci_name for line in f)
+    except OSError:
+        return False
+
+
 def get_notification_tier(sci_name):
     # Species tiers set on the Species Management page: one 'Sci_Name=tier' line
     # per non-normal species (muted/rare); a species not listed gets the
@@ -174,7 +183,9 @@ def sendAppriseNotifications(sci_name, com_name, confidence, confidencepct, path
         return ret
 
     tier = get_notification_tier(sci_name)
-    if tier == 'muted':
+    # muted on purpose (own line in the tiers file) = never; muted only by NOTIFICATION_DEFAULT_TIER may still be
+    # promoted by region-rare below — an unexpected species is exactly the one nobody listed
+    if tier == 'muted' and tier_listed(sci_name):
         return
     # region-rare (APPRISE_NOTIFY_REGION_RARE): a species the location model does not expect here — in no week
     # (vagrant) or not now (out of season) — goes to the Rare channel with that reason, once per Repetition limit
@@ -188,6 +199,8 @@ def sendAppriseNotifications(sci_name, com_name, confidence, confidencepct, path
             if too_soon(com_name):
                 return
             tier = 'rare'
+    if tier == 'muted':
+        return
     if in_quiet_hours(tier):
         log.info('quiet hours (%s): no notification for %s', tier, com_name)
         return

@@ -1,71 +1,127 @@
-<h1 align="center"><a href="https://github.com/mcguirepr89/BirdNET-Pi/blob/main/LICENSE">Review the license!!</a></h1>
-<h1 align="center">You may not use BirdNET-Pi to develop a commercial product!!!!</h1>
-<h1 align="center">
-  BirdNET-Pi
-</h1>
 <p align="center">
-A realtime acoustic bird classification system for the Raspberry Pi 5, 4B, 400, 3B+, and 0W2
+  <img src="homepage/images/BirdNetBr.png" alt="BirdNET-Pi" width="140" />
+</p>
+<h1 align="center">BirdNET-Pi — long-term monitoring edition</h1>
+<p align="center"><b>Turn a Raspberry Pi into a 24/7 bird observatory that listens, identifies, records and tells you what matters.</b></p>
+<p align="center">
+  <a href="https://github.com/EvaldoOliveira/BirdNET-Pi/releases"><img alt="Release" src="https://img.shields.io/github/v/release/EvaldoOliveira/BirdNET-Pi?include_prereleases&label=release&color=4a8f3c"></a>
+  <img alt="Raspberry Pi" src="https://img.shields.io/badge/Raspberry%20Pi-5%20%7C%204B%20%7C%20400%20%7C%203B%2B%20%7C%20Zero%202W-c51a4a">
+  <img alt="Models" src="https://img.shields.io/badge/models-BirdNET%2B%20V3%20%7C%20V2.4-2b5e22">
+  <a href="LICENSE"><img alt="Licence" src="https://img.shields.io/badge/licence-CC%20BY--NC--SA%204.0-lightgrey"></a>
 </p>
 <p align="center">
-  <img src="homepage/images/BirdNetBr.png" alt="BirdNetBr" width="200" />
+  <a href="#how-to-get-this-edition"><b>Installation guide</b></a> ·
+  <a href="#features"><b>Features</b></a> ·
+  <a href="#screenshots"><b>Screenshots</b></a> ·
+  <a href="https://github.com/EvaldoOliveira/BirdNET-Pi/releases"><b>Releases</b></a> ·
+  <a href="#reporting-issues"><b>Help</b></a>
 </p>
+<p align="center">
+  <img src="docs/screenshots/now.png" alt="The Now page of a station" width="900" />
+  <br><sub><i>The Now page of the pilot station in São Paulo — BirdNET+ V3 with Brazilian (CBRO) names.</i></sub>
+</p>
+<p align="center"><sub>⚠️ <a href="LICENSE">Review the licence</a> — BirdNET-Pi may not be used to develop a commercial product.</sub></p>
 
-## About this edition (EvaldoOliveira/BirdNET-Pi)
+## More than bird identification
 
 This repository is an independent edition of BirdNET-Pi, maintained as a hard fork of
 [Nachtzuster/BirdNET-Pi](https://github.com/Nachtzuster/BirdNET-Pi) — itself the maintained continuation of
 [mcguirepr89/BirdNET-Pi](https://github.com/mcguirepr89/BirdNET-Pi) — from upstream commit `88985a3` (v0.11 line,
 forked on 2026-08-29).
 
-This edition extends BirdNET-Pi with capabilities intended for long-term acoustic monitoring.
+It keeps everything BirdNET-Pi does — continuous recording, real-time identification, clip extraction, charts,
+live audio — and adds what a station needs to run for years: the newest model, trustworthy data, notifications
+that only interrupt you for what matters, and a station that tells you when something is wrong.
 
-1. **Support for V3 model, and pararel use of shadow models.** Additional classifiers can be selected
-   beside the BirdNET models shipped upstream — currently BirdNET+ V3.0, the developer-preview model of the BirdNET
-   Live application, running on ONNX Runtime. A second model may analyse every recording in parallel with the official
-   one (*shadow mode*), if the Pi Hardware supports, so that two model generations are compared on identical field audio before any change of the
-   official model. *(In verification on the pilot station — see below.)*
-2. **Scheduled raw recording of the dawn chorus, in parallel with the analysis.** Long, unprocessed recordings covering the
-   whole dawn period are made while the analysis keeps running on the same microphone, so that the complete soundscape
-   is preserved for later study (e.g. in Raven) and not only the detected segments. Set it up in
-   *Scheduling › Raw Recording*: days of the week, every week or only once, start and end time, maximum length of each
-   file. The files (`YYYY-MM-DD-<time>-<station>.wav`, 48 kHz 16-bit, with a `.recording` session log) are kept in
-   `~/BirdNET-Pi/raw-recording/`.
-3. **Sound from detection sent in notification.** Detections are announced by Telegram, e-mail or any other messaging
-   channel supported by Apprise, **with the recording attached**, so that a detection can be heard and confirmed on a
-   telephone within moments. Species are assigned to notification tiers, each with its own policy.
-4. **A configurable live spectrogram.** Colour palettes and colour sensitivity (floor, range, contrast) are adjustable
-   while the display runs.
-5. **Custom Bird by bird Confidence Override.** Adjust levels for common incorrect detections so that a real bird is detected, instead of being always ignored or blacklisted
-6. **Normal and Prio Notification.** Separation of notifications so that if for e.g. in Telegram they can be sent to separate channels, so
-   that a Normal is muted and Prio is noisy. Each tier has its own **quiet hours** (e.g. 22:00 to 06:00) and a
-   **repetition limit**, and **region-rare alerts** send to Prio, with the reason, any species the V3 location model
-   does not expect here — never at this place (*vagrant here*) or not in this season (*out of season here*).
-7. **Auto stop/restore services when microphone is removed/inserted.** Recording and analysis stop when the USB
-   microphone is unplugged and start again, with the microphone reconfigured, as soon as it is plugged back in.
-8. **Station species lists.** Choose *None* (the model's species distribution), one of your own lists, or a
-   Brazilian state built from its WikiAves records with CBRO names; lists are saved and loaded in
-   *Species › Custom Species List*.
-9. **A redesigned web interface.** A side menu with one address per page (open any page in a new tab), a *Now* page
-   with the latest detections, *All Detections* with today's totals and chart, detection cards with WikiAves, eBird,
-   Birds of the World and Wikipedia links and the delete / change species / protect / frequency shift actions in place.
-10. **Mobile friendly interface.** On a phone the menu folds into a ☰ button, the header stays on one line, pages use
-   the whole screen and the cards and buttons are sized for touch; the live spectrogram keeps at least 45 seconds on
-   screen so its detection labels show on a narrow display too.
-11. **Station Doctor.** *System › Station Doctor* checks the station in one page — services, microphone, recording,
-   analysis backlog, latest detection, disk and purge protection, quarantined recordings, model files, location
-   profile, version, clock, power and temperature — and offers a one-click restart for what is down. The same checks
-   are available as JSON (`scripts/doctor.php?format=json`) for external monitoring.
-12. **New release badge.** Once a day the station compares the newest release of this edition with the installed
-   one; a new release shows a badge in the menu and a note with its release notes in *System Controls*.
-13. **A page for every species.** One click on the page icon next to a species name opens everything about it: totals,
-   the last 12 months as a calendar, activity by month and by hour, the season the location model expects here, the
-   best clips, the latest detections, the species' threshold, notification tier and lists, and its reviews.
-14. **Review of detections.** The ? icon on a detection asks *Is this the bird?* — *Yes*, *Not this bird* or
-   *Can't tell* (keys Y / N / U). Confirmed clips are protected from the disk purge; rejected detections leave the
-   best detections and the species page counts; three rejections in 90 days suggest a species threshold.
-15. **Automatic purge protection.** The best detections of every species (3 by default, *Advanced Settings*) and every
-   confirmed one are never deleted when disk space is freed. The list is refreshed right before each purge, and if it
-   cannot be refreshed nothing is deleted.
+### Features
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+#### 🧠 V3 model and shadow models
+**BirdNET+ V3** (about 10,000 classes) with its own location filter, or V2.4. A second model can run in **shadow** on every recording, into its own database, to compare models for weeks before switching.
+</td>
+<td width="33%" valign="top">
+
+#### 🎙️ Scheduled raw recording
+Long, unprocessed WAV recordings of the **dawn chorus** — days of the week, once or recurrent, start and end time, segment length — made **while the analysis keeps running** on the same microphone.
+</td>
+<td width="33%" valign="top">
+
+#### 🔔 Notifications with sound
+Telegram, e-mail or any Apprise service, **with the clip attached**, so a detection can be heard and confirmed on the phone within moments.
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+#### 📡 Live spectrogram you can tune
+Colour palettes and sensitivity (floor, range, contrast) adjustable while it runs; detection labels on the spectrogram, on desktop and phone.
+</td>
+<td valign="top">
+
+#### 🎚️ Threshold per species
+Raise the bar for a species that is often misidentified, so a real bird is still detected instead of being ignored or blacklisted.
+</td>
+<td valign="top">
+
+#### 🚦 Normal and Prio channels
+Separate channels (e.g. a quiet and a loud Telegram group), **quiet hours** per channel, a **repetition limit** and **region-rare alerts**: species the V3 location model does not expect here go to Prio with the reason.
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+#### 🔌 Microphone hot-plug
+Recording and analysis stop when the USB microphone is unplugged and start again — microphone reconfigured — as soon as it is plugged back in.
+</td>
+<td valign="top">
+
+#### 🗺️ Station species lists
+The model's distribution, one of your own lists, or a **Brazilian state** built from its WikiAves records with CBRO names — saved and loaded in *Species › Custom Species List*.
+</td>
+<td valign="top">
+
+#### 🧭 Redesigned interface
+A side menu with one address per page, a *Now* page, *All Detections*, and detection cards with WikiAves, eBird, Birds of the World and Wikipedia links and every action in place.
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+#### 📱 Mobile friendly
+On a phone the menu folds into ☰, the header stays on one line, cards and buttons are sized for touch and the live spectrogram keeps its labels readable.
+</td>
+<td valign="top">
+
+#### 🩺 Station Doctor
+One page checks services, microphone, recording, analysis backlog, disk, model, version, clock, power and temperature — with a **one-click restart** for what is down, and the same checks as JSON for monitoring.
+</td>
+<td valign="top">
+
+#### 🆕 Release badge
+Once a day the station compares the newest release of this edition with the installed one and shows a badge and the release notes in *System Controls*.
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+#### 🐦 A page for every species
+Totals, the last 12 months as a calendar, activity by month and hour, the season the location model expects, the best clips, the latest detections, thresholds, lists and reviews — in one place.
+</td>
+<td valign="top">
+
+#### ✅ Review your detections
+*Is this the bird?* — **Yes**, **Not this bird** or **Can't tell** on any card (keys Y / N / U). Confirmed clips are protected; rejections suggest a species threshold.
+</td>
+<td valign="top">
+
+#### 🛡️ Automatic purge protection
+The best detections of every species and every confirmed one are **never deleted** when disk space is freed; if the protection list cannot be refreshed, nothing is deleted.
+</td>
+</tr>
+</table>
 
 ### How to get this edition
 
@@ -151,23 +207,39 @@ git remote set-url origin https://github.com/Nachtzuster/BirdNET-Pi.git
 
 Pilot station, São Paulo (BirdNET+ V3, Portuguese Brazil (CBRO) names).
 
-| Now (the start page) | Today's Detections |
-|---|---|
-| ![Now](docs/screenshots/now.png) | ![Today's Detections](docs/screenshots/todays-detections.png) |
-| **All Detections (today's totals and chart)** | **Detections by... (species or date)** |
-| ![All Detections](docs/screenshots/all-detections.png) | ![Detections by](docs/screenshots/detections-by.png) |
-| **Live spectrogram (palettes, detection labels)** | **Detection card (links and actions)** |
-| ![Live spectrogram](docs/screenshots/live-spectrogram.png) | ![Detection card](docs/screenshots/detection-card.png) |
-| **Species Management (per-species threshold)** | **Settings — Models and species list filter** |
-| ![Species Management](docs/screenshots/species-management.png) | ![Settings](docs/screenshots/settings-models.png) |
-| **Notifications — Normal and Rare tiers** | |
-| ![Notifications](docs/screenshots/notifications.png) | |
+<table>
+<tr>
+<td width="50%" align="center"><b>Today's Detections</b><br><img src="docs/screenshots/todays-detections.png" alt="Today's Detections"></td>
+<td width="50%" align="center"><b>All Detections — today's totals and chart</b><br><img src="docs/screenshots/all-detections.png" alt="All Detections"></td>
+</tr>
+<tr>
+<td align="center"><b>A page for every species</b><br><img src="docs/screenshots/species-page.png" alt="Species page"></td>
+<td align="center"><b>Station Doctor</b><br><img src="docs/screenshots/station-doctor.png" alt="Station Doctor"></td>
+</tr>
+<tr>
+<td align="center"><b>Species Management — threshold, tier and lists per species</b><br><img src="docs/screenshots/species-management.png" alt="Species Management"></td>
+<td align="center"><b>Detections by... (species or date)</b><br><img src="docs/screenshots/detections-by.png" alt="Detections by"></td>
+</tr>
+<tr>
+<td align="center"><b>Live spectrogram — palettes and detection labels</b><br><img src="docs/screenshots/live-spectrogram.png" alt="Live spectrogram"></td>
+<td align="center"><b>Review — Is this the bird?</b><br><img src="docs/screenshots/review.png" alt="Review dialog" width="320"></td>
+</tr>
+<tr>
+<td align="center"><b>Settings — models, shadow model and species filter</b><br><img src="docs/screenshots/settings-models.png" alt="Settings models"></td>
+<td align="center"><b>Notifications — Normal and Prio, quiet hours, region-rare alerts</b><br><img src="docs/screenshots/notifications.png" alt="Notifications"></td>
+</tr>
+</table>
 
 On a phone (the menu opens from the ☰ button):
 
-| Now | Today's Detections | All Detections |
-|---|---|---|
-| ![Now on a phone](docs/screenshots/mobile-now.png) | ![Today's Detections on a phone](docs/screenshots/mobile-todays.png) | ![All Detections on a phone](docs/screenshots/mobile-all-detections.png) |
+<table>
+<tr>
+<td align="center"><b>Now</b><br><img src="docs/screenshots/mobile-now.png" alt="Now on a phone" width="220"></td>
+<td align="center"><b>Today's Detections</b><br><img src="docs/screenshots/mobile-todays.png" alt="Today's Detections on a phone" width="220"></td>
+<td align="center"><b>All Detections</b><br><img src="docs/screenshots/mobile-all-detections.png" alt="All Detections on a phone" width="220"></td>
+<td align="center"><b>Species page</b><br><img src="docs/screenshots/mobile-species-page.png" alt="Species page on a phone" width="220"></td>
+</tr>
+</table>
 
 ### Reporting issues
 
