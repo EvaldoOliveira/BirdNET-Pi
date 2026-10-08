@@ -81,7 +81,7 @@ def create_plot(df_plt_today, now, is_top=None):
     conf = get_settings()
 
     # Set up plot axes and titles
-    height = max(readings / 3, 0) + 1.06
+    height = max(readings / 4, 0) + 1.06  # 25 px per species row (was 33, owner 2026-10-08)
     if conf['COLOR_SCHEME'] == "dark":
         facecolor = 'darkgrey'
     else:
