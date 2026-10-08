@@ -208,6 +208,15 @@ def run_analysis(file):
                         confidence,
                     )
                     confident_detections.append(d)
+    # AVOID_DUPLICITY=1 (Settings > Models): one species per recording — only the species with the
+    # highest confidence in this file is kept (all its detections); the others are dropped. It removes the
+    # second name a model gives to one song, and also real birds singing in the same seconds.
+    if confident_detections and (conf.get('AVOID_DUPLICITY') or '0').strip() == '1':
+        best = max(confident_detections, key=lambda d: d.confidence).scientific_name
+        for d in confident_detections:
+            if d.scientific_name != best:
+                log.info('Dropped by the avoid duplicity filter: %s %s (%s)', d.scientific_name, d.common_name, d.confidence)
+        confident_detections = [d for d in confident_detections if d.scientific_name == best]
     return confident_detections
 
 

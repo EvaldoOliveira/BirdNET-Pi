@@ -482,9 +482,64 @@ class Wikipedia extends ImageProvider {
   }
 }
 
+// WikiAves page of a Brazilian bird, from its CBRO name (pt_BR): "Sanhaço-cinzento" -> sanhaco-cinzento.
+// Only for species of the Brazilian state lists (model/include_lists/BR-*.txt): the pt_BR file also
+// names non-Brazilian birds (Portugal or English names), which have no WikiAves page.
+function get_wikiaves_url($sciname) {
+  static $brazilian = null, $cbro = null;
+  if ($brazilian === null) {
+    $brazilian = array();
+    foreach (glob(__ROOT__ . '/model/include_lists/BR-*.txt') as $list) {
+      foreach (file($list, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        $brazilian[explode('_', $line)[0]] = true;
+      }
+    }
+    $cbro = json_decode((string)@file_get_contents(__ROOT__ . '/model/l18n/labels_pt_BR.json'), true) ?: array();
+  }
+  if (!isset($brazilian[$sciname]) || empty($cbro[$sciname])) return '';
+  $slug = strtr(mb_strtolower($cbro[$sciname], 'UTF-8'), array('á' => 'a', 'à' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a',
+    'é' => 'e', 'ê' => 'e', 'è' => 'e', 'í' => 'i', 'ï' => 'i', 'ó' => 'o', 'ô' => 'o', 'õ' => 'o', 'ö' => 'o',
+    'ú' => 'u', 'ü' => 'u', 'ç' => 'c', 'ñ' => 'n'));
+  $slug = trim(preg_replace('/[^a-z0-9]+/', '-', $slug), '-');
+  return $slug === '' ? '' : "https://www.wikiaves.com.br/wiki/$slug";
+}
+
+// Species links shown next to every scientific name (owner 2026-10-08): eBird and Birds of the World
+// for the birds eBird knows, Wikipedia in the station language, and WikiAves when the names are CBRO
+// (Portuguese Brazil) and the bird is Brazilian. $style/$width are the page's icon style.
+function species_links($sciname, $style = '', $width = 20) {
+  static $ebirds = null;
+  if ($ebirds === null) {
+    require __ROOT__ . '/scripts/ebird.php';
+  }
+  $config = get_config();
+  $lang = $config['DATABASE_LANG'] ?? 'en';
+  $links = array();
+  $code = $ebirds[$sciname] ?? '';
+  if ($code !== '') {
+    $links[] = array("https://ebird.org/species/$code?siteLanguage=$lang", 'eBird', 'images/ebird.png');
+    $links[] = array("https://birdsoftheworld.org/bow/species/$code/cur/introduction", 'Birds of the World', 'images/bow.png');
+  }
+  $wiki_lang = explode('_', $lang)[0];
+  $links[] = array("https://$wiki_lang.wikipedia.org/wiki/" . str_replace(' ', '_', $sciname), 'Wikipedia', 'images/wiki.png');
+  if ($lang === 'pt_BR' && ($wikiaves = get_wikiaves_url($sciname)) !== '') {
+    $links[] = array($wikiaves, 'WikiAves', 'images/wikiaves.png');
+  }
+  $html = '';
+  foreach ($links as $l) {
+    $html .= '<a href="' . htmlspecialchars($l[0], ENT_QUOTES) . '" target="_blank"><img style="' . htmlspecialchars($style, ENT_QUOTES)
+      . '" title="' . $l[1] . '" src="' . $l[2] . '" width="' . intval($width) . '"></a> ';
+  }
+  return $html;
+}
+
 function get_info_url($sciname){
   $engname = get_com_en_name($sciname);
   $config = get_config();
+  // names per CBRO (Portuguese Brazil): Brazilian birds link to their WikiAves page
+  if (($config['DATABASE_LANG'] ?? '') === 'pt_BR' && ($wikiaves = get_wikiaves_url($sciname)) !== '') {
+    return array('URL' => $wikiaves, 'TITLE' => 'WikiAves');
+  }
   if ($config['INFO_SITE'] === 'EBIRD'){
     require 'scripts/ebird.php';
     $ebird = $ebirds[$sciname] ?? '';

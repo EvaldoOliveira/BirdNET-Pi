@@ -108,6 +108,8 @@ if(isset($_GET["latitude"])){
   // Shadow on/off flag: unchecked = the shadow model and its parameters stay configured
   // but nothing is analysed by it (only the official model runs). Absent key = off (the default).
   $shadow_enabled = isset($_GET['shadow_enabled']) ? 1 : 0;
+  // one species per recording (Settings > Models): only the highest-confidence species of each file is kept
+  $avoid_duplicity = isset($_GET['avoid_duplicity']) ? 1 : 0;
   // Swap: the shadow model becomes the official one and vice versa, each keeping its own
   // three parameters (what the owner did by hand on 2026-09-21). Only when a shadow is set.
   if(isset($_GET['swap_models']) && $shadow_model != '') {
@@ -268,6 +270,7 @@ if(isset($_GET["latitude"])){
                  'SHADOW_MIN_CONF' => array($shadow_min_conf, 'minimum confidence of a shadow model detection'),
                  'SHADOW_SENS' => array($shadow_sens, 'sigmoid sensitivity of the shadow model'),
                  'SHADOW_GEO_THRESH' => array($shadow_geo_thresh, 'location (species occurrence) threshold of the shadow model'),
+                 'AVOID_DUPLICITY' => array($avoid_duplicity, 'avoid duplicity filter: 1 = only the species with the highest confidence in each recording is kept (fewer species), 0 = every species above its minimum (default)'),
                  'SHADOW_ENABLED' => array($shadow_enabled, 'shadow switch: 1 = the shadow model analyses every recording, 0 = only the official model runs (shadow settings kept)')) as $key => $pair) {
     list($val, $desc) = $pair;
     if(preg_match("/^$key=/m", $contents)) {
@@ -497,6 +500,11 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
           <td><input name="shadow_min_conf" type="number" style="width:5em;" max="0.99" min="0.01" step="0.01" value="<?php print($config['SHADOW_MIN_CONF'] ?? '0.35');?>"/></td>
           <td><input name="shadow_sens" type="number" style="width:5em;" min="0.5" max="1.5" step="0.01" value="<?php print($config['SHADOW_SENS'] ?? '1.0');?>"/></td>
           <td><input name="shadow_geo_thresh" type="number" style="width:5em;" max="0.99" min="0.0005" step="any" value="<?php print($config['SHADOW_GEO_THRESH'] ?? $config['SF_THRESH']);?>"/></td>
+        </tr>
+        <tr>
+          <td><b>Avoid duplicity</b></td>
+          <td colspan="4"><label><input type="checkbox" name="avoid_duplicity" value="1" <?php if((string)($config['AVOID_DUPLICITY'] ?? '0') === '1') echo 'checked'; ?>> one species per recording</label>
+            <small>— keeps, in each recording (e.g. 15 s), only the species with the highest confidence. It removes the second name a model sometimes gives to the same song, but it also drops other birds singing in the same seconds, so fewer species are identified. Off by default.</small></td>
         </tr>
         <tr>
           <td><b>Overlap</b></td>

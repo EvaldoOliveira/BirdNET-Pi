@@ -542,8 +542,7 @@ $url = $info_url['URL'];
 echo "<table>
   <tr><th>$com_name<br><span style=\"font-weight:normal;\">
   <i>$sciname</i></span><br>
-    <a href=\"$url\" target=\"_blank\"><img title=\"$url_title\" src=\"images/info.png\" width=\"20\"></a>
-    <a href=\"https://wikipedia.org/wiki/$sciname\" target=\"_blank\"><img title=\"Wikipedia\" src=\"images/wiki.png\" width=\"20\"></a>
+    " . species_links($sciname, '', 20) . "
   </th></tr>";
   $iter=0;
   while($results=$result2->fetchArray(SQLITE3_ASSOC))
@@ -647,8 +646,7 @@ echo "<table>
     echo "<table>
       <tr><th>$name<br>
       <i>$sciname</i><br>
-          <a href=\"$url\" target=\"_blank\"><img title=\"$url_title\" src=\"images/info.png\" width=\"20\"></a>
-          <a href=\"https://wikipedia.org/wiki/$sciname\" target=\"_blank\"><img title=\"Wikipedia\" src=\"images/wiki.png\" width=\"20\"></a>
+          " . species_links($sciname, '', 20) . "
       </th></tr>";
       while($results=$result2->fetchArray(SQLITE3_ASSOC))
       {

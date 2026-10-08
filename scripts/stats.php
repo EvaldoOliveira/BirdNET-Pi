@@ -152,8 +152,7 @@ while($results=$result3->fetchArray(SQLITE3_ASSOC)){
   echo str_pad("<h3>$species</h3>
     <table><tr>
   <td class=\"relative\"><a target=\"_blank\" href=\"index.php?filename=".$results['File_Name']."\"><img title=\"Open in new tab\" class=\"copyimage\" width=25 src=\"images/copy.png\"></a><i>$sciname</i>
-  <a href=\"$url\" target=\"_blank\"><img style=\"width: unset !important; display: inline; height: 1em; cursor: pointer;\" title=\"$url_title\" src=\"images/info.png\" width=\"20\"></a>
-  <a href=\"https://wikipedia.org/wiki/$sciname\" target=\"_blank\"><img style=\"width: unset !important; display: inline; height: 1em; cursor: pointer;\" title=\"Wikipedia\" src=\"images/wiki.png\" width=\"20\"></a><br>
+  " . species_links($sciname, 'width: unset !important; display: inline; height: 1em; cursor: pointer;', 20) . "<br>
   Occurrences: $count<br>
   Max Confidence: $maxconf<br>
   Best Recording: $date $time<br><br>
