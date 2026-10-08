@@ -183,11 +183,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
 
     if (!empty($config["IMAGE_PROVIDER"])) {
       if ($image_provider === null) {
-        if ($config["IMAGE_PROVIDER"] === 'FLICKR') {
-          $image_provider = new Flickr();
-        } else {
-          $image_provider = new Wikipedia();
-        }
+        $image_provider = new Wikipedia();
         if ($image_provider->is_reset()) {
           $_SESSION['images'] = [];
         }

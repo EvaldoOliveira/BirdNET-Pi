@@ -212,14 +212,13 @@ if ! grep -E '^RARE_SPECIES_THRESHOLD=' /etc/birdnet/birdnet.conf &>/dev/null;th
   echo "RARE_SPECIES_THRESHOLD=\"30\"" >> /etc/birdnet/birdnet.conf
 fi
 
-if ! grep -E '^IMAGE_PROVIDER=' /etc/birdnet/birdnet.conf &>/dev/null;then
-  if grep -E '^FLICKR_API_KEY=\S+' /etc/birdnet/birdnet.conf &>/dev/null;then
-    PROVIDER=FLICKR
-  else
-    PROVIDER=""
-  fi
-  echo '## WIKIPEDIA or FLICKR (Flickr requires API key)' >> /etc/birdnet/birdnet.conf
-  echo "IMAGE_PROVIDER=${PROVIDER}" >> /etc/birdnet/birdnet.conf
+# Bird photos come from Wikipedia (the Flickr option and the Bird Photo Source settings were retired,
+# owner 2026-10-08): stations on FLICKR, None or without the key move to WIKIPEDIA
+if grep -qE '^IMAGE_PROVIDER=' /etc/birdnet/birdnet.conf; then
+  sed -i 's/^IMAGE_PROVIDER=.*/IMAGE_PROVIDER=WIKIPEDIA/' /etc/birdnet/birdnet.conf
+else
+  echo '## IMAGE_PROVIDER: bird photos from Wikipedia' >> /etc/birdnet/birdnet.conf
+  echo "IMAGE_PROVIDER=WIKIPEDIA" >> /etc/birdnet/birdnet.conf
 fi
 
 if grep -E '^DATABASE_LANG=zh$' /etc/birdnet/birdnet.conf &>/dev/null;then

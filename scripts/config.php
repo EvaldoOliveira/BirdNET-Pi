@@ -73,8 +73,6 @@ if(isset($_GET["latitude"])){
   if(isset($_GET['apprise_notification_title_rare'])) { $apprise_notification_title_rare = str_replace('$(', '', preg_replace('/["`\\\\\x00-\x1F\x7F]/', '', $_GET['apprise_notification_title_rare'])); }
   if(isset($_GET['apprise_notification_body_rare'])) { $apprise_notification_body_rare = htmlspecialchars_decode($_GET['apprise_notification_body_rare'], ENT_QUOTES); }
   $minimum_time_limit = $_GET['minimum_time_limit'];
-  $image_provider = $_GET["image_provider"];
-  $flickr_api_key = $_GET['flickr_api_key'];
   $flickr_filter_email = $_GET["flickr_filter_email"];
   $language = $_GET["language"];
   // Portuguese has two name sets (owner 2026-10-07): pt_BR = CBRO (Brazil), pt_PT = the upstream
@@ -222,8 +220,6 @@ if(isset($_GET["latitude"])){
   $contents = preg_replace("/APPRISE_NOTIFY_NEW_SPECIES=.*/", "APPRISE_NOTIFY_NEW_SPECIES=$apprise_notify_new_species", $contents);
   $contents = preg_replace("/APPRISE_NOTIFY_NEW_SPECIES_EACH_DAY=.*/", "APPRISE_NOTIFY_NEW_SPECIES_EACH_DAY=$apprise_notify_new_species_each_day", $contents);
   $contents = preg_replace("/APPRISE_WEEKLY_REPORT=.*/", "APPRISE_WEEKLY_REPORT=$apprise_weekly_report", $contents);
-  $contents = preg_replace("/IMAGE_PROVIDER=.*/", "IMAGE_PROVIDER=$image_provider", $contents);
-  $contents = preg_replace("/FLICKR_API_KEY=.*/", "FLICKR_API_KEY=$flickr_api_key", $contents);
   if(strlen($language) == 2 || strlen($language) == 5){
     $contents = preg_replace("/DATABASE_LANG=.*/", "DATABASE_LANG=$language", $contents);
   }
@@ -835,21 +831,6 @@ mailto://{user}:{password}@gmail.com
           document.querySelectorAll('.birddb_field').forEach(function (f) { f.disabled = !on; });
         }
       </script>
-      </td></tr></table><br>
-      <table class="settingstable"><tr><td>
-      <h2>Bird Photo Source</h2>
-      <label for="image_provider">Image Provider: </label>
-      <select name="image_provider" class="testbtn">
-        <option value="" <?php if(empty($config['IMAGE_PROVIDER'])) { echo 'selected'; } ?>>None</option>
-        <option value="WIKIPEDIA" <?php if($config['IMAGE_PROVIDER'] == 'WIKIPEDIA') { echo 'selected'; } ?>>Wikipedia</option>
-        <option value="FLICKR" <?php if(empty($config['FLICKR_API_KEY'])) { echo 'disabled'; } else if($config['IMAGE_PROVIDER'] == 'FLICKR') { echo 'selected'; } ?>>Flickr</option>
-      </select>
-      <hr>
-      <p>Set your Flickr API key to enable the display of bird images next to detections. <a target="_blank" href="https://www.flickr.com/services/api/misc.api_keys.html">Get your key here.</a></p>
-      <label for="flickr_api_key">Flickr API Key: </label>
-      <input name="flickr_api_key" type="text" size="32" value="<?php print($config['FLICKR_API_KEY']);?>"/><br>
-      <label for="flickr_filter_email">Only search photos from this Flickr user: </label>
-      <input name="flickr_filter_email" type="email" size="24" placeholder="myflickraccount@gmail.com" value="<?php print($config['FLICKR_FILTER_EMAIL']);?>"/><br>
       </td></tr></table><br>
       <table class="settingstable"><tr><td>
       <h2>Localization</h2>

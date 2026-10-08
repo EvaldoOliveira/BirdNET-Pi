@@ -12,11 +12,7 @@ if ($requestMethod !== 'GET') {
 }
 
 if (preg_match('#^/api/v1/image/(\S+)$#', $requestUri, $matches)) {
-  if ($config["IMAGE_PROVIDER"] === 'FLICKR') {
-    $image_provider = new Flickr();
-  } else {
-    $image_provider = new Wikipedia();
-  }
+  $image_provider = new Wikipedia();
   $sci_name = urldecode($matches[1]);
   $result = $image_provider->get_image($sci_name);
 
