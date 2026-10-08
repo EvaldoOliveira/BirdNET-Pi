@@ -1055,7 +1055,7 @@ pre#timer.bash {
 
 /* The page frame reaches the bottom of the screen (owner 2026-10-08): on phones "100%" is measured without
    the browser's toolbars, which left a green band below the content */
-iframe { top: 54px; bottom: 0; left: 0; height: auto !important; }
+iframe { top: 54px; left: 0; height: calc(100vh - 54px) !important; height: calc(100dvh - 54px) !important; }
 @media screen and (max-width: 800px) {
-  iframe { top: 48px; }
+  iframe { top: 48px; height: calc(100vh - 48px) !important; height: calc(100dvh - 48px) !important; }
 }
