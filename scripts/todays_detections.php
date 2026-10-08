@@ -203,8 +203,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
         <?php if(isset($_GET['display_limit']) && is_numeric($_GET['display_limit'])){ ?>
           <tr class="relative" id="<?php echo $iterations; ?>">
           <td class="relative">
-            <img style='cursor:pointer;right:45px' src='images/delete.svg' onclick='deleteDetection("<?php echo $filename_formatted; ?>")' class="copyimage" width=25 title='Delete Detection'>
-            <a target="_blank" href="index.php?filename=<?php echo $todaytable['File_Name']; ?>"><img class="copyimage" title="Open in new tab" width=25 src="images/copy.png"></a>
+            <?php echo detection_actions($filename_formatted); ?>
         
             
           <div class="centered_image_container">
@@ -240,7 +239,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
 	                    <?php echo species_links($todaytable['Sci_Name'], 'height: 1em;cursor:pointer;float:unset;display:inline', 25); ?>
       	    <?php if($_GET['kiosk'] == false){?>
 	                    <img style="height: 1em;cursor:pointer;float:unset;display:inline" title="View species stats" onclick="generateMiniGraph(this, '<?php echo $comnamegraph; ?>')" width=25 src="images/chart.svg">
-	                    <a target="_blank" href="index.php?filename=<?php echo $todaytable['File_Name']; ?>"><img style="height: 1em;cursor:pointer;float:unset;display:inline" class="copyimage-mobile" title="Open in new tab" width=16 src="images/copy.png"></a>
+	                    <?php echo detection_actions($filename_formatted, false, 'height: 1em;float:unset;display:inline', 16); ?>
           	    <?php } ?></i>
 	                <br>
 	            </div>
@@ -321,29 +320,11 @@ if (get_included_files()[0] === __FILE__) {
     <button style="font-weight:bold;color:blue" onclick="if(confirm('Are you sure you want to blacklist this image?')) { blacklistImage(); }" <?php if($config["IMAGE_PROVIDER"] === 'WIKIPEDIA'){ echo 'hidden';} ?> >Blacklist this image</button>
   </dialog>
   <script src="static/dialog-polyfill.js"></script>
+  <script src="static/detection-actions.js"></script>
   <script src="static/Chart.bundle.js"></script>
   <script src="static/chartjs-plugin-trendline.min.js"></script>
   
   <script>
-    function deleteDetection(filename,copylink=false) {
-    if (confirm("Are you sure you want to delete this detection from the database?") == true) {
-      const xhttp = new XMLHttpRequest();
-      xhttp.onload = function() {
-        if(this.responseText == "OK"){
-          if(copylink == true) {
-            window.top.close();
-          } else {
-            location.reload();
-          }
-        } else {
-          alert("Database busy.")
-        }
-      }
-      xhttp.open("GET", "play.php?deletefile="+filename, true);
-      xhttp.send();
-    }
-  }
-
     var last_photo_link;
   var dialog = document.querySelector('dialog');
   dialogPolyfill.registerDialog(dialog);

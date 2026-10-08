@@ -506,6 +506,38 @@ function get_wikiaves_url($sciname) {
 
 // Species links shown next to every scientific name (owner 2026-10-08): WikiAves first when the names are
 // CBRO (Portuguese Brazil) and the bird is Brazilian, then eBird and Birds of the World
+// Action icons of one detection (delete, change species, protect from purge, frequency shift), the same
+// ones the Recordings page shows, so a card does not need the "open in new tab" detour (owner 2026-10-08).
+// $file = "<date>/<common name>/<file>"; $positioned = the absolute top-right layout of the cards.
+function detection_actions($file, $positioned = true, $style = '', $width = 25) {
+  static $locked = null;
+  $home = get_home();
+  if ($locked === null) {
+    $list = $home . '/BirdNET-Pi/scripts/disk_check_exclude.txt';
+    $locked = is_file($list) ? array_flip(file($list, FILE_IGNORE_NEW_LINES)) : array();
+  }
+  $f = htmlspecialchars(json_encode($file), ENT_QUOTES);
+  $lock = isset($locked[$file])
+    ? array('del', 'images/lock.svg', 'This file is excluded from being purged.')
+    : array('add', 'images/unlock.svg', 'This file will be deleted when disk space needs to be freed (>95% usage).');
+  $shift = file_exists($home . '/BirdSongs/Extracted/By_Date/shifted/' . $file)
+    ? array('unshift', 'images/unshift.svg', 'This file has been shifted down in frequency.')
+    : array('shift', 'images/shift.svg', 'This file is not shifted in frequency.');
+  $icons = array(
+    array("deleteDetection($f)", 'images/delete.svg', 'Delete Detection', '120px'),
+    array("changeDetection($f)", 'images/bird.svg', 'Change Detection', '85px'),
+    array("toggleLock($f, &quot;$lock[0]&quot;, this)", $lock[1], $lock[2], '45px'),
+    array("toggleShiftFreq($f, &quot;$shift[0]&quot;, this)", $shift[1], $shift[2], ''),
+  );
+  $html = '';
+  foreach ($icons as $i) {
+    $css = 'cursor:pointer;' . ($positioned && $i[3] !== '' ? "right:$i[3];" : '') . $style;
+    $html .= "<img style=\"$css\" src=\"$i[1]\" onclick=\"$i[0]\"" . ($positioned ? ' class="copyimage"' : '')
+      . " width=\"$width\" title=\"" . htmlspecialchars($i[2], ENT_QUOTES) . '"> ';
+  }
+  return $html;
+}
+
 // for the birds eBird knows, and Wikipedia in the station language. $style/$width are the page's icon style.
 function species_links($sciname, $style = '', $width = 20) {
   static $ebirds = null;

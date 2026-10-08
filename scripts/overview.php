@@ -112,7 +112,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true" && isse
         <table class="<?php echo ($_GET['previous_detection_identifier'] == 'undefined') ? '' : 'fade-in';  ?>">
           <h3>Most Recent Detection: <span style="font-weight: normal;"><?php echo $mostrecent['Date']." ".$mostrecent['Time'];?></span></h3>
           <tr>
-            <td class="relative"><a target="_blank" href="index.php?filename=<?php echo $mostrecent['File_Name']; ?>"><img class="copyimage" title="Open in new tab" width="25" height="25" src="images/copy.png"></a>
+            <td class="relative"><?php echo detection_actions($mostrecent['Date'] . '/' . str_replace(array("'", ' '), array('', '_'), $mostrecent['Com_Name']) . '/' . $mostrecent['File_Name']); ?>
             <div class="centered_image_container" style="margin-bottom: 0px !important;">
               <?php if(!empty($config["IMAGE_PROVIDER"]) && strlen($image[2]) > 0) { ?>
                 <img onclick='setModalText(<?php echo $iterations; ?>,"<?php echo urlencode($image[2]); ?>", "<?php echo $image[3]; ?>", "<?php echo $image[4]; ?>", "<?php echo $image[1]; ?>", "<?php echo $image[5]; ?>")' src="<?php echo $image[1]; ?>" class="img1">
@@ -393,7 +393,7 @@ function display_species($species_list, $title, $show_last_seen=false) {
                                         <?php if ($show_last_seen): ?>
                                             <img style="height: 1em;cursor:pointer;float:unset;display:inline" title="View species stats" onclick="generateMiniGraph(this, '<?php echo $comnamegraph; ?>', 160)" width="25" src="images/chart.svg">
                                         <?php endif; ?>
-                                        <a target="_blank" href="index.php?filename=<?php echo $todaytable['File_Name']; ?>"><img style="height: 1em;cursor:pointer;float:unset;display:inline" class="copyimage-mobile" title="Open in new tab" width="16" src="images/copy.png"></a>
+                                        <?php echo detection_actions($filename_formatted, false, 'height: 1em;float:unset;display:inline', 16); ?>
                                     </i>
                             </form></div>
                         </td>
@@ -589,6 +589,7 @@ startAutoRefresh();
 }
 </style>
 <script src="static/custom-audio-player.js"></script>
+<script src="static/detection-actions.js"></script>
 <script src="static/generateMiniGraph.js"></script>
 <script>
 // Listen for the scroll event on the window object
