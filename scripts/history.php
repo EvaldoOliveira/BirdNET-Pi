@@ -130,18 +130,20 @@ function submitID() {
 
 </script>  
 
-<form action="views.php" method="GET">
+<!-- date on the left, the day's total on the right, one line (owner 2026-10-08) -->
+<div class="daybar" style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 8px;">
+<form action="views.php" method="GET" style="margin:0;">
   <input type="date" name="date" value="<?php echo $theDate;?>">
   <button type="submit" name="view" value="Daily Charts">Submit Date</button>
 </form>
-<br>
-<table class="overview">
+<table class="overview" style="margin:0 !important;">
   <tr>
     <th>Total Detections For The Day</th>
     <td><?php echo $totalcount['COUNT(*)']; ?></td>
     <td style="padding:unset"><img src="images/spinner.gif" id="SwipeSpinner" hidden style="height:30px;"></td>
   </tr>
 </table>
+</div>
     	<?php // <br><button type="button" onclick="showDialog()">Export as CSV for eBird</button><br><br> ?>
 <?php
 $time = time();
