@@ -315,6 +315,36 @@ if(isset($_GET["latitude"])){
     sleep(5);
   }
 
+  // BirdDB-Br (Basic Settings, below BirdWeather — owner 2026-10-08)
+  // US-40: station-side transport to the central sound repository (rclone remote + upload interval)
+  if(isset($_GET['sound_repo_upload_minutes'])) {
+    $sound_repo_upload_minutes = is_numeric($_GET['sound_repo_upload_minutes']) ? max(0, min(1440, intval($_GET['sound_repo_upload_minutes']))) : 5;
+    $sound_repo_remote = isset($_GET['sound_repo_remote']) ? trim($_GET['sound_repo_remote']) : '';
+    // remote:path — no blanks, quotes, backticks, $ or backslashes (the value is written into birdnet.conf;
+    // the old class ended in an escaped ']' and never compiled, so every remote was dropped)
+    if(!preg_match('/^[A-Za-z0-9_-]+:[^\s"\'`$\\\\]*$/', $sound_repo_remote)) { $sound_repo_remote = ''; }
+  }
+  // BirdDB-Br switch (default off): the spool, the upload and the clean-up all follow it.
+  // Only the Settings form carries the checkbox (it always sends birdweather_id).
+  if (isset($_GET['birdweather_id'])) {
+    $birddb_enabled = isset($_GET['birddb_enabled']) ? 1 : 0;
+    if(preg_match("/^BIRDDB_ENABLED=/m", $contents)) {
+      $contents = preg_replace("/^BIRDDB_ENABLED=.*/m", "BIRDDB_ENABLED=$birddb_enabled", $contents);
+    } else {
+      $contents .= "\n## BIRDDB_ENABLED: 1 = contribute this station's clips to BirdDB-Br (sound repository), 0 = off (default)\nBIRDDB_ENABLED=$birddb_enabled\n";
+    }
+  }
+  if(isset($sound_repo_upload_minutes)) {
+    foreach (array('SOUND_REPO_REMOTE' => array("\"$sound_repo_remote\"", 'rclone destination of the central sound repository (remote:path; empty = deposits stay in SOUND_REPO_PATH)'),
+                   'SOUND_REPO_UPLOAD_MINUTES' => array($sound_repo_upload_minutes, 'interval in minutes between uploads of SOUND_REPO_PATH to SOUND_REPO_REMOTE (0 = never)')) as $key => $pair) {
+      list($val, $desc) = $pair;
+      if(preg_match("/^$key=/m", $contents)) {
+        $contents = preg_replace("/^$key=.*/m", "$key=$val", $contents);
+      } else {
+        $contents .= "\n## $key is the $desc\n$key=$val\n";
+      }
+    }
+  }
   $fh = fopen("/etc/birdnet/birdnet.conf", "w");
   fwrite($fh, $contents);
   fclose($fh);
@@ -638,23 +668,6 @@ function runProcess() {
       <p>Set your Latitude and Longitude to 4 decimal places. Get your coordinates <a href="https://latlong.net" target="_blank">here</a>.</p>
       <p>Brazilian states include list: only the bird species with WikiAves records in the chosen state are accepted (names per CBRO; non-bird classes are not filtered). It replaces your Included Species list (the previous one is kept as a .bak file). Leave <i>None</i> outside Brazil or if you want to detect species that have not been registered yet in your area.</p>
       </td></tr></table><br>
-      <table class="settingstable"><tr><td>
-      <h2>BirdWeather</h2>
-      <label for="birdweather_enabled">Upload to BirdWeather: </label>
-      <input type="checkbox" name="birdweather_enabled" id="birdweather_enabled" <?php echo (($config['BIRDWEATHER_ENABLED'] ?? '1') != '0') ? 'checked' : ''; ?>>
-      (off = nothing is sent, the token is kept)<br>
-      <label for="birdweather_id">BirdWeather Token: </label>
-      <input name="birdweather_id" type="text" value="<?php print($config['BIRDWEATHER_ID']);?>" /><br>
-           <p><a href="https://app.birdweather.com" target="_blank">BirdWeather.com</a> is a weather map for bird sounds. 
-        Stations around the world supply audio and video streams to BirdWeather where they are then analyzed by BirdNET 
-        and compared to eBird Grid data. BirdWeather catalogues the bird audio and spectrogram visualizations so that you 
-        can listen to, view, and read about birds throughout the world. <br><br> 
-        To request a BirdWeather Token, You'll first need to create an account - <a href="https://app.birdweather.com/login" target="_blank">https://app.birdweather.com/</a><br>
-        Once that's done - you can go to - <a href="https://app.birdweather.com/account/stations" target="_blank">https://app.birdweather.com/account/stations</a><br>
-        Make sure that the Latitude and Longitude match what is in your BirdNET-Pi configuration.
-        <br><br>
-        <dt>NOTE - by using your BirdWeather Token - you are consenting to sharing your soundscapes and detections with BirdWeather</dt></p>
-      </td></tr></table><br>
       <table class="settingstable" style="width:100%"><tr><td>
       <h2>Notifications - Global</h2>
       <p><a target="_blank" href="https://github.com/caronc/apprise/wiki">Apprise Notifications</a> can be setup and enabled for 90+ notification services. Each service should be on its own line.</p>
@@ -769,6 +782,51 @@ mailto://{user}:{password}@gmail.com
       &nbsp;&nbsp;Empty Rare Apprise/title/body fall back to the Normal ones.<br><br>
       <button type="button" class="testbtn" onclick="sendTestNotification(this, 'apprise_input_rare', 'testsuccessmsgrare', 'apprise_notification_title_rare', 'apprise_notification_body_rare')">Send Test Notification (Rare)</button><br>
       <span id="testsuccessmsgrare"></span>
+      </td></tr></table><br>
+      <table class="settingstable"><tr><td>
+      <h2>BirdWeather</h2>
+      <label for="birdweather_enabled">Upload to BirdWeather: </label>
+      <input type="checkbox" name="birdweather_enabled" id="birdweather_enabled" <?php echo (($config['BIRDWEATHER_ENABLED'] ?? '1') != '0') ? 'checked' : ''; ?>>
+      (off = nothing is sent, the token is kept)<br>
+      <label for="birdweather_id">BirdWeather Token: </label>
+      <input name="birdweather_id" type="text" value="<?php print($config['BIRDWEATHER_ID']);?>" /><br>
+           <p><a href="https://app.birdweather.com" target="_blank">BirdWeather.com</a> is a weather map for bird sounds. 
+        Stations around the world supply audio and video streams to BirdWeather where they are then analyzed by BirdNET 
+        and compared to eBird Grid data. BirdWeather catalogues the bird audio and spectrogram visualizations so that you 
+        can listen to, view, and read about birds throughout the world. <br><br> 
+        To request a BirdWeather Token, You'll first need to create an account - <a href="https://app.birdweather.com/login" target="_blank">https://app.birdweather.com/</a><br>
+        Once that's done - you can go to - <a href="https://app.birdweather.com/account/stations" target="_blank">https://app.birdweather.com/account/stations</a><br>
+        Make sure that the Latitude and Longitude match what is in your BirdNET-Pi configuration.
+        <br><br>
+        <dt>NOTE - by using your BirdWeather Token - you are consenting to sharing your soundscapes and detections with BirdWeather</dt></p>
+      </td></tr></table><br>
+      <table class="settingstable" style="width:100%"><tr><td>
+      <h2>BirdDB-Br</h2>
+      <?php $bde = (string)($config['BIRDDB_ENABLED'] ?? '0') === '1'; ?>
+      <label><input type="checkbox" name="birddb_enabled" id="birddb_enabled" value="1" <?php echo $bde ? 'checked' : ''; ?>
+        onchange="birddbToggle(this.checked)"> Contribute to BirdDB-Br (central sound repository)</label>
+      <small>— off (default): no clip is copied, uploaded or kept for the repository</small><br>
+      <div id="birddb_box" style="<?php echo $bde ? '' : 'opacity:0.45;'; ?>">
+      <?php $srm = $config['SOUND_REPO_REMOTE'] ?? ''; $sru = $config['SOUND_REPO_UPLOAD_MINUTES'] ?? '5'; ?>
+      <table class="settingstable plaintable">
+        <tr>
+          <td><label for="sound_repo_remote">rclone remote (remote:path):</label></td>
+          <td><input name="sound_repo_remote" class="birddb_field" type="text" style="width:14em;" value="<?php print(htmlspecialchars($srm, ENT_QUOTES));?>" pattern="[A-Za-z0-9_\-]+:.*" placeholder="birddb:" <?php echo $bde ? '' : 'disabled'; ?>/></td>
+          <td>(empty = no upload, deposits stay in the local spool)</td>
+        </tr>
+        <tr>
+          <td><label for="sound_repo_upload_minutes">Upload every:</label></td>
+          <td><input name="sound_repo_upload_minutes" class="birddb_field" type="number" style="width:5em;" min="0" max="1440" step="1" value="<?php print(intval($sru));?>" <?php echo $bde ? '' : 'disabled'; ?>/> minutes</td>
+          <td>(0 = never; the spool is moved to the remote at this interval)</td>
+        </tr>
+      </table>
+      </div>
+      <script>
+        function birddbToggle(on) {
+          document.getElementById('birddb_box').style.opacity = on ? '' : '0.45';
+          document.querySelectorAll('.birddb_field').forEach(function (f) { f.disabled = !on; });
+        }
+      </script>
       </td></tr></table><br>
       <table class="settingstable"><tr><td>
       <h2>Bird Photo Source</h2>

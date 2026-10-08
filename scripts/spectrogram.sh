@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Make sox spectrogram
+# Overview spectrogram of the recording being analysed (scripts/spectrogram_png.py, sox as fallback)
 source /etc/birdnet/birdnet.conf
 
 # Read the logging level from the configuration option
@@ -44,12 +44,11 @@ while read; do
 
     if [ -n "${analyzing_now}" ] && [ -f "${analyzing_now}" ]; then
       spectrogram_png=${EXTRACTED}/spectrogram.png
-        # Check if RAW_SPECTROGRAM is 1
-        if [ "$RAW_SPECTROGRAM" == "1" ]; then
-          # If it is, add "-r" as an argument to the SOX command
-          sox -V1 "${analyzing_now}" -n remix 1 rate 24k spectrogram $PALETTE_OPTS -c "${analyzing_now//$HOME\//}" -o "${spectrogram_png}" -r
-        else
-          sox -V1 "${analyzing_now}" -n remix 1 rate 24k spectrogram $PALETTE_OPTS -c "${analyzing_now//$HOME\//}" -o "${spectrogram_png}"
+        raw_opt=""; [ "$RAW_SPECTROGRAM" == "1" ] && raw_opt="-r"
+        # drawn with the live Spectrogram page's palette, floor, range and contrast; sox stays the fallback
+        if ! "$HOME/BirdNET-Pi/birdnet/bin/python3" "$HOME/BirdNET-Pi/scripts/spectrogram_png.py" "${analyzing_now}" "${spectrogram_png}" \
+            "${analyzing_now//$HOME\//}" ${raw_opt:+--raw} 2> /dev/null; then
+          sox -V1 "${analyzing_now}" -n remix 1 rate 24k spectrogram $PALETTE_OPTS -c "${analyzing_now//$HOME\//}" -o "${spectrogram_png}" $raw_opt
         fi
     fi
     next=$(( now + looptime ))
