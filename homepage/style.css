@@ -1092,3 +1092,14 @@ body.sidenav-collapsed .sidenav ~ .views iframe { left: 40px; width: calc(100% -
   .sidenav-collapse { display: none; }
 }
 }
+
+/* Overview split (owner 2026-10-08): Now = recent detections, All Detections = totals + chart */
+.overview-stats.part-now .left-column,
+.overview-stats.part-now .new_species,
+.overview-stats.part-now .rare_species,
+.overview-stats.part-now .chart { display: none !important; }
+.overview-stats.part-records #most_recent_detection,
+.overview-stats.part-records .now-only,
+.overview-stats.part-records #detections_table,
+.overview-stats.part-records #spectrogramimage,
+.overview-stats.part-records #customimage { display: none !important; }

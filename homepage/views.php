@@ -61,12 +61,13 @@ elseif ($config["LONGITUDE"] == "0.000") {
 <?php
 // Side menu (owner 2026-10-08): groups like webmin, one real link per page (/?view=...), so a page opens
 // in another tab and the address bar shows it. The page itself still loads in this frame.
-$current_view = $_GET['view'] ?? 'Overview';
+$current_view = $_GET['view'] ?? 'Now';
 $update_badge = (isset($_SESSION['behind']) && intval($_SESSION['behind']) >= 50 && ($config['SILENCE_UPDATE_INDICATOR'] ?? 0) != 1)
   ? ' <span class="updatenumber">' . $_SESSION['behind'] . '</span>' : '';
 $updatediv = $update_badge;
 $menu = array(
-  array('Overview', 'Overview'),
+  array('Now', 'Now'),
+  array('All Detections', 'All Detections'),
   array('Spectrogram', 'Spectrogram'),
   array('Detections', array('Todays Detections' => "Today's Detections", 'Recordings' => 'Recordings', 'Species Stats' => 'Best Recordings')),
   array('Statistics', array('Streamlit' => 'Species Stats', 'Daily Charts' => 'Daily Charts', 'Weekly Report' => 'Weekly Report')),
@@ -194,7 +195,7 @@ function update_species_list($filename, $species, $add) {
 }
 
 // First-run setup wizard (US-51c): an installation nobody answered opens on the wizard
-if(file_exists($home.'/BirdNET-Pi/firstrun_pending') && (!isset($_GET['view']) || $_GET['view'] == "Overview")){
+if(file_exists($home.'/BirdNET-Pi/firstrun_pending') && (!isset($_GET['view']) || in_array($_GET['view'], array("Overview", "Now"), true))){
   $_GET['view'] = "Setup";
 }
 if(isset($_GET['view'])){
@@ -210,7 +211,10 @@ if(isset($_GET['view'])){
   }
   if($_GET['view'] == "Spectrogram"){include('spectrogram.php');}
   if($_GET['view'] == "View Log"){echo "<body style=\"scroll:no;overflow-x:hidden;\"><iframe style=\"width:calc( 100% + 1em);\" src=\"log\"></iframe></body>";}
-  if($_GET['view'] == "Overview"){include('overview.php');}
+  // the Overview is split in two pages (owner 2026-10-08): Now (default) = most recent detection, 5 most
+  // recent, currently analysing; All Detections = the totals and today's chart. "Overview" = Now.
+  if($_GET['view'] == "Overview" || $_GET['view'] == "Now"){$overview_part = 'now'; include('overview.php');}
+  if($_GET['view'] == "All Detections"){$overview_part = 'records'; include('overview.php');}
   if($_GET['view'] == "Todays Detections"){include('todays_detections.php');}
   if($_GET['view'] == "Kiosk"){$kiosk = true;include('todays_detections.php');}
   if($_GET['view'] == "Species Stats"){include('stats.php');}
@@ -405,7 +409,7 @@ if(isset($_GET['view'])){
       }
     }
   ob_end_flush();
-} else {include('overview.php');}
+} else {$overview_part = 'now'; include('overview.php');}
 ?>
 <script>
 function setLiveStreamVolume(vol) {

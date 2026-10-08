@@ -271,7 +271,7 @@ if (get_included_files()[0] === __FILE__) {
     showDialog();
   }
   </script>  
-<div class="overview-stats">
+<div class="overview-stats part-<?php echo ($overview_part ?? 'now') === 'records' ? 'records' : 'now'; ?>">
 <div class="left-column">
 </div>
 <div class="right-column">
@@ -444,10 +444,10 @@ if (file_exists('./Charts/'.$chart)) {
 
 <div id="most_recent_detection"></div>
 <br>
-<h3>5 Most Recent Detections</h3>
+<h3 class="now-only">5 Most Recent Detections</h3>
 <div style="padding-bottom:10px;" id="detections_table"><h3>Loading...</h3></div>
 
-<h3>Currently Analyzing</h3>
+<h3 class="now-only">Currently Analyzing</h3>
 <?php
 $refresh = $config['RECORDING_LENGTH'];
 $time = time();

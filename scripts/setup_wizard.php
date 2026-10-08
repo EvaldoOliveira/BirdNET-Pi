@@ -140,7 +140,7 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
   <table class="settingstable"><tr><td>
     <h2>Saved</h2>
     <p>The station restarts its services with the new settings. Detections start appearing on the
-    <a href="views.php?view=Overview">Overview</a> in a few minutes<?php echo $update_caddy ? ' — Tools and Settings now ask for the user <b>birdnet</b> and your password' : ''; ?>.</p>
+    <a href="views.php?view=Now">Now</a> in a few minutes<?php echo $update_caddy ? ' — Tools and Settings now ask for the user <b>birdnet</b> and your password' : ''; ?>.</p>
     <?php if ($state_detected) { echo '<p>Species list from the coordinates: <b>' . ($state === '' ? 'none (outside Brazil)' : 'BR-' . $h($state)) . '</b>.</p>'; } ?>
   </td></tr></table>
 <?php } else { ?>
