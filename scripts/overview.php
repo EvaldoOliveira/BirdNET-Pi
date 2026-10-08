@@ -163,7 +163,7 @@ if(isset($_GET['ajax_left_chart']) && $_GET['ajax_left_chart'] == "true") {
     <th>#Today</th>
     <th>Sp. Total</th>
     <th>Sp. Today</th>
-    <th>New Sp. Today</th>
+    <th>New Today</th>
   </tr>
   <tr>
     <td><?php echo $chart_data['totalcount'];?></td>
