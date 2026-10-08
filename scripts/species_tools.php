@@ -237,16 +237,16 @@ $result = $db->query($sql);
       <tr>
         <th onclick="sortTable(0)">Common Name</th>
         <th onclick="sortTable(1)">Scientific Name</th>
+        <th onclick="sortTable(2)">Max Confidence</th>
+        <th onclick="sortTable(3)" title="Minimum confidence for this species; empty = the global Minimum Confidence (<?php echo htmlspecialchars(sprintf('%.2f', $global_conf)); ?>)">Min. Confidence</th>
+        <th onclick="sortTable(4)">Last Seen</th>
+        <th onclick="sortTable(5)">Probability</th>
+        <th onclick="sortTable(6)">Notification</th>
+        <th onclick="sortTable(7)">Confirmed</th>
+        <th onclick="sortTable(8)">Excluded</th>
+        <th onclick="sortTable(9)">Whitelisted</th>
         <th>Stats</th>
-        <th onclick="sortTable(3)">Count</th>
-        <th onclick="sortTable(4)">Max Confidence</th>
-        <th onclick="sortTable(5)" title="Minimum confidence for this species; empty = the global Minimum Confidence (<?php echo htmlspecialchars(sprintf('%.2f', $global_conf)); ?>)">Min. Confidence</th>
-        <th onclick="sortTable(6)">Last Seen</th>
-        <th onclick="sortTable(7)">Probability</th>
-        <th onclick="sortTable(8)">Notification</th>
-        <th onclick="sortTable(9)">Confirmed</th>
-        <th onclick="sortTable(10)">Excluded</th>
-        <th onclick="sortTable(11)">Whitelisted</th>
+        <th onclick="sortTable(11)">Count</th>
         <th>Delete</th>
       </tr>
     </thead>
@@ -314,8 +314,6 @@ $result = $db->query($sql);
   echo "<tr data-comname=\"{$common}\" data-sciname=\"{$scient}\">"
      . "<td>{$common_link}</td>"
      . "<td>{$scient_link}</td>"
-     . "<td>{$chart_cell}</td>"
-     . "<td>{$count}</td>"
      . "<td data-sort='{$max_confidence}'>{$max_confidence}%</td>"
      . "<td data-sort='{$conf_sort}'>".$conf_cell."</td>"
      . "<td data-sort=\"{$lastSeenSort}\">{$lastSeen}</td>"
@@ -324,6 +322,8 @@ $result = $db->query($sql);
      . "<td data-sort='".($is_confirmed?0:1)."'>".$confirm_cell."</td>"
      . "<td data-sort='".($is_excluded?0:1)."'>".$excl_cell."</td>"
      . "<td data-sort='".($is_whitelisted?0:1)."'>".$white_cell."</td>"
+     . "<td>{$chart_cell}</td>"
+     . "<td>{$count}</td>"
      . "<td><img style='cursor:pointer;max-width:20px' src='images/delete.svg' onclick=\"deleteSpecies('".addslashes($row['Sci_Name'])." + ".addslashes($row['Com_Name'])."')\"></td>"
      . "</tr>";
 } ?>
