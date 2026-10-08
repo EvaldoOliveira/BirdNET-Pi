@@ -43,6 +43,9 @@ This edition extends BirdNET-Pi with capabilities intended for long-term acousti
 9. **A redesigned web interface.** A side menu with one address per page (open any page in a new tab), a *Now* page
    with the latest detections, *All Detections* with today's totals and chart, detection cards with WikiAves, eBird,
    Birds of the World and Wikipedia links and the delete / change species / protect / frequency shift actions in place.
+10. **Mobile friendly interface.** On a phone the menu folds into a ☰ button, the header stays on one line, pages use
+   the whole screen and the cards and buttons are sized for touch; the live spectrogram keeps at least 45 seconds on
+   screen so its detection labels show on a narrow display too.
 
 ### How to get this edition
 
