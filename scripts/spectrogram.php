@@ -178,6 +178,11 @@ var gain = 128;
 const ctx = null;
 let fps =[];
 let avgfps;
+// Scroll speed in pixels per second. One column per frame shows only W/fps seconds — about 6 s on a
+// phone — while a detection arrives 20-30 s after its sound, so its label fell off the left edge.
+// The graph keeps at least MIN_WINDOW_S seconds visible (owner 2026-10-08).
+const MIN_WINDOW_S = 45;
+let pxPerSec = 60;
 let requestTime;
 
 <?php 
@@ -280,13 +285,13 @@ function loadDetectionIfNewExists() {
       for (detection of resp.detections) {
         console.log("detection.start  " + detection.start);
         secago = resp.delay - detection.start;
-        x = document.body.querySelector('canvas').width - (secago * avgfps);
+        x = document.body.querySelector('canvas').width - (secago * pxPerSec);
         y = (document.body.querySelector('canvas').height * 0.50) + add;
-        if(x > document.body.querySelector('canvas').width - (5*avgfps) && detection.common_name.length > 8) {
+        if(x > document.body.querySelector('canvas').width - (5*pxPerSec) && detection.common_name.length > 8) {
           setTimeout(function (detection, x, y, x_org) {
             console.log("originally at "+x_org+", now waiting 3 sec and at "+x);
             applyText(detection.common_name, x, y, detection.confidence);
-          }, 3*1000, detection, x - (5*avgfps), y, x);
+          }, 3*1000, detection, x - (5*pxPerSec), y, x);
         } else {
           applyText(detection.common_name, x, y, detection.confidence);
         }
@@ -511,6 +516,7 @@ function initialize() {
     CTX.fillStyle = paletteColor(0);
     CTX.fillRect(0, 0, W, H);
 
+    let lastTime = null, acc = 0;
     loop();
 
     function loop(time) {
@@ -525,7 +531,15 @@ function initialize() {
       }
       requestTime = time;
       window.requestAnimationFrame((timeRes) => loop(timeRes));
-      let imgData = CTX.getImageData(1, 0, W - 1, H);
+      // px per second: one per frame on wide screens, slower on narrow ones (MIN_WINDOW_S visible)
+      pxPerSec = Math.min(avgfps || 60, W / MIN_WINDOW_S);
+      if (lastTime !== null && time) acc += pxPerSec * (time - lastTime) / 1000;
+      lastTime = time || lastTime;
+      let n = Math.floor(acc);
+      if (n < 1) return;
+      acc -= n;
+      n = Math.min(n, W - 1);
+      let imgData = CTX.getImageData(n, 0, W - n, H);
 
       CTX.fillStyle = paletteColor(0);
       CTX.fillRect(0, 0, W, H);
@@ -533,11 +547,8 @@ function initialize() {
       ANALYSER.getByteFrequencyData(DATA);
       for (let i = 0; i < LEN; i++) {
         let rat = DATA[i] / 255 ;
-        CTX.beginPath();
-        CTX.strokeStyle = paletteColor(rat);
-        CTX.moveTo(x, H - (i * h));
-        CTX.lineTo(x, H - (i * h + h));
-        CTX.stroke();
+        CTX.fillStyle = paletteColor(rat);
+        CTX.fillRect(W - n, H - (i * h + h), n, h);
       }
     }
   }
