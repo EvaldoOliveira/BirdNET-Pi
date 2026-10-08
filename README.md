@@ -111,20 +111,25 @@ to the card's *bootfs* drive as `birdnet-setup.conf`, fill in the answers, then 
 2. Connect to the station (`ssh <username>@<station address>`) and run:
    ```
    cd ~/BirdNET-Pi
-   git remote add evaldo https://github.com/EvaldoOliveira/BirdNET-Pi.git
-   ./scripts/update_birdnet.sh -r evaldo -b stable
+   git remote set-url origin https://github.com/EvaldoOliveira/BirdNET-Pi.git
+   ./scripts/update_birdnet.sh -b stable
    ```
-3. Open the station in the browser. Your detections and settings are kept.
+3. Open the station in the browser. Your detections and settings are kept. From now on
+   *Tools › System Controls › Update* installs the new versions of this edition.
 
-To go back to Nachtzuster's version: `./scripts/update_birdnet.sh -r origin -b main`.
+To go back to Nachtzuster's version:
+```
+cd ~/BirdNET-Pi
+git remote set-url origin https://github.com/Nachtzuster/BirdNET-Pi.git
+./scripts/update_birdnet.sh -b main
+```
 
 ### Reporting issues
 
 - Matters specific to **this edition** (the stories above, the upgrade package): please open an
   [issue in this repository](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/new/choose) — user story, defect or epic.
 - Behaviour that also occurs on a standard installation belongs to
-  [Nachtzuster's tracker](https://github.com/Nachtzuster/BirdNET-Pi/issues); corrections of general interest made
-  here are offered upstream as pull requests.
+  [Nachtzuster's tracker](https://github.com/Nachtzuster/BirdNET-Pi/issues).
 - Neither project adjudicates detections: questions about the classification performance of the BirdNET models
   should be addressed to the [BirdNET team](https://github.com/birdnet-team).
 
@@ -196,16 +201,10 @@ Please note that installing BirdNET-Pi on top of other servers is not supported.
 
 [Raspberry Pi 3B[+] and 0W2 installation guide available here](https://github.com/mcguirepr89/BirdNET-Pi/wiki/RPi0W2-Installation-Guide)
 
-The system can be installed with:
-```
-curl -s https://raw.githubusercontent.com/Nachtzuster/BirdNET-Pi/main/newinstaller.sh | bash
-```
-The installer takes care of any and all necessary updates, so you can run that as the very first command upon the first boot, if you'd like.
+To install this edition, follow [How to get this edition](#how-to-get-this-edition). The installer takes care of
+any and all necessary updates, so you can run it as the very first command upon the first boot.
 
 The installation creates a log in `$HOME/installation-$(date "+%F").txt`.
-
-> **Note for this edition:** the command above installs Nachtzuster's BirdNET-Pi. To install this edition from a
-> blank card, or to move an existing installation to it, see [How to get this edition](#how-to-get-this-edition).
 
 ## Access
 The BirdNET-Pi can be accessed from any web browser on the same network:
@@ -268,12 +267,8 @@ cpu-model: BirdNet
 Before switching, make sure your installation is fully up-to-date. Also make sure to have a backup, that is also the only way to get back to the original BirdNET-Pi.
 Please note that upgrading your underlying OS to Bookworm is not going to work. Please stick to Bullseye. If you do want Bookworm, you need to start from a fresh install and copy back your data. (remember the backup!)
 
-Run these commands to migrate to this repo:
-```
-git remote remove origin
-git remote add origin https://github.com/Nachtzuster/BirdNET-Pi.git
-./scripts/update_birdnet.sh
-```
+To move an existing installation to this edition, see
+[Option 2 — Upgrade an existing Nachtzuster installation](#option-2--upgrade-an-existing-nachtzuster-installation).
 
 ## Troubleshooting and Ideas
 *Hint: A lot of weird problems can be solved by simply restarting the core services. Do this from the web interface "Tools" > "Services" > "Restart Core Services"*

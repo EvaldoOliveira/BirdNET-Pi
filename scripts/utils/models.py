@@ -256,8 +256,11 @@ class BirdNETPlusV3(OnnxBasemodel):
     chunk_duration = 3
     sample_rate = 32000
     model_name = 'BirdNET-Plus_V3.0-preview3.1_Global_10K'
-    _base_url = 'https://media.githubusercontent.com/media/birdnet-team/birdnet-live-app/main/assets/models'
-    _raw_url = 'https://raw.githubusercontent.com/birdnet-team/birdnet-live-app/main/assets/models'
+    # pinned to the app commit this edition was validated with: its main branch moves, and a renamed or
+    # replaced preview would break every new station on its first start
+    _commit = '255acc33b01000d416d38785e23c0263c0e2d6dd'
+    _base_url = f'https://media.githubusercontent.com/media/birdnet-team/birdnet-live-app/{_commit}/assets/models'
+    _raw_url = f'https://raw.githubusercontent.com/birdnet-team/birdnet-live-app/{_commit}/assets/models'
     _files = {
         f'{model_name}.onnx': 'BirdNET+_V3.0-preview3.1_Global_10K-pruned_FP16.onnx',
         f'{model_name}_Geo.onnx': 'BirdNET+_Geomodel_V3.0.4_Global_10K-pruned_FP16.onnx',

@@ -172,7 +172,7 @@ http:// ${BIRDNETPI_URL} {
   }
   @fileview {
     path /views.php
-    query view=File*
+    query view=File
   }
   basicauth @fileview {
     birdnet ${HASHWORD}

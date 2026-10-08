@@ -210,14 +210,15 @@ def run_analysis(file):
 
     # Process audio data and get detections
     raw_detections, predicted_species_list = analyzeAudioData(audio_data, conf.getfloat('OVERLAP'), conf.getfloat('LATITUDE'),
-                                                              conf.getfloat('LONGITUDE'), file.week)
+                                                              conf.getfloat('LONGITUDE'), file.week48)
     confident_detections = []
     for time_slot, entries in raw_detections.items():
         sci_name, confidence = entries[0]
         log.info('%s-(%s_%s, %s)', time_slot, sci_name, names.get(sci_name, sci_name), confidence)
         for sci_name, confidence in entries:
             if confidence >= species_confidence.get(sci_name, min_confidence):
-                com_name = names.get(sci_name, sci_name)
+                # V3 classes missing from the language file keep the model's own common name
+                com_name = names.get(sci_name) or getattr(model, 'common_names', {}).get(sci_name, sci_name)
                 if sci_name not in include_list and len(include_list) != 0 and sci_name not in region_free:
                     log.warning("Excluded as INCLUDE_LIST is active but this species is not in it: %s %s", sci_name, com_name)
                 elif sci_name in exclude_list and len(exclude_list) != 0:

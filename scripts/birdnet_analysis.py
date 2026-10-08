@@ -13,7 +13,7 @@ from inotify.constants import IN_CLOSE_WRITE
 
 from utils.analysis import load_global_model, run_analysis
 from utils.shadow import run_shadow_analysis
-from utils.helpers import get_settings, get_wav_files, ANALYZING_NOW
+from utils.helpers import get_settings, get_wav_files, set_label_file, ANALYZING_NOW, MODEL_PATH
 from utils.classes import ParseFileName
 from utils.reporting import extract_detection, summary, write_to_file, write_to_db, apprise, bird_weather, sound_repo, heartbeat, \
     update_json_file
@@ -31,6 +31,13 @@ def sig_handler(sig_num, curr_stack_frame):
 
 def main():
     load_global_model()
+    # an install made without internet could not build the label file of a model fetched on first
+    # use (BirdNET+ V3): write it now that the model is here, the web pages need it
+    if not os.path.exists(os.path.join(MODEL_PATH, 'labels.txt')):
+        try:
+            set_label_file()
+        except Exception as e:
+            log.warning('could not write model/labels.txt: %s', e)
     conf = get_settings()
     i = inotify.adapters.Inotify()
     i.add_watch(os.path.join(conf['RECS_DIR'], 'StreamData'), mask=IN_CLOSE_WRITE)

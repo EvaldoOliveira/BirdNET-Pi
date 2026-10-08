@@ -43,7 +43,7 @@ LONGITUDE=${FR_LONGITUDE:-$LONGITUDE}
 #______________________used for detecting bird audio.__________________________#
 #_It's recommended that you only change these values through the web interface.#
 
-MODEL=${FR_MODEL:-BirdNET_GLOBAL_6K_V2.4_Model_FP16}
+MODEL=${FR_MODEL:-BirdNET-Plus_V3.0-preview3.1_Global_10K}
 SF_THRESH=0.03
 DATA_MODEL_VERSION=1
 ## SHADOW_MODEL_NAME is a second model analysing the same audio into birds_shadow.db (empty = none)
@@ -219,7 +219,7 @@ CONFIDENCE=${FR_CONFIDENCE:-0.25}
 
 ## SENSITIVITY is the detection sensitivity from 0.5-1.5.
 
-SENSITIVITY=${FR_SENSITIVITY:-1.25}
+SENSITIVITY=${FR_SENSITIVITY:-1.0}
 
 ## Configuration of the frequency shifting feature, useful for earing impaired people.
 
@@ -352,12 +352,11 @@ if ! [ -f ${birdnet_conf} ];then
   if [ -n "${FR_TIMEZONE}" ] && [ "${FR_TIMEZONE}" != "$(timedatectl show --value --property=Timezone 2>/dev/null || true)" ]; then
     sudo timedatectl set-timezone "${FR_TIMEZONE}" && echo "Timezone set to ${FR_TIMEZONE}" || echo "Could not set the timezone - set it with: sudo timedatectl set-timezone ${FR_TIMEZONE}"
   fi
-  set -x
+  # tested while tracing is still off: the URL carries the notification token
   if [ -n "${FR_APPRISE_URL}" ]; then
-    { set +x; } 2>/dev/null
     printf '%s\n' "${FR_APPRISE_URL}" > $my_dir/apprise.txt
-    set -x
   fi
+  set -x
 fi
 chmod g+w ${birdnet_conf}
 [ -d /etc/birdnet ] || sudo mkdir /etc/birdnet

@@ -141,6 +141,21 @@ if ! grep -E '^SOUND_REPO_UPLOAD_MINUTES=' /etc/birdnet/birdnet.conf &>/dev/null
     echo 'SOUND_REPO_UPLOAD_MINUTES=5' >> /etc/birdnet/birdnet.conf
 fi
 
+# US-51e: the release channel a station follows. A station that came from another BirdNET-Pi has
+# no key yet: keep the line it was just updated to (stable or main), so the next update neither
+# jumps to another line nor goes back to an older release.
+if ! grep -E '^UPDATE_BRANCH=' /etc/birdnet/birdnet.conf &>/dev/null;then
+  current_branch=$(git -C $HOME/BirdNET-Pi rev-parse --abbrev-ref HEAD 2>/dev/null)
+  case "$current_branch" in stable|main) ;; *) current_branch=stable ;; esac
+  echo "## UPDATE_BRANCH is the release channel the updater follows: stable = released versions, main = development" >> /etc/birdnet/birdnet.conf
+  echo "UPDATE_BRANCH=$current_branch" >> /etc/birdnet/birdnet.conf
+fi
+
+if ! grep -E '^BIRDDB_ENABLED=' /etc/birdnet/birdnet.conf &>/dev/null;then
+  echo "## BIRDDB_ENABLED: 1 = contribute this station's clips to BirdDB-Br (sound repository), 0 = off (default)" >> /etc/birdnet/birdnet.conf
+  echo "BIRDDB_ENABLED=0" >> /etc/birdnet/birdnet.conf
+fi
+
 if ! grep -E '^BIRDNET_USER=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "## BIRDNET_USER is for scripts to easily find where BirdNET-Pi is installed" >> /etc/birdnet/birdnet.conf
   echo "## DO NOT EDIT!" >> /etc/birdnet/birdnet.conf

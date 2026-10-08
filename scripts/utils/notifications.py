@@ -163,9 +163,9 @@ def sendAppriseNotifications(sci_name, com_name, confidence, confidencepct, path
         return
 
     settings_dict = get_settings()
-    title = html.unescape(settings_dict.get('APPRISE_NOTIFICATION_TITLE'))
-    f = open(APPRISE_BODY, 'r')
-    body = f.read()
+    title = html.unescape(settings_dict.get('APPRISE_NOTIFICATION_TITLE') or '')
+    with open(APPRISE_BODY, 'r') as f:
+        body = f.read()
 
     if tier == 'rare':
         # Rare species may carry their own title/body; empty falls back to Normal
@@ -173,7 +173,8 @@ def sendAppriseNotifications(sci_name, com_name, confidence, confidencepct, path
         if rare_title:
             title = html.unescape(rare_title)
         if _has_config(APPRISE_BODY_RARE):
-            body = open(APPRISE_BODY_RARE, 'r').read()
+            with open(APPRISE_BODY_RARE, 'r') as f:
+                body = f.read()
 
     websiteurl = settings_dict.get('BIRDNETPI_URL')
     if websiteurl is None or len(websiteurl) == 0:

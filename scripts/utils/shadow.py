@@ -37,8 +37,8 @@ def conf_float(conf, key, default):
 def shadow_settings():
     conf = get_settings()
     return {
-        # SHADOW_ENABLED=0 keeps the shadow model and its parameters configured but inactive
-        # (owner 2026-09-22: "flag que desativa o shadow e mantém só o principal"); absent = on
+        # SHADOW_ENABLED=0 keeps the shadow model and its parameters configured but inactive;
+        # absent = off (the default)
         'enabled': (conf.get('SHADOW_ENABLED', fallback='0') or '0').strip() not in ('0', 'false', 'no', ''),
         'model': (conf.get('SHADOW_MODEL_NAME', fallback=None) or '').strip(),
         # the defaults are the ones the BirdNET Live app uses for BirdNET+ V3.0
@@ -114,7 +114,7 @@ def run_shadow_analysis(file):
         log.error('Shadow analysis could not read %s: %s', file.file_name, e)
         return []
 
-    model.set_meta_data(conf.getfloat('LATITUDE'), conf.getfloat('LONGITUDE'), file.week)
+    model.set_meta_data(conf.getfloat('LATITUDE'), conf.getfloat('LONGITUDE'), file.week48)
     predicted_species_list = model.get_species_list()
 
     detections = []

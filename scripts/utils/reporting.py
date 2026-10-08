@@ -212,6 +212,24 @@ def sound_repo_upload_active(conf):
     return bool(conf.get('SOUND_REPO_REMOTE')) and minutes.isdigit() and int(minutes) > 0
 
 
+_conf_mtime = None
+
+
+def _settings_if_changed(path='/etc/birdnet/birdnet.conf'):
+    # re-read birdnet.conf only when the settings page has changed it: a reload per recording raced
+    # with the page writing the file and could leave half a config as the global settings
+    global _conf_mtime
+    try:
+        mtime = os.path.getmtime(path)
+        if mtime != _conf_mtime:
+            conf = get_settings(force_reload=True)
+            _conf_mtime = mtime
+            return conf
+    except Exception as e:
+        log.warning('could not re-read %s: %s', path, e)
+    return get_settings()
+
+
 def sound_repo(file: ParseFileName, detections: [Detection]):
     # US-38: beside the BirdWeather upload, write every detection to the
     # owner's central sound repository (SOUND_REPO_PATH, empty = off) as the
@@ -221,7 +239,7 @@ def sound_repo(file: ParseFileName, detections: [Detection]):
     # The spool only exists to feed the upload: nothing is written while the
     # upload is off (no remote, or interval 0 = paused). Re-read the file so a
     # pause in the settings page applies without restarting the analysis.
-    conf = get_settings(force_reload=True)
+    conf = _settings_if_changed()
     repo = conf.get('SOUND_REPO_PATH')
     if not repo or not sound_repo_upload_active(conf):
         return

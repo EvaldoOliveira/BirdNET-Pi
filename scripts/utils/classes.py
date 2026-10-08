@@ -5,6 +5,12 @@ import re
 from tzlocal import get_localzone
 
 
+def week48(date):
+    """Week number the BirdNET location models were trained on: 4 weeks per month, 1-48
+    (BirdNET-Analyzer --week, BirdNET Live GeoModel.dateTimeToWeek). Not the ISO week, which
+    runs to 53 and drifts from the month; the database keeps the ISO week."""
+    return (date.month - 1) * 4 + min(4, (date.day - 1) // 7 + 1)
+
 class Detection:
     def __init__(self, file_date, start_time, stop_time, scientific_name, common_name, confidence):
         self.start = float(start_time)
@@ -53,3 +59,7 @@ class ParseFileName:
     def week(self):
         week = self.file_date.isocalendar()[1]
         return week
+
+    @property
+    def week48(self):
+        return week48(self.file_date)

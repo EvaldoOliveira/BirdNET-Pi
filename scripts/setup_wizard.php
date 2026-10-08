@@ -38,7 +38,8 @@ $errors = array();
 $saved = false;
 if (isset($_POST['wizard_save'])) {
   $p = array_map(function ($v) { return is_string($v) ? trim(htmlspecialchars_decode($v, ENT_QUOTES)) : $v; }, $_POST);
-  $site_name = str_replace(array('"', "'", '\\', '$', '`'), '', $p['site_name'] ?? '');
+  // control characters too: a newline would leave a second, executable line in birdnet.conf
+  $site_name = preg_replace('/[\x00-\x1F\x7F]/', '', str_replace(array('"', "'", '\\', '$', '`'), '', $p['site_name'] ?? ''));
   $lat = $p['latitude'] ?? '';
   $lon = $p['longitude'] ?? '';
   if (!is_numeric($lat) || $lat < -90 || $lat > 90) $errors[] = 'Latitude must be a number between -90 and 90';
@@ -64,7 +65,7 @@ if (isset($_POST['wizard_save'])) {
   if ($pwd !== ($p['password2'] ?? '')) $errors[] = 'The two passwords differ';
   $bw = $p['birdweather_id'] ?? '';
   if ($bw !== '' && !preg_match('/^[A-Za-z0-9]+$/', $bw)) $errors[] = 'Invalid BirdWeather ID';
-  $apprise = $p['apprise_url'] ?? '';
+  $apprise = preg_replace('/[\x00-\x1F\x7F]/', '', $p['apprise_url'] ?? '');
 
   if (empty($errors)) {
     $contents = file_get_contents('/etc/birdnet/birdnet.conf');

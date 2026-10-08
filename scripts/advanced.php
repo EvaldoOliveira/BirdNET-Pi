@@ -318,12 +318,15 @@ if (isset($_GET["max_files_species"])) {
     // the old class ended in an escaped ']' and never compiled, so every remote was dropped)
     if(!preg_match('/^[A-Za-z0-9_-]+:[^\s"\'`$\\\\]*$/', $sound_repo_remote)) { $sound_repo_remote = ''; }
   }
-  // BirdDB-Br switch (default off): the spool, the upload and the clean-up all follow it
-  $birddb_enabled = isset($_GET['birddb_enabled']) ? 1 : 0;
-  if(preg_match("/^BIRDDB_ENABLED=/m", $contents)) {
-    $contents = preg_replace("/^BIRDDB_ENABLED=.*/m", "BIRDDB_ENABLED=$birddb_enabled", $contents);
-  } else {
-    $contents .= "\n## BIRDDB_ENABLED: 1 = contribute this station's clips to BirdDB-Br (sound repository), 0 = off (default)\nBIRDDB_ENABLED=$birddb_enabled\n";
+  // BirdDB-Br switch (default off): the spool, the upload and the clean-up all follow it.
+  // Only the Advanced form carries the checkbox: other pages (Spectrogram) also submit to this view.
+  if (isset($_GET['advanced_form'])) {
+    $birddb_enabled = isset($_GET['birddb_enabled']) ? 1 : 0;
+    if(preg_match("/^BIRDDB_ENABLED=/m", $contents)) {
+      $contents = preg_replace("/^BIRDDB_ENABLED=.*/m", "BIRDDB_ENABLED=$birddb_enabled", $contents);
+    } else {
+      $contents .= "\n## BIRDDB_ENABLED: 1 = contribute this station's clips to BirdDB-Br (sound repository), 0 = off (default)\nBIRDDB_ENABLED=$birddb_enabled\n";
+    }
   }
   if(isset($sound_repo_upload_minutes)) {
     foreach (array('SOUND_REPO_REMOTE' => array("\"$sound_repo_remote\"", 'rclone destination of the central sound repository (remote:path; empty = deposits stay in SOUND_REPO_PATH)'),

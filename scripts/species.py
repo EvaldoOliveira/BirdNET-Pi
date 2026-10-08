@@ -2,8 +2,9 @@ import argparse
 import datetime
 import os
 
+from utils.classes import week48
 from utils.helpers import get_settings, get_language, MODEL_PATH
-from utils.models import BirdNETPlusV3, GeoModelV3, MDataModel1, MDataModel2
+from utils.models import BirdNETPlusV3, GeoModelV3, MDataModel1, MDataModel2, get_model
 
 # models whose location filter is the separate meta model (utils/models.get_meta_model)
 META_MODEL_USERS = ['BirdNET_GLOBAL_6K_V2.4_Model_FP16', 'BirdNET-Go_classifier_20250916']
@@ -19,8 +20,8 @@ if __name__ == '__main__':
     conf = get_settings()
     lat = conf.getfloat('LATITUDE')
     lon = conf.getfloat('LONGITUDE')
-    # same week number the analysis hands to the location filter (utils/classes.py)
-    week = datetime.datetime.today().isocalendar()[1]
+    # same week number the analysis hands to the location filter (utils/classes.py week48)
+    week = week48(datetime.datetime.today())
     threshold = conf.getfloat('SF_THRESH') if args.threshold is None else args.threshold
 
     if conf['MODEL'] == BirdNETPlusV3.model_name:
@@ -28,6 +29,8 @@ if __name__ == '__main__':
         print(f'Getting species list for {lat}/{lon}, Week {week}, {BirdNETPlusV3.model_name} geo model, '
               f'threshold {threshold}...', flush=True)
         names = get_language(conf['DATABASE_LANG'])
+        if not os.path.exists(os.path.join(MODEL_PATH, f'{BirdNETPlusV3.model_name}_Geo_Labels.txt')):
+            get_model()  # the model files arrive on first use: fetch them like the analysis does
         geo_names = {}
         with open(os.path.join(MODEL_PATH, f'{BirdNETPlusV3.model_name}_Geo_Labels.txt'), encoding='utf-8') as f:
             for line in f:

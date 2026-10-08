@@ -15,7 +15,9 @@ fi
 
 python3 -c 'from utils.helpers import set_label_file; set_label_file()'
 ret=$?
-[ $ret -ne 0 ] && echo "The label file model/labels.txt could not be written for ${MODEL} / ${DATABASE_LANG}"
+# not fatal: without internet the model (and so its label file) arrives at the first analysis start,
+# which writes model/labels.txt itself when it is missing
+[ $ret -ne 0 ] && echo "The label file model/labels.txt could not be written for ${MODEL} / ${DATABASE_LANG} - it will be written when the analysis first starts"
 
 cd - > /dev/null
-exit $ret
+exit 0

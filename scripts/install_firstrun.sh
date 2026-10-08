@@ -86,7 +86,7 @@ done
 
 fr_ask fr_model "Model: V3 (BirdNET+ V3.0, recommended) or V2.4" "V3" "" MODEL
 case "${fr_model,,}" in
-  v2*|2*)
+  v2*|2*|*v2.4*)
     FR_MODEL=BirdNET_GLOBAL_6K_V2.4_Model_FP16; FR_CONFIDENCE=0.7; FR_SENSITIVITY=1.25 ;;
   *)
     # V3 defaults: minimum confidence 0.25 (owner 2026-10-07), sensitivity 1.0 (BirdNET Live)

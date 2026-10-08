@@ -87,4 +87,6 @@ while read -r species; do
 done <<<"$sanitized_names"
 
 # The sound-repo spool (US-38) only holds clips waiting for the upload: empty it while the upload is off
-[ -n "${SOUND_REPO_PATH:-}" ] && "$HOME"/BirdNET-Pi/scripts/sound_repo_clean.sh
+if [ -n "${SOUND_REPO_PATH:-}" ]; then
+  "$HOME"/BirdNET-Pi/scripts/sound_repo_clean.sh
+fi

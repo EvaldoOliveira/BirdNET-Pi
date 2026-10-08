@@ -62,7 +62,9 @@ can_auto_update () {
     exit 0
   fi
   sudo_with_user git -C $HOME/BirdNET-Pi fetch $remote $branch
-  behind_count=$(sudo_with_user git -C $HOME/BirdNET-Pi rev-list --count HEAD..@{u})
+  # compare with what was just fetched, not with the upstream of the checked-out branch: after a
+  # change of UPDATE_BRANCH those differ and "No updates" would be reported forever
+  behind_count=$(sudo_with_user git -C $HOME/BirdNET-Pi rev-list --count HEAD..FETCH_HEAD)
   if [ "${behind_count}" -eq 0 ]; then
     echo "No updates"
     exit 0

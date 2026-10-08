@@ -33,7 +33,7 @@ fi
 [ -n "$(find "$spool" -type f -mmin +1 -print -quit 2>/dev/null)" ] || exit 0
 
 if ! rclone listremotes 2>/dev/null | grep -qx "${remote%%:*}:"; then
-  echo "sound repo: rclone remote '${remote%%:*}' is not configured — nothing uploaded (see Basic Settings › BirdDB-Br)"
+  echo "sound repo: rclone remote '${remote%%:*}' is not configured — nothing uploaded (see Advanced Settings › BirdDB-Br)"
   exit 0
 fi
 

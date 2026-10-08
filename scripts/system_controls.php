@@ -63,9 +63,15 @@ function update() {
 <?php
   $cmd="cd ".$home."/BirdNET-Pi && sudo -u ".$user." git rev-list --max-count=1 HEAD";
   $curr_hash = shell_exec($cmd);
+  // link the running commit on the repository this station really updates from (the clone's origin)
+  $repo_url = trim((string) shell_exec("cd ".$home."/BirdNET-Pi && sudo -u ".$user." git remote get-url origin 2>/dev/null"));
+  $repo_url = preg_replace('/\.git$/', '', $repo_url);
+  if (!preg_match('#^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$#', $repo_url)) {
+    $repo_url = "https://github.com/EvaldoOliveira/BirdNET-Pi";
+  }
 ?>
   <p style="font-size:11px;text-align:center"></br></br>Running version: </p>
-  <a href="https://github.com/Nachtzuster/BirdNET-Pi/commit/<?php echo $curr_hash; ?>" target="_blank">
+  <a href="<?php echo $repo_url; ?>/commit/<?php echo trim($curr_hash); ?>" target="_blank">
     <p style="font-size:11px;text-align:center;box-sizing: border-box"><?php echo $curr_hash; ?></p>
   </a>
   <pre id="console" style="text-align:center"></pre>

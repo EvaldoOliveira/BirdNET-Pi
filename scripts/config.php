@@ -67,7 +67,8 @@ if(isset($_GET["latitude"])){
   if(isset($_GET['apprise_input_rare'])) { $apprise_input_rare = $_GET['apprise_input_rare']; }
   $apprise_notification_title = $_GET['apprise_notification_title'];
   $apprise_notification_body = htmlspecialchars_decode($_GET['apprise_notification_body'], ENT_QUOTES);
-  if(isset($_GET['apprise_notification_title_rare'])) { $apprise_notification_title_rare = $_GET['apprise_notification_title_rare']; }
+  // written quoted into birdnet.conf (sourced by shell scripts): no quotes, backticks, backslashes, $( or control characters
+  if(isset($_GET['apprise_notification_title_rare'])) { $apprise_notification_title_rare = str_replace('$(', '', preg_replace('/["`\\\\\x00-\x1F\x7F]/', '', $_GET['apprise_notification_title_rare'])); }
   if(isset($_GET['apprise_notification_body_rare'])) { $apprise_notification_body_rare = htmlspecialchars_decode($_GET['apprise_notification_body_rare'], ENT_QUOTES); }
   $minimum_time_limit = $_GET['minimum_time_limit'];
   $image_provider = $_GET["image_provider"];
@@ -103,7 +104,7 @@ if(isset($_GET["latitude"])){
   $shadow_sens = isset($_GET['shadow_sens']) && is_numeric($_GET['shadow_sens']) ? max(0.5, min(1.5, round(floatval($_GET['shadow_sens']), 2))) : ($config['SHADOW_SENS'] ?? 1.0);
   $shadow_geo_thresh = isset($_GET['shadow_geo_thresh']) && is_numeric($_GET['shadow_geo_thresh']) ? max(0.0005, min(0.99, floatval($_GET['shadow_geo_thresh']))) : ($config['SHADOW_GEO_THRESH'] ?? 0.03);
   // Shadow on/off flag: unchecked = the shadow model and its parameters stay configured
-  // but nothing is analysed by it (only the official model runs). Absent key = on.
+  // but nothing is analysed by it (only the official model runs). Absent key = off (the default).
   $shadow_enabled = isset($_GET['shadow_enabled']) ? 1 : 0;
   // Swap: the shadow model becomes the official one and vice versa, each keeping its own
   // three parameters (what the owner did by hand on 2026-09-21). Only when a shadow is set.
@@ -121,7 +122,8 @@ if(isset($_GET["latitude"])){
   if(isset($_GET['only_notify_species_names'])) { $only_notify_species_names = htmlspecialchars_decode($_GET['only_notify_species_names'], ENT_QUOTES); }
   if(isset($_GET['only_notify_species_names_2'])) { $only_notify_species_names_2 = htmlspecialchars_decode($_GET['only_notify_species_names_2'], ENT_QUOTES); }
 
-  if(isset($_GET['notification_email']) && trim($_GET['notification_email']) != '') { $notification_email = trim($_GET['notification_email']); }
+  // written into birdnet.conf, which shell scripts source: a plain address only, nothing a shell would expand
+  if(isset($_GET['notification_email']) && preg_match('/^[^\s"\'`$\\\\@]+@[^\s"\'`$\\\\@]+$/', trim($_GET['notification_email']))) { $notification_email = trim($_GET['notification_email']); }
   if(isset($_GET['notification_default_tier'])) {
     $notification_default_tier = strtolower($_GET['notification_default_tier']);
     if(!in_array($notification_default_tier, ['muted', 'normal', 'rare'], true)) {
@@ -307,6 +309,8 @@ if(isset($_GET["latitude"])){
 
   $fh = fopen("/etc/birdnet/birdnet.conf", "w");
   fwrite($fh, $contents);
+  // settings saved here answer the first-run questions too: stop opening the Overview on the wizard
+  if (file_exists($home.'/BirdNET-Pi/firstrun_pending')) { @unlink($home.'/BirdNET-Pi/firstrun_pending'); }
 
   if(isset($apprise_input)){
     $appriseconfig = fopen($home."/BirdNET-Pi/apprise.txt", "w");
@@ -701,7 +705,7 @@ function runProcess() {
       <label for="minimum_time_limit">Minimum time between notifications of the same species (sec):</label>
       <input type="number" id="minimum_time_limit" name="minimum_time_limit" value="<?php echo $config['APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES'];?>" style="width:6em;" min="0"><br>
       <label for="notification_email">Notification e-mail address (used as $email in the Apprise boxes):</label>
-      <input type="text" id="notification_email" name="notification_email" placeholder="you@example.com (empty = keep current)" value="<?php echo $config['NOTIFICATION_EMAIL'] ?? '';?>" size=40><br>
+      <input type="text" id="notification_email" name="notification_email" placeholder="you@example.com (empty = keep current)" value="<?php echo htmlspecialchars($config['NOTIFICATION_EMAIL'] ?? '');?>" size=40><br>
       <label for="notification_default_tier">Default notification tier for species not listed in Species Management:</label>
       <select name="notification_default_tier" id="notification_default_tier" style="width:12em;">
         <?php $ndt = strtolower($config['NOTIFICATION_DEFAULT_TIER'] ?? 'normal');

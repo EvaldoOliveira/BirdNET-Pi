@@ -44,7 +44,7 @@ get_tf_whl () {
       echo "Could not download $WHL"
       return 1
     fi
-    SUMS=$(curl -fsSL ${BASE_URL}SHA256SUMS 2>/dev/null | grep " ${WHL}\$")
+    SUMS=$(curl -fsSL ${BASE_URL}SHA256SUMS 2>/dev/null | grep " ${WHL}\$" || true)
     if [ -n "$SUMS" ] && ! (cd $HOME/BirdNET-Pi && echo "$SUMS" | sha256sum -c --quiet -); then
       echo "Checksum mismatch for $WHL"
       return 1
