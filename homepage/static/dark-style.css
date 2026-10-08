@@ -1004,3 +1004,35 @@ pre#timer.bash {
    would not be submitted and the save would wipe the shadow settings), only look and feel change */
 .modelstable tr.shadow-off select, .modelstable tr.shadow-off input[type=number] { opacity: 0.4; pointer-events: none; }
 .modelstable tr.shadow-off td b { opacity: 0.5; }
+
+/* Side menu (owner 2026-10-08): groups like webmin, one link per page */
+.sidenav { position: fixed; top: 0; left: 0; bottom: 0; width: 180px; overflow-y: auto; background-color: #2b2b2b;
+  box-shadow: 0px 0px 28px 1px rgba(0, 0, 0, 0.10); padding: 6px 0; z-index: 20; font-size: 14px; }
+.sidenav ~ .views { margin-left: 188px; }
+.sidenav a.navitem { display: block; padding: 6px 14px; color: #f5f5f5; text-decoration: none; white-space: nowrap; }
+.sidenav details a.navitem { padding-left: 26px; }
+.sidenav a.navitem:hover, .sidenav a.navitem.active { background-color: #3b3b3b; color: #f5f5f5; }
+.sidenav a.navitem.active { font-weight: bold; }
+.sidenav summary { padding: 6px 14px; cursor: pointer; font-weight: bold; color: #f5f5f5; list-style-position: inside; }
+.sidenav summary:hover { background-color: #3b3b3b; }
+.sidenav .updatenumber { display: inline-block; position: static; margin-left: 6px; }
+.sidenav-toggle { display: none; }
+@media screen and (max-width: 800px) {
+  .sidenav { display: none; }
+  .sidenav ~ .views { margin-left: 0; padding-top: 40px; }
+  .sidenav-toggle { display: block; position: fixed; top: 4px; left: 4px; z-index: 30; padding: 4px 10px; font-size: 20px;
+    background-color: #2b2b2b; color: #f5f5f5; border-radius: 4px; }
+  body.sidenav-open .sidenav { display: block; width: 220px; padding-top: 44px; }
+}
+
+/* Header on phones (owner 2026-10-08): one row — small logo, station name, Live Audio; the centred
+   BirdNET-Pi wordmark is left out so nothing overlaps */
+@media screen and (max-width: 800px) {
+  .banner { height: 48px; margin-left: 0; padding: 0 8px; }
+  .banner h1 { display: none; }
+  .logo img { display: block; width: 36px; height: 36px; }
+  .banner .sitename { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50vw; }
+  .banner .stream { width: auto; float: none; margin-left: auto; }
+  .banner button { padding: 4px 8px; font-size: 13px; }
+  .banner audio { max-width: 45vw; }
+}

@@ -58,21 +58,63 @@ elseif ($config["LONGITUDE"] == "0.000") {
   <link rel="stylesheet" href="<?php echo $color_scheme . '?v=' . date('n.d.y', filemtime($color_scheme)); ?>">
 </head>
 <body>
-<form action="views.php" method="GET" id="views">
-<div class="topnav" id="myTopnav">
-  <button type="submit" name="view" value="Overview" form="views">Overview</button>
-  <button type="submit" name="view" value="Todays Detections" form="views">Today's Detections</button>
-  <button type="submit" name="view" value="Spectrogram" form="views">Spectrogram</button>
-  <button type="submit" name="view" value="Species Stats" form="views">Best Recordings</button>
-  <button type="submit" name="view" value="Streamlit" form="views">Species Stats</button>
-  <button type="submit" name="view" value="Daily Charts" form="views">Daily Charts</button>
-  <button type="submit" name="view" value="Weekly Report" form="views">Weekly Report</button>
-  <button type="submit" name="view" value="Recordings" form="views">Recordings</button>
-  <button type="submit" name="view" value="View Log" form="views">View Log</button>
-  <button type="submit" name="view" value="Tools" form="views">Tools<?php if(isset($_SESSION['behind']) && intval($_SESSION['behind']) >= 50 && ($config['SILENCE_UPDATE_INDICATOR'] != 1)){ $updatediv = ' <div class="updatenumber">'.$_SESSION["behind"].'</div>'; } else { $updatediv = ""; } echo $updatediv; ?></button>
-  <button type="button" href="javascript:void(0);" class="icon" onclick="myFunction()"><img src="images/menu.png"></button>
-</div>
-</form>
+<?php
+// Side menu (owner 2026-10-08): groups like webmin, one real link per page (/?view=...), so a page opens
+// in another tab and the address bar shows it. The page itself still loads in this frame.
+$current_view = $_GET['view'] ?? 'Overview';
+$update_badge = (isset($_SESSION['behind']) && intval($_SESSION['behind']) >= 50 && ($config['SILENCE_UPDATE_INDICATOR'] ?? 0) != 1)
+  ? ' <span class="updatenumber">' . $_SESSION['behind'] . '</span>' : '';
+$updatediv = $update_badge;
+$menu = array(
+  array('Overview', 'Overview'),
+  array('Spectrogram', 'Spectrogram'),
+  array('Detections', array('Todays Detections' => "Today's Detections", 'Recordings' => 'Recordings', 'Species Stats' => 'Best Recordings')),
+  array('Statistics', array('Streamlit' => 'Species Stats', 'Daily Charts' => 'Daily Charts', 'Weekly Report' => 'Weekly Report')),
+  array('Species', array('Species Management' => 'Species Management', 'Included' => 'Custom Species List', 'Excluded' => 'Excluded Species', 'Whitelisted' => 'Whitelist')),
+  array('Settings', array('Settings' => 'Basic Settings', 'Advanced' => 'Advanced Settings', 'Setup' => 'Station Setup')),
+  array('System', array('System Controls' => 'System Controls', 'Services' => 'Services', 'System Info' => 'System Info',
+                        'View Log' => 'View Log', 'File' => 'File Manager', 'Webterm' => 'Web Terminal', 'Adminer' => 'Database Maintenance')),
+);
+function nav_link($view, $label, $current, $badge = '') {
+  $cls = $view === $current ? 'navitem active' : 'navitem';
+  return '<a class="' . $cls . '" data-view="' . htmlspecialchars($view, ENT_QUOTES) . '" href="/?view=' . rawurlencode($view) . '">'
+    . htmlspecialchars($label) . $badge . '</a>';
+}
+?>
+<form action="views.php" method="GET" id="views"></form>
+<?php if ($current_view !== 'Kiosk') { ?>
+<button type="button" class="sidenav-toggle" onclick="document.body.classList.toggle('sidenav-open')" title="Menu">&#9776;</button>
+<nav class="sidenav" id="sidenav">
+<?php
+foreach ($menu as $entry) {
+  if (!is_array($entry[1])) {
+    echo nav_link($entry[1], $entry[0], $current_view);
+    continue;
+  }
+  $open = array_key_exists($current_view, $entry[1]) || ($entry[0] === 'System' && $current_view === 'Tools');
+  echo '<details class="navgroup"' . ($open ? ' open' : '') . '><summary>' . htmlspecialchars($entry[0])
+    . ($entry[0] === 'System' ? $update_badge : '') . '</summary>';
+  foreach ($entry[1] as $view => $label) {
+    echo nav_link($view, $label, $current_view, $view === 'System Controls' ? $update_badge : '');
+  }
+  echo '</details>';
+}
+?>
+</nav>
+<script>
+  // a normal click loads the page in this frame (the header, live audio etc. stay); middle click, Ctrl/Cmd
+  // click and "open in new tab" use the real link
+  document.querySelectorAll('#sidenav a.navitem').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      var v = document.getElementsByClassName('views')[0];
+      if (v) v.style.opacity = '0.5';
+      window.location.href = 'views.php?view=' + encodeURIComponent(a.dataset.view);
+    });
+  });
+</script>
+<?php } ?>
 <script type="text/javascript" src="static/plupload.full.min.js"></script>
 <!--<script type="text/javascript" src="static/moxie.js"></script>
 <script type="text/javascript" src="static/plupload.dev.js"></script>-->
@@ -88,16 +130,12 @@ window.onload = function() {
       elements[i].addEventListener('click', setViewsOpacity, false);
   }
 };
-var topbuttons = document.querySelectorAll("button[form='views']");
-if(window.location.search.substr(1) != '') {
-  for (var i = 0; i < topbuttons.length; i++) {
-    if(topbuttons[i].value == decodeURIComponent(window.location.search.substr(1)).replace(/\+/g,' ').split('=').pop()) {
-      topbuttons[i].classList.add("button-hover");
-    }
+// keep the address bar of the station page on the page shown here (/?view=...), so reload and bookmarks work
+try {
+  if (window.top !== window && window.top.location.host === window.location.host) {
+    window.top.history.replaceState(null, '', '/?view=' + encodeURIComponent(<?php echo json_encode($current_view); ?>));
   }
-} else {
-  topbuttons[0].classList.add("button-hover");
-}
+} catch (e) {}
 function copyOutput(elem) {
   elem.innerHTML = 'Copied!';
   const copyText = document.getElementsByTagName("pre")[0].textContent;
@@ -354,14 +392,6 @@ if(isset($_GET['view'])){
 } else {include('overview.php');}
 ?>
 <script>
-function myFunction() {
-  var x = document.getElementById("myTopnav");
-  if (x.className === "topnav") {
-    x.className += " responsive";
-  } else {
-    x.className = "topnav";
-  }
-}
 function setLiveStreamVolume(vol) {
   var audioElements = document.querySelectorAll(".custom-audio-player audio");
   audioElements.forEach(audioEl => {
@@ -395,9 +425,9 @@ function getTheDate(increment) {
 }
 
 function installKeyAndSwipeEventHandler() {
-  for (var i = 0; i < topbuttons.length; i++) {
-    if (topbuttons[i].textContent == "Daily Charts" && 
-        topbuttons[i].className == "button-hover") {
+  // (was keyed on the old top menu's highlighted button)
+  for (var i = 0; i < 1; i++) {
+    if (<?php echo json_encode($current_view); ?> === "Daily Charts") {
 
       document.onkeydown = function(event) {
         switch (event.keyCode) {

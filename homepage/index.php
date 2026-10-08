@@ -58,6 +58,10 @@ if(isset($_GET['filename'])) {
   $filename = $_GET['filename'];
 echo "
 <iframe src=\"views.php?view=Recordings&filename=$filename\"></iframe>";
+} elseif(isset($_GET['view'])) {
+  // a page's own address (/?view=...): the side menu links and the address bar point here
+  echo "
+<iframe src=\"views.php?view=" . rawurlencode($_GET['view']) . "\"></iframe>";
 } else {
   echo "
 <iframe src=\"views.php\"></iframe>";

@@ -503,7 +503,7 @@ function refreshTodayStats() {
 }
 window.addEventListener("load", function(){
   <?php if($kiosk == true) { ?>
-    document.getElementById("myTopnav").remove();
+    var topnav = document.getElementById("myTopnav"); if (topnav) topnav.remove();  // the side menu is not drawn in kiosk mode
     loadDetections(undefined);
     refreshTodayStats();
     // refresh the kiosk detection list every minute
