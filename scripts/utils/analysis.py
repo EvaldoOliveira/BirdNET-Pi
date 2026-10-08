@@ -1,14 +1,12 @@
-import csv
 import logging
 import os
-import re
 import time
 
 import librosa
 import numpy as np
 
 from .classes import Detection, ParseFileName
-from .helpers import get_settings, get_language, MODEL_PATH
+from .helpers import get_settings, get_language
 from .models import get_model
 
 log = logging.getLogger(__name__)
@@ -25,26 +23,6 @@ def loadCustomSpeciesList(path):
             species_list = [line.strip().split('_')[0] for line in csfile.readlines()]
 
     return species_list
-
-
-def loadRegionIncludeList(region):
-    # Regional include list shipped with the code: model/include_lists/<INCLUDE_REGION>.txt
-    # (e.g. BR-SP = species with WikiAves records in the State of Sao Paulo). Empty = none.
-    if not region or not re.fullmatch(r'[A-Z]{2}-[A-Z]{2}', region):
-        return set()
-    return set(loadCustomSpeciesList(os.path.join(MODEL_PATH, 'include_lists', f'{region}.txt')))
-
-
-def loadNonBirdClasses(model):
-    # Regional lists cover birds only: the non-bird classes of a model that says so (V3 labels csv) stay allowed
-    path = os.path.join(MODEL_PATH, f'{model}_Labels.csv')
-    non_birds = set()
-    if os.path.isfile(path):
-        with open(path, encoding='utf-8-sig') as f:
-            for row in csv.DictReader(f, delimiter=';'):
-                if row.get('class') and row['class'] != 'Aves':
-                    non_birds.add(row['sci_name'])
-    return non_birds
 
 
 def loadSpeciesConfidence(path):
@@ -191,13 +169,8 @@ def run_analysis(file):
 
     conf = get_settings()
     min_confidence = conf.getfloat('CONFIDENCE')
-    # INCLUDE_REGION (Basic Settings > Location): the regional list joins the user's include list
-    region_list = loadRegionIncludeList(conf.get('INCLUDE_REGION', ''))
-    if region_list:
-        include_list = set(include_list) | region_list
-        region_free = loadNonBirdClasses(conf['MODEL'])
-    else:
-        region_free = set()
+    # INCLUDE_REGION (a Brazilian state) is no separate filter: state_include_list.py writes the state's
+    # birds plus the model's non-bird classes into include_species_list.txt, where the user sees it
     model = load_global_model()
     names = get_language(conf['DATABASE_LANG'])
 
@@ -219,7 +192,7 @@ def run_analysis(file):
             if confidence >= species_confidence.get(sci_name, min_confidence):
                 # V3 classes missing from the language file keep the model's own common name
                 com_name = names.get(sci_name) or getattr(model, 'common_names', {}).get(sci_name, sci_name)
-                if sci_name not in include_list and len(include_list) != 0 and sci_name not in region_free:
+                if sci_name not in include_list and len(include_list) != 0:
                     log.warning("Excluded as INCLUDE_LIST is active but this species is not in it: %s %s", sci_name, com_name)
                 elif sci_name in exclude_list and len(exclude_list) != 0:
                     log.warning("Excluded as species in EXCLUDE_LIST: %s %s", sci_name, com_name)

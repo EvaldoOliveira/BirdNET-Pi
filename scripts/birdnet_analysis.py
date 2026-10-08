@@ -6,6 +6,7 @@ import signal
 import sys
 import threading
 from queue import Queue
+import subprocess
 from subprocess import CalledProcessError
 
 import inotify.adapters
@@ -38,6 +39,13 @@ def main():
             set_label_file()
         except Exception as e:
             log.warning('could not write model/labels.txt: %s', e)
+    # the state's Custom Species List needs the model's non-bird classes, which a V3 model fetched
+    # on first use only brings now: complete the list if it was built without them
+    try:
+        subprocess.run([sys.executable, os.path.expanduser('~/BirdNET-Pi/scripts/state_include_list.py'), '--if-needed'],
+                       check=False, timeout=120)
+    except Exception as e:
+        log.warning('could not build the state species list: %s', e)
     conf = get_settings()
     i = inotify.adapters.Inotify()
     i.add_watch(os.path.join(conf['RECS_DIR'], 'StreamData'), mask=IN_CLOSE_WRITE)

@@ -19,5 +19,8 @@ ret=$?
 # which writes model/labels.txt itself when it is missing
 [ $ret -ne 0 ] && echo "The label file model/labels.txt could not be written for ${MODEL} / ${DATABASE_LANG} - it will be written when the analysis first starts"
 
+# Brazilian state chosen: its birds + the model's non-bird classes become the Custom Species List
+python3 ./state_include_list.py --if-needed || echo "The state species list could not be built - it will be built when the analysis first starts"
+
 cd - > /dev/null
 exit 0

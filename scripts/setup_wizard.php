@@ -97,6 +97,11 @@ if (isset($_POST['wizard_save'])) {
       shell_exec('sudo timedatectl set-timezone ' . escapeshellarg($tz));
       if (file_exists('/etc/timezone')) shell_exec('echo ' . escapeshellarg($tz) . ' | sudo tee /etc/timezone > /dev/null');
     }
+    // a new state rebuilds the Custom Species List: the state's birds + the model's non-bird classes
+    $new_region = $state === '' ? '' : "BR-$state";
+    if ($new_region !== ($config['INCLUDE_REGION'] ?? '')) {
+      shell_exec('sudo -u ' . escapeshellarg($user) . ' python3 ' . escapeshellarg($home . '/BirdNET-Pi/scripts/state_include_list.py') . ' > /dev/null 2>&1');
+    }
     if ($model !== $old_model || $lang !== $old_lang) {
       shell_exec('sudo -u ' . escapeshellarg($user) . ' ' . escapeshellarg($home . '/BirdNET-Pi/scripts/install_language_label.sh') . ' > /dev/null 2>&1');
     }

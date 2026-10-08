@@ -131,7 +131,8 @@ if(isset($_GET["latitude"])){
     }
   }
   // Regional include list (owner 2026-10-07): '' = none (default, outside Brazil) or one shipped list
-  // model/include_lists/<region>.txt, e.g. BR-SP; joins the user's include_species_list.txt
+  // model/include_lists/<region>.txt, e.g. BR-SP; choosing one rebuilds include_species_list.txt
+  // (Custom Species List) as the state's birds + the model's non-bird classes (state_include_list.py)
   if(isset($_GET['include_region'])) {
     $include_region = $_GET['include_region'];
     if($include_region !== '' && !(preg_match('/^[A-Z]{2}-[A-Z]{2}$/', $include_region) && is_file($home."/BirdNET-Pi/model/include_lists/".$include_region.".txt"))) {
@@ -309,6 +310,11 @@ if(isset($_GET["latitude"])){
 
   $fh = fopen("/etc/birdnet/birdnet.conf", "w");
   fwrite($fh, $contents);
+  fclose($fh);
+  // a new state rebuilds the Custom Species List: the state's birds + the model's non-bird classes
+  if (isset($include_region) && $include_region !== ($config['INCLUDE_REGION'] ?? '')) {
+    syslog_shell_exec("python3 ".escapeshellarg($home."/BirdNET-Pi/scripts/state_include_list.py"), $user);
+  }
   // settings saved here answer the first-run questions too: stop opening the Overview on the wizard
   if (file_exists($home.'/BirdNET-Pi/firstrun_pending')) { @unlink($home.'/BirdNET-Pi/firstrun_pending'); }
 
@@ -619,7 +625,7 @@ function runProcess() {
             }
             ?>
           </select></td>
-          <td>(Optional)</td>
+          <td>(Optional) Replaces the Custom Species List with the birds recorded in the state plus all non-bird classes of the model; the previous list is kept as a .bak file</td>
         </tr>
       </table>
       <p>Set your Latitude and Longitude to 4 decimal places. Get your coordinates <a href="https://latlong.net" target="_blank">here</a>.</p>

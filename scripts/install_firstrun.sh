@@ -46,9 +46,12 @@ fr_ask() {
     if [ -n "$secret" ]; then
       read -r -s -p "$question: " answer < /dev/tty; echo > /dev/tty
     else
-      read -r -p "$question [${default}]: " answer < /dev/tty
+      # -e: line editing, so arrow keys and the like edit the answer instead of ending up in it
+      read -e -r -p "$question [${default}]: " answer < /dev/tty
     fi
   fi
+  # no control characters (escape sequences, stray keys) in a value that goes into birdnet.conf
+  answer=$(printf '%s' "$answer" | tr -d '\000-\037\177')
   printf -v "$var" '%s' "${answer:-$default}"
 }
 
@@ -59,6 +62,11 @@ if [ -n "$json" ] && [ "$(echo "$json" | jq -r .status 2>/dev/null)" = "success"
   fr_tz=$(echo "$json" | jq -r .timezone)
 fi
 
+# drop what was typed (or what the terminal answered) while the packages were installing:
+# it would otherwise become the beginning of the first answer
+if [ -n "$fr_interactive" ]; then
+  while read -r -t 0.1 -n 1000 _ < /dev/tty; do :; done
+fi
 [ -n "$fr_interactive" ] && echo -e "\n=== BirdNET-Pi first-run settings (Enter keeps the value in brackets) ===" > /dev/tty
 
 fr_ask FR_SITE_NAME "Station name" "$HOSTNAME" "" SITE_NAME

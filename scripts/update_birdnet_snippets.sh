@@ -156,6 +156,12 @@ if ! grep -E '^BIRDDB_ENABLED=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "BIRDDB_ENABLED=0" >> /etc/birdnet/birdnet.conf
 fi
 
+# INCLUDE_REGION used to be a separate filter joined to the Custom Species List: build the list once
+# from the state, keeping the species already in it (the previous list is also kept as a .bak)
+if grep -qE '^INCLUDE_REGION=BR-[A-Z]{2}' /etc/birdnet/birdnet.conf && ! [ -f $HOME/BirdNET-Pi/include_species_list.state ]; then
+  sudo -u $USER python3 $HOME/BirdNET-Pi/scripts/state_include_list.py --merge || true
+fi
+
 if ! grep -E '^BIRDNET_USER=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "## BIRDNET_USER is for scripts to easily find where BirdNET-Pi is installed" >> /etc/birdnet/birdnet.conf
   echo "## DO NOT EDIT!" >> /etc/birdnet/birdnet.conf
