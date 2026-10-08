@@ -247,8 +247,8 @@ $result = $db->query($sql);
         <th onclick="sortTable(5)">Probability</th>
         <th onclick="sortTable(6)">Notification</th>
         <th onclick="sortTable(7)">Confirmed</th>
-        <th onclick="sortTable(8)" title="Ticked = in the exclude list: no longer detected (its past detections stay listed here)">Exclude</th>
-        <th onclick="sortTable(9)">Whitelisted</th>
+        <th onclick="sortTable(8)">Whitelist</th>
+        <th onclick="sortTable(9)" title="Ticked = in the exclude list: no longer detected (its past detections stay listed here)">Exclude</th>
         <th>Stats</th>
         <th onclick="sortTable(11)">Count</th>
         <th>Delete</th>
@@ -324,8 +324,8 @@ $result = $db->query($sql);
      . "<td class='threshold' data-sort='0'>0.0000</td>"
      . "<td data-sort='{$species_tier}'>".$tier_cell."</td>"
      . "<td data-sort='".($is_confirmed?0:1)."'>".$confirm_cell."</td>"
-     . "<td data-sort='".($is_excluded?0:1)."'>".$excl_cell."</td>"
      . "<td data-sort='".($is_whitelisted?0:1)."'>".$white_cell."</td>"
+     . "<td data-sort='".($is_excluded?0:1)."'>".$excl_cell."</td>"
      . "<td>{$chart_cell}</td>"
      . "<td>{$count}</td>"
      . "<td><img style='cursor:pointer;max-width:20px' src='images/delete.svg' onclick=\"deleteSpecies('".addslashes($row['Sci_Name'])." + ".addslashes($row['Com_Name'])."')\"></td>"
