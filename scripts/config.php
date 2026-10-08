@@ -629,7 +629,7 @@ function runProcess() {
         </tr>
       </table>
       <p>Set your Latitude and Longitude to 4 decimal places. Get your coordinates <a href="https://latlong.net" target="_blank">here</a>.</p>
-      <p>Brazilian states include list: only the bird species with WikiAves records in the chosen state are accepted (names per CBRO; non-bird classes are not filtered). It adds to your own Included Species list. Leave <i>None</i> outside Brazil.</p>
+      <p>Brazilian states include list: only the bird species with WikiAves records in the chosen state are accepted (names per CBRO; non-bird classes are not filtered). It replaces your Included Species list (the previous one is kept as a .bak file). Leave <i>None</i> outside Brazil or if you want to detect species that have not been registered yet in your area.</p>
       </td></tr></table><br>
       <table class="settingstable"><tr><td>
       <h2>BirdWeather</h2>

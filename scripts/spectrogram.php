@@ -136,9 +136,9 @@ if ($contents !== false) {
   $json = json_decode($contents);
   if ($json != null) {
     $datetime = DateTime::createFromFormat(DateTime::ISO8601, $json->{'timestamp'});
-    $now = new DateTime();
-    $interval = $now->diff($datetime);
-    $json->delay = $interval->format('%s');
+    // total seconds since the recording started: DateInterval's '%s' is only the seconds part
+    // (0-59), so an analysis running minutes behind put its labels at a wrong place
+    $json->delay = $datetime ? (time() - $datetime->getTimestamp()) : 0;
     echo json_encode($json);
   }
 }
