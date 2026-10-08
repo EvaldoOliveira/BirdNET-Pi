@@ -375,6 +375,8 @@ install_livestream_service() {
 Description=BirdNET-Pi Live Stream
 After=network-online.target
 Requires=network-online.target
+# keep restarting however often ffmpeg stops (a busy or replugged microphone), never give up
+StartLimitIntervalSec=0
 [Service]
 Restart=always
 Type=simple

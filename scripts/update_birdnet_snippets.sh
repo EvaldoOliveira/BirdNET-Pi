@@ -177,6 +177,12 @@ if ! grep -E '^BIRDWEATHER_ENABLED=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "BIRDWEATHER_ENABLED=1" >> /etc/birdnet/birdnet.conf
 fi
 
+# livestream: systemd must never give up restarting it (a replugged microphone stops ffmpeg repeatedly)
+if [ -f $HOME/BirdNET-Pi/templates/livestream.service ] && ! grep -q '^StartLimitIntervalSec=0' $HOME/BirdNET-Pi/templates/livestream.service; then
+  sed -i 's/^Requires=network-online.target$/Requires=network-online.target\nStartLimitIntervalSec=0/' $HOME/BirdNET-Pi/templates/livestream.service
+  systemctl daemon-reload
+fi
+
 if ! grep -E '^BIRDNET_USER=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "## BIRDNET_USER is for scripts to easily find where BirdNET-Pi is installed" >> /etc/birdnet/birdnet.conf
   echo "## DO NOT EDIT!" >> /etc/birdnet/birdnet.conf
