@@ -438,8 +438,8 @@ function askModal(title, text, okLabel) {
       m.id = 'spModal';
       m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:50;';
       m.innerHTML = '<div style="background:#fff;color:#000;border-radius:6px;max-width:440px;padding:16px 18px;box-shadow:0 4px 18px rgba(0,0,0,0.35);text-align:left;">'
-        + '<h3 id="spModalTitle" style="margin:0 0 8px;text-align:left"></h3><p id="spModalText" style="margin:0 0 14px"></p>'
-        + '<div style="text-align:right"><button id="spModalCancel" style="padding:6px 12px;margin-right:6px">Cancel</button>'
+        + '<h3 id="spModalTitle" style="margin:0 0 8px;text-align:left"></h3><p id="spModalText" style="margin:0 0 14px;white-space:pre-line"></p>'
+        + '<div style="text-align:right"><button id="spModalCancel" style="padding:6px 12px;margin-right:6px">No</button>'
         + '<button id="spModalOk" style="padding:6px 12px;font-weight:bold;background:rgb(219,255,235);border-radius:4px"></button></div></div>';
       document.body.appendChild(m);
     }
@@ -454,12 +454,12 @@ function askModal(title, text, okLabel) {
   });
 }
 const SPECIES_TOGGLE_TEXT = {
-  confirmed: { add: ['Confirm species', 'Mark NAME as confirmed: you have verified that it occurs at this station.', 'Confirm'],
-               del: ['Remove confirmation', 'NAME will no longer be marked as confirmed.', 'Remove'] },
-  whitelist: { add: ['Whitelist species', 'NAME will be detected even when the location filter does not expect it here and now.', 'Whitelist'],
-               del: ['Remove from the whitelist', 'The location filter applies to NAME again.', 'Remove'] },
-  exclude:   { add: ['Exclude species', 'NAME will no longer be detected. Its past detections are kept; untick to detect it again.', 'Exclude'],
-               del: ['Detect again', 'NAME leaves the exclude list and will be detected again.', 'Detect again'] },
+  confirmed: { add: ['Confirm NAME?', 'What it does: marks the species as confirmed — you have checked that it really occurs at this station.\n\nImpact: a curation marker only; detection, filters and notifications do not change.'],
+               del: ['Remove the confirmation of NAME?', 'What it does: the species is no longer marked as confirmed.\n\nImpact: a curation marker only; detection, filters and notifications do not change.'] },
+  whitelist: { add: ['Whitelist NAME?', 'What it does: the species is accepted even when the location filter (species occurrence threshold) does not expect it here and in this week.\n\nImpact: it can be detected all year; if it does not occur here, more false detections are possible. The minimum confidence and the species list still apply.'],
+               del: ['Remove NAME from the whitelist?', 'What it does: the location filter applies to the species again.\n\nImpact: it is only detected in the weeks the model expects it here.'] },
+  exclude:   { add: ['Exclude NAME?', 'What it does: the species is never detected again (exclude list).\n\nImpact: no new detections, notifications or recordings for it; its past detections are kept. Untick to detect it again.'],
+               del: ['Detect NAME again?', 'What it does: the species leaves the exclude list.\n\nImpact: it is detected again whenever it passes the minimum confidence and the filters.'] },
 };
 function toggleSpecies(list, species, action) {
   const parts = species.split('_');   // "Scientific name_Common name"
@@ -468,7 +468,7 @@ function toggleSpecies(list, species, action) {
   const go = () => get(scriptsBase + 'species_tools.php?toggle=' + list + '&species=' + encodeURIComponent(species) + '&action=' + action)
     .then(r => { if (r.trim() === 'OK') location.reload(); });
   if (!t) { go(); return; }
-  askModal(t[0], t[1].replace('NAME', name), t[2]).then(ok => { if (ok) go(); });
+  askModal(t[0].replace('NAME', name), t[1], 'Yes').then(ok => { if (ok) go(); });
 }
 function deleteSpecies(species) {
   let parts = species.split(' + '); let sci_species = parts[0]; let com_species = parts[1];
