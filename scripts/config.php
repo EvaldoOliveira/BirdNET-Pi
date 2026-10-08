@@ -416,7 +416,6 @@ $config = get_config($force_reload=true);
   </style>
   </head>
 <div class="settings">
-      <div class="brbanner"><h1>Basic Settings</h1></div><br>
     <form id="basicform" action=""  method="GET">
 
 

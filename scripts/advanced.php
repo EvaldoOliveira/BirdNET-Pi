@@ -336,7 +336,6 @@ $count = 6000;
 <?php
 $newconfig = get_config();
 ?>
-      <div class="brbanner"><h1>Advanced Settings</h1></div><br>
     <form id="advancedform" action="" method="GET">
       <table class="settingstable"><tr><td>
       <h2>Privacy Threshold</h2>
