@@ -379,6 +379,17 @@ if (get_included_files()[0] === __FILE__) {
     </div>
 
     <div style="padding-bottom:10px" id="detections_table"><h3>Loading...</h3></div>
+    <script>
+      // the totals / search bar spans exactly the width of the detection cards below it
+      (function () {
+        var bar = document.querySelector('.todaybar'), box = document.getElementById('detections_table');
+        if (!bar || !box || !window.ResizeObserver) return;
+        new ResizeObserver(function () {
+          var t = box.querySelector('table');
+          bar.style.maxWidth = t ? t.offsetWidth + 'px' : '';
+        }).observe(box);
+      })();
+    </script>
 
     <?php if($kiosk == false) { ?>
     <button onclick="switchViews(this);" class="legacyview">Legacy view</button>
