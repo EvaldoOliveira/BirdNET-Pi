@@ -430,7 +430,7 @@ function setConf(species, input) {
     });
 }
 /* confirmation modal for the Confirmed / Whitelist / Exclude columns (owner 2026-10-08) */
-function askModal(title, text, okLabel) {
+function askModal(title, text, okLabel, defaultNo = false) {
   return new Promise(resolve => {
     let m = document.getElementById('spModal');
     if (!m) {
@@ -447,6 +447,13 @@ function askModal(title, text, okLabel) {
     document.getElementById('spModalText').textContent = text;
     document.getElementById('spModalOk').textContent = okLabel;
     m.style.display = 'flex';
+    // the safe answer is the default: highlighted and focused (Enter = it)
+    const yes = document.getElementById('spModalOk'), no = document.getElementById('spModalCancel');
+    const primary = 'padding:6px 12px;font-weight:bold;background:rgb(219,255,235);border-radius:4px;';
+    const plain = 'padding:6px 12px;font-weight:normal;background:transparent;';
+    yes.style.cssText = defaultNo ? plain : primary;
+    no.style.cssText = (defaultNo ? primary : plain) + 'margin-right:6px;';
+    (defaultNo ? no : yes).focus();
     const done = v => { m.style.display = 'none'; resolve(v); };
     document.getElementById('spModalOk').onclick = () => done(true);
     document.getElementById('spModalCancel').onclick = () => done(false);
@@ -468,7 +475,8 @@ function toggleSpecies(list, species, action) {
   const go = () => get(scriptsBase + 'species_tools.php?toggle=' + list + '&species=' + encodeURIComponent(species) + '&action=' + action)
     .then(r => { if (r.trim() === 'OK') location.reload(); });
   if (!t) { go(); return; }
-  askModal(t[0].replace('NAME', name), t[1], 'Yes').then(ok => { if (ok) go(); });
+  // whitelist and exclude change what is detected: No is the default there
+  askModal(t[0].replace('NAME', name), t[1], 'Yes', list === 'whitelist' || list === 'exclude').then(ok => { if (ok) go(); });
 }
 function deleteSpecies(species) {
   let parts = species.split(' + '); let sci_species = parts[0]; let com_species = parts[1];
