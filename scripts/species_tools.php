@@ -247,7 +247,7 @@ $result = $db->query($sql);
         <th onclick="sortTable(5)">Probability</th>
         <th onclick="sortTable(6)">Notification</th>
         <th onclick="sortTable(7)">Confirmed</th>
-        <th onclick="sortTable(8)">Excluded</th>
+        <th onclick="sortTable(8)" title="Ticked = in the exclude list: no longer detected (its past detections stay listed here)">Exclude</th>
         <th onclick="sortTable(9)">Whitelisted</th>
         <th>Stats</th>
         <th onclick="sortTable(11)">Count</th>
@@ -430,6 +430,11 @@ function setConf(species, input) {
     });
 }
 function toggleSpecies(list, species, action) {
+  if (list === 'exclude' && action === 'add') {
+    const parts = species.split('_');   // "Scientific name_Common name"
+    const name = parts.length > 1 ? parts.slice(1).join('_') + ' (' + parts[0] + ')' : species;
+    if (!confirm('Exclude ' + name + '?\n\nIt will no longer be detected. Its past detections are kept; untick to detect it again.')) return;
+  }
   get(scriptsBase + 'species_tools.php?toggle=' + list + '&species=' + encodeURIComponent(species) + '&action=' + action)
     .then(t => { if (t.trim() === 'OK') location.reload(); });
 }
