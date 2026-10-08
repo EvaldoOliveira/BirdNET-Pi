@@ -322,8 +322,9 @@ var palette = "<?php echo $SPECTROGRAM_PALETTE; ?>";
 var specFloor = <?php echo $SPECTROGRAM_FLOOR_DB; ?>;
 var specRange = <?php echo $SPECTROGRAM_RANGE_DB; ?>;
 var specGamma = <?php echo $SPECTROGRAM_CONTRAST; ?>;
-var silentMode = false;
-try { silentMode = window.localStorage.getItem('spectrogram_silent') === '1'; } catch (e) {}
+var silentMode = true;
+// silent by default (owner 2026-10-08): sound only once the viewer unticks Silent (remembered per browser)
+try { silentMode = window.localStorage.getItem('spectrogram_silent') !== '0'; } catch (e) {}
 function applySilent() {
   if (typeof outGain === 'undefined' || !outGain) return;
   outGain.gain.setValueAtTime(silentMode ? 0 : 1, ACTX.currentTime);
