@@ -127,7 +127,7 @@ function setModalText(iter, title, text, authorlink) {
 </script>  
 <div class="column center">
 <?php if(!isset($_GET['species'])){
-?><p class="centered">Choose a species to see its best recording.</p>
+?><p class="centered">Choose a species to see its best detection.</p>
 <?php
 };?>
 <?php if(isset($_GET['species'])){
@@ -158,7 +158,7 @@ while($results=$result3->fetchArray(SQLITE3_ASSOC)){
   " . species_links($sciname, 'width: unset !important; display: inline; height: 1em; cursor: pointer;', 20) . "<br>
   Occurrences: $count<br>
   Max Confidence: $maxconf<br>
-  Best Recording: $date $time<br><br>
+  Best Detection: $date $time<br><br>
   <div class='custom-audio-player' data-audio-src=\"$filename\" data-image-src=\"$filename.png\"></div></td>
   </tr>
     </table>", '6096');
@@ -185,7 +185,7 @@ while($results=$result3->fetchArray(SQLITE3_ASSOC)){
 ?>
 <?php if(isset($_GET['species'])){?>
 <br><br>
-<div class="brbanner">Best Recordings for Other Species:</div><br>
+<div class="brbanner">Best Detections for Other Species:</div><br>
 <?php } else {?>
 <hr><br>
 <?php } ?>
@@ -209,7 +209,7 @@ array_push($excludelines, $results['Date']."/".$comname."/".$results['File_Name'
         <button type="submit" name="species" value="<?php echo $results['Com_Name'];?>"><?php echo $results['Com_Name'];?></button><br>
         <i><?php echo $results['Sci_Name']; ?></i> <?php echo species_links($results['Sci_Name'], 'width: unset !important; display: inline; height: 1em; cursor: pointer;', 20); ?><br><b>Occurrences:</b> <?php echo $results['Count'];?><br>
       <b>Max Confidence:</b> <?php echo $percent = round((float)round($results['MaxConfidence'],2) * 100 ) . '%';?><br>
-      <b>Best Recording:</b> <?php echo $results['Date']." ".$results['Time'];?><br><div class='custom-audio-player' data-audio-src="<?php echo $filename; ?>" data-image-src="<?php echo $filename.".png"; ?>"></div></td>
+      <b>Best Detection:</b> <?php echo $results['Date']." ".$results['Time'];?><br><div class='custom-audio-player' data-audio-src="<?php echo $filename; ?>" data-image-src="<?php echo $filename.".png"; ?>"></div></td>
       </tr>
 <?php
 }
