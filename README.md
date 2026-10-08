@@ -37,6 +37,12 @@ This edition extends BirdNET-Pi with capabilities intended for long-term acousti
    that a Normal is muted and Prio is noisy.
 7. **Auto stop/restore services when microphone is removed/inserted.** Recording and analysis stop when the USB
    microphone is unplugged and start again, with the microphone reconfigured, as soon as it is plugged back in.
+8. **Station species lists.** Choose *None* (the model's species distribution), one of your own lists, or a
+   Brazilian state built from its WikiAves records with CBRO names; lists are saved and loaded in
+   *Species › Custom Species List*.
+9. **A redesigned web interface.** A side menu with one address per page (open any page in a new tab), a *Now* page
+   with the latest detections, *All Detections* with today's totals and chart, detection cards with WikiAves, eBird,
+   Birds of the World and Wikipedia links and the delete / change species / protect / frequency shift actions in place.
 
 ### How to get this edition
 
@@ -85,10 +91,10 @@ and a notification address. The microphone is set up automatically. At the end t
 
 **4. Open the station.** After the restart, open the web browser on the Pi and go to **`http://localhost`**.
 From a phone, tablet or computer on the same network, use **`http://birdnetpi.local`** (or the Pi's IP address).
-If the installer did not ask the questions, a setup page asks them now. Detections appear on the *Overview* within
+If the installer did not ask the questions, a setup page asks them now. Detections appear on the *Now* page within
 a few minutes.
 
-**Updates:** *Tools › System Controls › Update* installs new released versions.
+**Updates:** *System › System Controls › Update* installs new released versions.
 
 *Without keyboard and monitor:* choose *Raspberry Pi OS (64-bit) Lite* in step 1, also turn on **Enable SSH** in
 the **Services** tab, and do step 3 from another computer on the same network with `ssh <username>@birdnetpi.local`.
@@ -101,7 +107,7 @@ to the card's *bootfs* drive as `birdnet-setup.conf`, fill in the answers, then 
 
 #### Option 2 — Upgrade an existing Nachtzuster installation
 
-1. Make a backup: *Tools › System Controls › Backup*.
+1. Make a backup: *System › System Controls › Backup*.
 2. Connect to the station (`ssh <username>@<station address>`) and run:
    ```
    cd ~/BirdNET-Pi
@@ -109,7 +115,7 @@ to the card's *bootfs* drive as `birdnet-setup.conf`, fill in the answers, then 
    ./scripts/update_birdnet.sh -b stable
    ```
 3. Open the station in the browser. Your detections and settings are kept. From now on
-   *Tools › System Controls › Update* installs the new versions of this edition.
+   *System › System Controls › Update* installs the new versions of this edition.
 
 To go back to Nachtzuster's version:
 ```
@@ -122,15 +128,15 @@ git remote set-url origin https://github.com/Nachtzuster/BirdNET-Pi.git
 
 Pilot station, São Paulo (BirdNET+ V3, Portuguese Brazil (CBRO) names).
 
-| Live spectrogram (palettes, detection labels) | Detection card (links and actions) |
+| Now (the start page) | Today's Detections |
 |---|---|
+| ![Now](docs/screenshots/now.png) | ![Today's Detections](docs/screenshots/todays-detections.png) |
+| **All Detections (today's totals and chart)** | **Detections by... (species or date)** |
+| ![All Detections](docs/screenshots/all-detections.png) | ![Detections by](docs/screenshots/detections-by.png) |
+| **Live spectrogram (palettes, detection labels)** | **Detection card (links and actions)** |
 | ![Live spectrogram](docs/screenshots/live-spectrogram.png) | ![Detection card](docs/screenshots/detection-card.png) |
-| **Overview** | **Species Management (per-species minimum confidence)** |
-| ![Overview](docs/screenshots/overview.png) | ![Species Management](docs/screenshots/species-management.png) |
-| **Settings — Models and species list filter** | **Daily Charts** |
-| ![Settings](docs/screenshots/settings-models.png) | ![Daily Charts](docs/screenshots/daily-charts.png) |
-| **Best Recordings** | **Weekly Report** |
-| ![Best Recordings](docs/screenshots/best-recordings.png) | ![Weekly Report](docs/screenshots/weekly-report.png) |
+| **Species Management (per-species threshold)** | **Settings — Models and species list filter** |
+| ![Species Management](docs/screenshots/species-management.png) | ![Settings](docs/screenshots/settings-models.png) |
 | **Notifications — Normal and Rare tiers** | |
 | ![Notifications](docs/screenshots/notifications.png) | |
 
@@ -188,7 +194,7 @@ Check out birds from around the world
 * **Tools to visualize your recorded bird data** and analyze trends
 * **Live audio stream and spectrogram**
 * **Automatic disk space management** that periodically purges old audio files
-* [BirdWeather](https://app.birdweather.com) integration -- you can request a BirdWeather ID from BirdNET-Pi's "Tools" > "Settings" page
+* [BirdWeather](https://app.birdweather.com) integration -- you can request a BirdWeather ID from BirdNET-Pi's "Settings" > "Basic Settings" page
 * Web interface access to all data and logs provided by [Caddy](https://caddyserver.com)
 * [GoTTY](https://github.com/yudai/gotty) and [GoTTY x86](https://github.com/sorenisanerd/gotty) Web Terminal
 * [Tiny File Manager](https://tinyfilemanager.github.io/)
@@ -220,7 +226,7 @@ The installation creates a log in `$HOME/installation-$(date "+%F").txt`.
 The BirdNET-Pi can be accessed from any web browser on the same network:
 - http://birdnetpi.local OR your Pi's IP address
 - Default Basic Authentication Username: birdnet
-- Password is empty by default. Set this in "Tools" > "Settings" > "Advanced Settings"
+- Password is empty by default. Set this in "Settings" > "Advanced Settings"
 
 Please take a look at the [wiki](https://github.com/mcguirepr89/BirdNET-Pi/wiki) and [discussions](https://github.com/mcguirepr89/BirdNET-Pi/discussions) for information on
 - [BirdNET-Pi's Deep Convolutional Neural Network(s)](https://github.com/mcguirepr89/BirdNET-Pi/wiki/BirdNET-Pi:-some-theory-on-classification-&-some-practical-hints)
@@ -235,14 +241,14 @@ Please take a look at the [wiki](https://github.com/mcguirepr89/BirdNET-Pi/wiki)
 
 ## Updating 
 
-Use the web interface and go to "Tools" > "System Controls" > "Update". If you encounter any issues with that, or suspect that the update did not work for some reason, please save its output and post it in an issue where we can help.
+Use the web interface and go to "System" > "System Controls" > "Update". If you encounter any issues with that, or suspect that the update did not work for some reason, please save its output and post it in an issue where we can help.
 
 > **Note for this edition:** the web updater follows the release channel set by `UPDATE_BRANCH` in `birdnet.conf`
 > (`stable` by default) on the `origin` remote of the installation; an installation switched with
 > `update_birdnet.sh -r evaldo -b stable` is updated by running that same command again.
 
 ## Backup and Restore
-Use the web interface and go to "Tools" > "System Controls" > "Backup" or "Restore". Backup/Restore is primary meant for migrating your data for one system to another. Since the time required to create or restore a backup depends on the size of the data set and the speed of the storage, this could take quite a while.
+Use the web interface and go to "System" > "System Controls" > "Backup" or "Restore". Backup/Restore is primary meant for migrating your data for one system to another. Since the time required to create or restore a backup depends on the size of the data set and the speed of the storage, this could take quite a while.
 
 Alternatively, the backup script can be used directly. These examples assume the backup medium is mounted on `/mnt`
 
@@ -281,7 +287,7 @@ To move an existing installation to this edition, see
 [Option 2 — Upgrade an existing Nachtzuster installation](#option-2--upgrade-an-existing-nachtzuster-installation).
 
 ## Troubleshooting and Ideas
-*Hint: A lot of weird problems can be solved by simply restarting the core services. Do this from the web interface "Tools" > "Services" > "Restart Core Services"*
+*Hint: A lot of weird problems can be solved by simply restarting the core services. Do this from the web interface "System" > "Services" > "Restart Core Services"*
 
 For this edition see [Reporting issues](#reporting-issues). For a standard installation, Nachtzuster asks: submit an *issue for trouble* and a *discussion for ideas*, search the repository before creating a new one, and do not open issues about "false positives" — the repository has nothing to do with the validity of the detection results.
 
@@ -310,7 +316,7 @@ For more information : https://github.com/alexbelgium/hassio-addons/blob/master/
 
 
 ### Internationalization:
-The bird names are in English by default, but other localized versions are available thanks to the wonderful efforts of [@patlevin](https://github.com/patlevin) and Wikipedia. Use the web interface's "Tools" > "Settings" and select your "Database Language" to have the detections in your language.
+The bird names are in English by default, but other localized versions are available thanks to the wonderful efforts of [@patlevin](https://github.com/patlevin) and Wikipedia. Use the web interface's "Settings" > "Basic Settings" and select your "Database Language" to have the detections in your language.
 
 [Internationalization](docs/translations.md)
 
