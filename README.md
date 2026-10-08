@@ -24,9 +24,12 @@ This edition extends BirdNET-Pi with capabilities intended for long-term acousti
    Live application, running on ONNX Runtime. A second model may analyse every recording in parallel with the official
    one (*shadow mode*), if the Pi Hardware supports, so that two model generations are compared on identical field audio before any change of the
    official model. *(In verification on the pilot station — see below.)*
-2. **Support for paralel Continuous raw recording of the dawn chorus.** Long, unprocessed recordings covering the whole dawn period are
-   made while the analysis keeps running on the same microphone, so that the complete soundscape is preserved for
-   later study and not only the detected segments and also to be processed by Raven.
+2. **Scheduled raw recording of the dawn chorus, in parallel with the analysis.** Long, unprocessed recordings covering the
+   whole dawn period are made while the analysis keeps running on the same microphone, so that the complete soundscape
+   is preserved for later study (e.g. in Raven) and not only the detected segments. Set it up in
+   *Scheduling › Raw Recording*: days of the week, every week or only once, start and end time, maximum length of each
+   file. The files (`YYYY-MM-DD-<time>-<station>.wav`, 48 kHz 16-bit, with a `.recording` session log) are kept in
+   `~/BirdNET-Pi/raw-recording/`.
 3. **Sound from detection sent in notification.** Detections are announced by Telegram, e-mail or any other messaging
    channel supported by Apprise, **with the recording attached**, so that a detection can be heard and confirmed on a
    telephone within moments. Species are assigned to notification tiers, each with its own policy.
