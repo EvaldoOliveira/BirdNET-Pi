@@ -1025,3 +1025,6 @@ pre#timer.bash {
 .sidenav ~ .views .history form,
 .sidenav ~ .views .right-column,
 .sidenav ~ .views .right-column > * { text-align: left; }
+.sidenav ~ .views .history.centered form,
+.sidenav ~ .views .center-column { justify-content: flex-start; }
+.sidenav ~ .views h2 { text-align: left !important; }
