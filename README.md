@@ -118,6 +118,18 @@ git remote set-url origin https://github.com/Nachtzuster/BirdNET-Pi.git
 ./scripts/update_birdnet.sh -b main
 ```
 
+### Screenshots
+
+Pilot station, São Paulo (BirdNET+ V3, Portuguese Brazil (CBRO) names).
+
+| Overview | Today's Detections |
+|---|---|
+| ![Overview](docs/screenshots/overview.png) | ![Today's Detections](docs/screenshots/todays-detections.png) |
+| **Daily Charts** | **Best Recordings** |
+| ![Daily Charts](docs/screenshots/daily-charts.png) | ![Best Recordings](docs/screenshots/best-recordings.png) |
+| **Weekly Report** | |
+| ![Weekly Report](docs/screenshots/weekly-report.png) | |
+
 ### Reporting issues
 
 - Matters specific to **this edition** (the stories above, the upgrade package): please open an
