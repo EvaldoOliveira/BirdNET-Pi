@@ -68,7 +68,7 @@ $updatediv = $update_badge;
 $menu = array(
   array('Now', 'Now'),
   array('Spectrogram', 'Spectrogram'),
-  array('Detections', array('Todays Detections' => "Today's Detections", 'All Detections' => 'All Detections', 'Recordings' => 'Recordings', 'Species Stats' => 'Best Recordings')),
+  array('Detections', array('Todays Detections' => "Today's Detections", 'All Detections' => 'All Detections', 'Recordings' => 'Detections by...', 'Species Stats' => 'Best Detections')),
   array('Statistics', array('Daily Charts' => 'Daily Charts', 'Streamlit' => 'Species Stats', 'Weekly Report' => 'Weekly Report')),
   array('Species', array('Species Management' => 'Species Management', 'Included' => 'Custom Species List', 'Excluded' => 'Excluded Species', 'Whitelisted' => 'Whitelist')),
   // Station Setup only while the first-run questions are unanswered; afterwards everything is in Settings
