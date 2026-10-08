@@ -153,7 +153,7 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
     </select></label><br>
     <label>Species names: <select name="language" id="wiz_lang">
 <?php
-$lang_names = array('pt_BR' => 'Portuguese Brazil (CBRO)', 'pt_PT' => 'Portuguese (Portugal)');
+$lang_names = array('pt_BR' => 'Portuguese Brazil (CBRO)', 'pt_PT' => 'Portuguese Portugal');
 foreach ($langs as $l) {
   $sel = ($l === $cur_lang || ($l === 'pt_BR' && $cur_lang === 'pt')) ? ' selected' : '';
   echo '<option value="' . $h($l) . '"' . $sel . '>' . $h($lang_names[$l] ?? $l) . '</option>';

@@ -108,7 +108,7 @@ case "$fr_country" in
 esac
 fr_langs=$(ls "$my_dir"/model/l18n/labels_*.json 2>/dev/null | sed -E 's/.*labels_(.*)\.json/\1/' | tr '\n' ' ')
 while :; do
-  fr_ask FR_LANGUAGE "Species names language (${fr_langs% }; pt_BR = Portuguese Brazil (CBRO), pt_PT = Portuguese (Portugal))" "$fr_lang_default" "" LANGUAGE
+  fr_ask FR_LANGUAGE "Species names language (${fr_langs% }; pt_BR = Portuguese Brazil (CBRO), pt_PT = Portuguese Portugal)" "$fr_lang_default" "" LANGUAGE
   [ "$FR_LANGUAGE" = "pt" ] && FR_LANGUAGE=pt_BR
   [ -f "$my_dir/model/l18n/labels_${FR_LANGUAGE}.json" ] && break
   echo "No species names for '$FR_LANGUAGE'" >&2

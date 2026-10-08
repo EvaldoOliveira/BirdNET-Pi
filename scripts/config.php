@@ -807,7 +807,7 @@ mailto://{user}:{password}@gmail.com
           "no" => "Norwegian",
           "pl" => "Polish",
           "pt_BR" => "Portuguese Brazil (CBRO)",
-          "pt_PT" => "Portuguese (Portugal)",
+          "pt_PT" => "Portuguese Portugal",
           "ro" => "Romanian",
           "ru" => "Russian",
           "sr" => "Serbian",
