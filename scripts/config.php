@@ -76,9 +76,9 @@ if(isset($_GET["latitude"])){
   $flickr_filter_email = $_GET["flickr_filter_email"];
   $language = $_GET["language"];
   // Portuguese has two name sets (owner 2026-10-07): pt_BR = CBRO (Brazil), pt_PT = the upstream
-  // Portugal names. The page asks which one when Portuguese is chosen; plain 'pt' is never stored.
+  // Portugal names, two entries of the list; a plain 'pt' (older form) is stored as pt_BR
   if($language === 'pt') {
-    $language = (isset($_GET['language_pt']) && $_GET['language_pt'] === 'PT') ? 'pt_PT' : 'pt_BR';
+    $language = 'pt_BR';
   }
   $info_site = $_GET["info_site"];
   $color_scheme = $_GET["color_scheme"];
@@ -806,7 +806,8 @@ mailto://{user}:{password}@gmail.com
           "lt" => "Lithuania",
           "no" => "Norwegian",
           "pl" => "Polish",
-          "pt" => "Portuguese",
+          "pt_BR" => "Portuguese Brazil (CBRO)",
+          "pt_PT" => "Portuguese (Portugal)",
           "ro" => "Romanian",
           "ru" => "Russian",
           "sr" => "Serbian",
@@ -823,7 +824,7 @@ mailto://{user}:{password}@gmail.com
         // Create options for each language
         foreach($langs as $langTag => $langName){
           $isSelected = "";
-          if($config['DATABASE_LANG'] == $langTag || ($langTag == 'pt' && in_array($config['DATABASE_LANG'], array('pt', 'pt_BR', 'pt_PT')))){
+          if($config['DATABASE_LANG'] == $langTag || ($langTag == 'pt_BR' && $config['DATABASE_LANG'] == 'pt')){
             $isSelected = 'selected="selected"';
           }
 
@@ -832,19 +833,6 @@ mailto://{user}:{password}@gmail.com
       ?>
 
       </select>
-      <?php $pt_variant = ($config['DATABASE_LANG'] ?? '') === 'pt_PT' ? 'PT' : 'BR'; ?>
-      <span id="language_pt_box" style="<?php echo in_array($config['DATABASE_LANG'] ?? '', array('pt', 'pt_BR', 'pt_PT')) ? '' : 'display:none'; ?>">
-        <label for="language_pt">&nbsp;Portuguese names: </label>
-        <select name="language_pt" id="language_pt" class="testbtn">
-          <option value="BR"<?php echo $pt_variant === 'BR' ? ' selected' : ''; ?>>Brazil (CBRO)</option>
-          <option value="PT"<?php echo $pt_variant === 'PT' ? ' selected' : ''; ?>>Portugal</option>
-        </select>
-      </span>
-      <script>
-        document.querySelector('select[name="language"]').addEventListener('change', function () {
-          document.getElementById('language_pt_box').style.display = this.value === 'pt' ? '' : 'none';
-        });
-      </script>
       <p>! Only modify this at initial setup !</p>
       </td></tr></table>
       <br>

@@ -48,7 +48,7 @@ if (isset($_POST['wizard_save'])) {
   if (!in_array($tz, $timezones, true)) $errors[] = 'Unknown timezone';
   $model = ($p['model'] ?? '') === 'V2.4' ? $model_v24 : $model_v3;
   $lang = $p['language'] ?? 'en';
-  if ($lang === 'pt') $lang = (($p['language_pt'] ?? 'BR') === 'PT') ? 'pt_PT' : 'pt_BR';
+  if ($lang === 'pt') $lang = 'pt_BR';
   if (!in_array($lang, $langs, true)) $errors[] = 'No species names for that language';
   $state = strtoupper($p['state'] ?? '');
   $state_detected = false;
@@ -153,22 +153,14 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
     </select></label><br>
     <label>Species names: <select name="language" id="wiz_lang">
 <?php
-$shown = array();
+$lang_names = array('pt_BR' => 'Portuguese Brazil (CBRO)', 'pt_PT' => 'Portuguese (Portugal)');
 foreach ($langs as $l) {
-  $code = strpos($l, 'pt_') === 0 ? 'pt' : $l;
-  if (isset($shown[$code])) continue;
-  $shown[$code] = true;
-  $sel = ($code === 'pt' ? strpos($cur_lang, 'pt') === 0 : $l === $cur_lang) ? ' selected' : '';
-  echo '<option value="' . $h($code) . '"' . $sel . '>' . $h($code === 'pt' ? 'Portuguese' : $code) . '</option>';
+  $sel = ($l === $cur_lang || ($l === 'pt_BR' && $cur_lang === 'pt')) ? ' selected' : '';
+  echo '<option value="' . $h($l) . '"' . $sel . '>' . $h($lang_names[$l] ?? $l) . '</option>';
 }
 ?>
     </select></label>
-    <span id="wiz_pt" style="<?php echo strpos($cur_lang, 'pt') === 0 ? '' : 'display:none'; ?>">
-      <select name="language_pt">
-        <option value="BR"<?php echo $cur_lang !== 'pt_PT' ? ' selected' : ''; ?>>Brazil (CBRO)</option>
-        <option value="PT"<?php echo $cur_lang === 'pt_PT' ? ' selected' : ''; ?>>Portugal</option>
-      </select>
-    </span><br>
+    <br>
     <label>Brazilian states include list: <select name="state">
       <option value="AUTO"<?php echo $pending ? ' selected' : ''; ?>>Detect from the coordinates</option>
       <option value=""<?php echo (!$pending && $cur_state === '') ? ' selected' : ''; ?>>None (outside Brazil)</option>
@@ -185,10 +177,5 @@ foreach ($langs as $l) {
   </td></tr></table><br>
   <button type="submit" name="wizard_save" value="1">Save and start</button>
   </form>
-  <script>
-    document.getElementById('wiz_lang').addEventListener('change', function () {
-      document.getElementById('wiz_pt').style.display = this.value === 'pt' ? '' : 'none';
-    });
-  </script>
 <?php } ?>
 </div>
