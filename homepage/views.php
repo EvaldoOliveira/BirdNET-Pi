@@ -67,9 +67,8 @@ $update_badge = (isset($_SESSION['behind']) && intval($_SESSION['behind']) >= 50
 $updatediv = $update_badge;
 $menu = array(
   array('Now', 'Now'),
-  array('All Detections', 'All Detections'),
   array('Spectrogram', 'Spectrogram'),
-  array('Detections', array('Todays Detections' => "Today's Detections", 'Recordings' => 'Recordings', 'Species Stats' => 'Best Recordings')),
+  array('Detections', array('Todays Detections' => "Today's Detections", 'All Detections' => 'All Detections', 'Recordings' => 'Recordings', 'Species Stats' => 'Best Recordings')),
   array('Statistics', array('Streamlit' => 'Species Stats', 'Daily Charts' => 'Daily Charts', 'Weekly Report' => 'Weekly Report')),
   array('Species', array('Species Management' => 'Species Management', 'Included' => 'Custom Species List', 'Excluded' => 'Excluded Species', 'Whitelisted' => 'Whitelist')),
   // Station Setup only while the first-run questions are unanswered; afterwards everything is in Settings

@@ -1131,7 +1131,6 @@ body.sidenav-collapsed .sidenav ~ .views iframe { left: 40px; width: calc(100% -
 @media screen and (max-width: 800px) {
   .sidenav-collapse { display: none; }
 }
-}
 
 /* Overview split (owner 2026-10-08): Now = recent detections, All Detections = totals + chart */
 .overview-stats.part-now .left-column,
