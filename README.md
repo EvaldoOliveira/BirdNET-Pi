@@ -122,13 +122,17 @@ git remote set-url origin https://github.com/Nachtzuster/BirdNET-Pi.git
 
 Pilot station, São Paulo (BirdNET+ V3, Portuguese Brazil (CBRO) names).
 
-| Overview | Today's Detections |
+| Live spectrogram (palettes, detection labels) | Detection card (links and actions) |
 |---|---|
-| ![Overview](docs/screenshots/overview.png) | ![Today's Detections](docs/screenshots/todays-detections.png) |
-| **Daily Charts** | **Best Recordings** |
-| ![Daily Charts](docs/screenshots/daily-charts.png) | ![Best Recordings](docs/screenshots/best-recordings.png) |
-| **Weekly Report** | |
-| ![Weekly Report](docs/screenshots/weekly-report.png) | |
+| ![Live spectrogram](docs/screenshots/live-spectrogram.png) | ![Detection card](docs/screenshots/detection-card.png) |
+| **Overview** | **Species Management (per-species minimum confidence)** |
+| ![Overview](docs/screenshots/overview.png) | ![Species Management](docs/screenshots/species-management.png) |
+| **Settings — Models and species list filter** | **Daily Charts** |
+| ![Settings](docs/screenshots/settings-models.png) | ![Daily Charts](docs/screenshots/daily-charts.png) |
+| **Best Recordings** | **Weekly Report** |
+| ![Best Recordings](docs/screenshots/best-recordings.png) | ![Weekly Report](docs/screenshots/weekly-report.png) |
+| **Notifications — Normal and Rare tiers** | |
+| ![Notifications](docs/screenshots/notifications.png) | |
 
 ### Reporting issues
 
