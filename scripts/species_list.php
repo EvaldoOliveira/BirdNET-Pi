@@ -42,8 +42,14 @@
   <p>Active list: <b><?php echo $active !== '' ? htmlspecialchars($active) : 'none (Settings › Location › Species list filter)'; ?></b></p>
             <input type="text" id="save_list_name" placeholder="name" style="width:10em">
             <button type="button" class="testbtn" onclick="speciesListAction('save')">Save current list as…</button>
+            <br>
+            <select id="station_lists">
+              <?php foreach (glob(dirname(__DIR__) . '/species_lists/*.txt') as $f) { $n = basename($f, '.txt');
+                echo '<option value="' . htmlspecialchars($n, ENT_QUOTES) . '"' . ($n === $active ? ' selected' : '') . '>' . htmlspecialchars($n) . '</option>'; } ?>
+            </select>
+            <button type="button" class="testbtn" onclick="speciesListAction('activate')">Load this list</button>
             <input type="file" id="load_list_file" accept=".txt" style="display:none" onchange="speciesListAction('load')">
-            <button type="button" class="testbtn" onclick="document.getElementById('load_list_file').click()">Load a list (.txt)…</button>
+            <button type="button" class="testbtn" onclick="document.getElementById('load_list_file').click()">Upload a list (.txt)…</button>
             <small>— one "Scientific name_Common name" per line; the list keeps the file name</small>
             <script>
               function speciesListAction(action) {
@@ -53,6 +59,10 @@
                   const n = document.getElementById('save_list_name').value.trim();
                   if (!/^[A-Za-z0-9_-]+$/.test(n)) { alert('Name: letters, digits, - and _ only'); return; }
                   fd.append('name', n);
+                } else if (action === 'activate') {
+                  const sel = document.getElementById('station_lists').value;
+                  if (!sel) return;
+                  fd.append('name', sel);
                 } else {
                   const f = document.getElementById('load_list_file').files[0];
                   if (!f) return;

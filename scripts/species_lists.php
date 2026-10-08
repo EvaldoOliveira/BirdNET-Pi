@@ -1,6 +1,6 @@
 <?php
 /* Station species lists (Settings > Location > Species list filter): save the active list under a name,
- * or load a .txt list, into ~/BirdNET-Pi/species_lists/ (owner 2026-10-08). POST only, authenticated. */
+ * load a .txt list into ~/BirdNET-Pi/species_lists/, or make a station list the active one (owner 2026-10-08). POST only, authenticated. */
 error_reporting(E_ERROR);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/common.php';
@@ -45,6 +45,16 @@ if ($action === 'save') {
   if (empty($lines)) die('No "Scientific name_Common name" lines in the file');
   file_put_contents("$dir/$name.txt", implode("\n", $lines) . "\n");
   echo "Loaded $name (" . count($lines) . " species). Choose it in the Species list filter to use it.";
+} elseif ($action === 'activate') {
+  // make a station list the active one: SPECIES_LIST in birdnet.conf, then link the active list to it
+  $name = $_POST['name'] ?? '';
+  if (!preg_match('/^[A-Za-z0-9_-]{1,40}$/', $name) || !is_file("$dir/$name.txt")) die('No such list');
+  $conf = file_get_contents('/etc/birdnet/birdnet.conf');
+  $conf = preg_match('/^SPECIES_LIST=/m', $conf) ? preg_replace('/^SPECIES_LIST=.*/m', "SPECIES_LIST=$name", $conf)
+                                                  : $conf . "\nSPECIES_LIST=$name\n";
+  file_put_contents('/etc/birdnet/birdnet.conf', $conf);
+  shell_exec('sudo -u ' . escapeshellarg(get_user()) . ' python3 ' . escapeshellarg($home . '/BirdNET-Pi/scripts/select_species_list.py') . ' 2>&1');
+  echo "$name is now the active species list.";
 } else {
   http_response_code(400);
   echo 'Unknown action';
