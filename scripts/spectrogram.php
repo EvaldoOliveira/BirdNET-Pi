@@ -183,6 +183,7 @@ let avgfps;
 // The graph keeps at least MIN_WINDOW_S seconds visible (owner 2026-10-08).
 const MIN_WINDOW_S = 45;
 let pxPerSec = 60;
+const spectrogramOpenedAt = Date.now();
 let requestTime;
 
 <?php 
@@ -283,6 +284,8 @@ function loadDetectionIfNewExists() {
       newest_file = resp.file_name;
       console.log("delay " + resp.delay);
       for (detection of resp.detections) {
+        // only sounds heard since the page opened: older ones would pile up on the still-empty graph
+        if (resp.timestamp && Date.parse(resp.timestamp) + detection.start * 1000 < spectrogramOpenedAt) continue;
         console.log("detection.start  " + detection.start);
         secago = resp.delay - detection.start;
         x = document.body.querySelector('canvas').width - (secago * pxPerSec);
