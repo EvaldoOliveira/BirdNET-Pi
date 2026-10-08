@@ -35,17 +35,18 @@ if (get_included_files()[0] === __FILE__) {
    <form action="views.php" method="GET">
     <input type="hidden" name="sort" value="<?php if(isset($_GET['sort'])){echo $_GET['sort'];}?>">
       <input type="hidden" name="view" value="Species Stats">
+      <span class="sortlabel">Sort by:</span>
       <button <?php if(!isset($_GET['sort']) || $_GET['sort'] == "alphabetical"){ echo "class='sortbutton active'";} else { echo "class='sortbutton'"; }?> type="submit" name="sort" value="alphabetical">
-         <img src="images/sort_abc.svg" title="Sort by alphabetical" alt="Sort by alphabetical">
+         <span title="Sort by alphabetical">Name</span>
       </button>
       <button <?php if(isset($_GET['sort']) && $_GET['sort'] == "occurrences"){ echo "class='sortbutton active'";} else { echo "class='sortbutton'"; }?> type="submit" name="sort" value="occurrences">
-         <img src="images/sort_occ.svg" title="Sort by occurrences" alt="Sort by occurrences">
+         <span title="Sort by occurrences">Occur.</span>
       </button>
       <button <?php if(isset($_GET['sort']) && $_GET['sort'] == "confidence"){ echo "class='sortbutton active'";} else { echo "class='sortbutton'"; }?> type="submit" name="sort" value="confidence">
-         <img src="images/sort_conf.svg" title="Sort by confidence" alt="Sort by confidence">
+         <span title="Sort by confidence">Conf.</span>
       </button>
       <button <?php if(isset($_GET['sort']) && $_GET['sort'] == "date"){ echo "class='sortbutton active'";} else { echo "class='sortbutton'"; }?> type="submit" name="sort" value="date">
-         <img src="images/sort_date.svg" title="Sort by date" alt="Sort by date">
+         <span title="Sort by date">Date</span>
       </button>
    </form>
 </div>

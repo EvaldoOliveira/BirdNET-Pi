@@ -191,17 +191,18 @@ if(!isset($_GET['species']) && !isset($_GET['filename'])){
    <form action="views.php" method="GET">
       <input type="hidden" name="view" value="Recordings">
       <input type="hidden" name="<?php echo $view; ?>" value="<?php echo $_GET['date']; ?>">
+      <span class="sortlabel">Sort by:</span>
       <button <?php if(!isset($_GET['sort']) || $_GET['sort'] == "alphabetical"){ echo "class='sortbutton active'";} else { echo "class='sortbutton'"; }?> type="submit" name="sort" value="alphabetical">
-         <img src="images/sort_abc.svg" title="Sort by alphabetical" alt="Sort by alphabetical">
+         <span title="Sort by alphabetical">Name</span>
       </button>
       <button <?php if(isset($_GET['sort']) && $_GET['sort'] == "occurrences"){ echo "class='sortbutton active'";} else { echo "class='sortbutton'"; }?> type="submit" name="sort" value="occurrences">
-         <img src="images/sort_occ.svg" title="Sort by occurrences" alt="Sort by occurrences">
+         <span title="Sort by occurrences">Occur.</span>
       </button>
       <button <?php if(isset($_GET['sort']) && $_GET['sort'] == "confidence"){ echo "class='sortbutton active'";} else { echo "class='sortbutton'"; }?> type="submit" name="sort" value="confidence">
-         <img src="images/sort_conf.svg" title="Sort by confidence" alt="Sort by confidence">
+         <span title="Sort by confidence">Conf.</span>
       </button>
       <button <?php if(isset($_GET['sort']) && $_GET['sort'] == "date"){ echo "class='sortbutton active'";} else { echo "class='sortbutton'"; }?> type="submit" name="sort" value="date">
-         <img src="images/sort_date.svg" title="Sort by date" alt="Sort by date">
+         <span title="Sort by date">Date</span>
       </button>
    </form>
 </div>
@@ -312,11 +313,12 @@ if(isset($_GET['species'])){ ?>
       <input type="hidden" name="view" value="Recordings">
       <input type="hidden" name="species" value="<?php echo $_GET['species']; ?>">
       <input type="hidden" name="sort" value="<?php echo $_GET['sort']; ?>">
+      <span class="sortlabel">Sort by:</span>
       <button <?php if(!isset($_GET['sort']) || $_GET['sort'] == "" || $_GET['sort'] == "date"){ echo "class='sortbutton active'";} else { echo "class='sortbutton'"; }?> type="submit" name="sort" value="date">
-         <img width=35px src="images/sort_date.svg" title="Sort by date" alt="Sort by date">
+         <span title="Sort by date">Date</span>
       </button>
       <button <?php if(isset($_GET['sort']) && $_GET['sort'] == "confidence"){ echo "class='sortbutton active'";} else { echo "class='sortbutton'"; }?> type="submit" name="sort" value="confidence">
-         <img src="images/sort_occ.svg" title="Sort by confidence" alt="Sort by confidence">
+         <span title="Sort by confidence">Conf.</span>
       </button><br>
       <label style="cursor: pointer; margin-top: 10px; margin-bottom: 10px;font-weight: normal; display: inline-flex; align-items: center; justify-content: center;">
         <input type="checkbox" name="only_excluded" <?= isset($_GET['only_excluded']) ? 'checked' : '' ?> onchange="submit()" style="display:none;">

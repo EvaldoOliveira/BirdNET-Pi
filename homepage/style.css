@@ -1065,3 +1065,8 @@ iframe { top: 54px; left: 0; height: calc(100vh - 54px) !important; height: calc
 .play td.spec button, .play table button { font-size: 13px; padding: 2px 4px; }
 .sortbutton { font-size: medium; padding: 2px; margin-top: 4px; }
 .sortbutton img { width: 22px; height: 22px; }
+/* text sort buttons (owner 2026-10-08) */
+.sortlabel { font-size: 13px; margin-right: 4px; }
+.sortbutton { font-size: 13px !important; padding: 3px 8px !important; margin-top: 4px; border-radius: 3px; }
+.sortbutton.active { color: black !important; font-weight: bold; }
+.sortbutton:hover { color: black !important; }
