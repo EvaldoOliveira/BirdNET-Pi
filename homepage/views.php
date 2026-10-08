@@ -91,8 +91,8 @@ foreach ($menu as $entry) {
     echo nav_link($entry[1], $entry[0], $current_view);
     continue;
   }
-  $open = array_key_exists($current_view, $entry[1]) || ($entry[0] === 'System' && $current_view === 'Tools');
-  echo '<details class="navgroup"' . ($open ? ' open' : '') . '><summary>' . htmlspecialchars($entry[0])
+  // every group expanded by default (owner 2026-10-08); a click on its title still folds it
+  echo '<details class="navgroup" open><summary>' . htmlspecialchars($entry[0])
     . ($entry[0] === 'System' ? $update_badge : '') . '</summary>';
   foreach ($entry[1] as $view => $label) {
     echo nav_link($view, $label, $current_view, $view === 'System Controls' ? $update_badge : '');

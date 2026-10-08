@@ -560,6 +560,11 @@ canvas {
   height: <?php echo $SPECTROGRAM_HEIGHT; ?>vh;
 }
 
+/* phones: the height box goes below the palette and colour controls instead of over them */
+@media screen and (max-width: 800px) {
+  #specheight { position: static !important; display: block; margin-top: 4px; }
+}
+
 h1 {
   position: absolute;
   top: 50%;
@@ -573,7 +578,7 @@ h1 {
 
 <!-- US-41: palette picklist + height box, top-left of the spectrogram pane -->
 <div id="specopts" style="text-align:left;padding:2px 8px;font-size:12px;position:relative;">
-  <span style="position:absolute;right:8px;top:2px;">
+  <span id="specheight" style="position:absolute;right:8px;top:2px;">
     <label for="height_input">Height (% of page): </label>
     <input id="height_input" type="number" min="20" max="100" step="1" style="width:4.5em;" value="<?php echo $SPECTROGRAM_HEIGHT; ?>">
   </span>
