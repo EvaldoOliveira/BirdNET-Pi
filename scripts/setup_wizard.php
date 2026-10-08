@@ -84,10 +84,11 @@ if (isset($_POST['wizard_save'])) {
     $contents = wizard_set_key($contents, 'LONGITUDE', round((float)$lon, 4));
     $contents = wizard_set_key($contents, 'MODEL', $model);
     if ($model !== $old_model) {
-      // per-generation defaults (V3 = 0.35 / 1.0 / location 0.1, V2.4 = upstream 0.7 / 1.25 / 0.03)
+      // per-generation defaults (V3 = 0.35 / 1.0 / location 0.5 / overlap 1.2, V2.4 = upstream 0.7 / 1.25 / 0.03 / 0.0)
       $contents = wizard_set_key($contents, 'CONFIDENCE', $model === $model_v3 ? '0.35' : '0.7');
       $contents = wizard_set_key($contents, 'SENSITIVITY', $model === $model_v3 ? '1.0' : '1.25');
-      $contents = wizard_set_key($contents, 'SF_THRESH', $model === $model_v3 ? '0.1' : '0.03');
+      $contents = wizard_set_key($contents, 'SF_THRESH', $model === $model_v3 ? '0.5' : '0.03');
+      $contents = wizard_set_key($contents, 'OVERLAP', $model === $model_v3 ? '1.2' : '0.0');
     }
     $contents = wizard_set_key($contents, 'DATABASE_LANG', $lang);
     $contents = wizard_set_key($contents, 'SPECIES_LIST', $sel);

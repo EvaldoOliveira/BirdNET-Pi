@@ -44,7 +44,7 @@ LONGITUDE=${FR_LONGITUDE:-$LONGITUDE}
 #_It's recommended that you only change these values through the web interface.#
 
 MODEL=${FR_MODEL:-BirdNET-Plus_V3.0-preview3.1_Global_10K}
-SF_THRESH=${FR_SF_THRESH:-0.1}
+SF_THRESH=${FR_SF_THRESH:-0.5}
 ## AVOID_DUPLICITY: 1 = keep only the highest-confidence species of each recording (fewer species), 0 = every species above its minimum (default)
 AVOID_DUPLICITY=0
 DATA_MODEL_VERSION=1
@@ -214,7 +214,7 @@ EXTRACTED=$HOME/BirdSongs/Extracted
 ## OVERLAP is the value in seconds which BirdNET should use when analyzing
 ## the data. The values must be between 0.0-2.9.
 
-OVERLAP=0.0
+OVERLAP=${FR_OVERLAP:-1.2}
 
 ## CONFIDENCE is the minimum confidence level from 0.0-1.0 BirdNET's analysis
 ## should reach before creating an entry in the BirdNET.selection.txt file.
