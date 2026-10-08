@@ -133,7 +133,7 @@ def create_plot(df_plt_today, now, is_top=None):
     # Next two lines avoid a UserWarning on set_ticklabels() requesting a fixed number of ticks
     yticks = plot.get_yticks()
     plot.set_yticks(yticks)
-    plot.set_yticklabels(yticklabels, fontsize=10)
+    plot.set_yticklabels(yticklabels, fontsize=8)  # smaller with the tighter rows (owner 2026-10-08)
     plot.set(ylabel=None)
     plot.set(xlabel="Detections")
     plot.xaxis.tick_top()
