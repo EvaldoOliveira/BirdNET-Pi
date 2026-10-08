@@ -1107,7 +1107,7 @@ body.sidenav-collapsed .sidenav ~ .views iframe { left: 40px; width: calc(100% -
 #speciesTable { overflow: visible !important; }
 #speciesTable thead th { position: sticky; top: 0; z-index: 3; background-color: rgb(159, 226, 155); box-shadow: 0 2px 3px rgba(0, 0, 0, 0.15); }
 
-/* phones: the card actions in a row above the card text, so they do not cover the species name */
+/* phones: the card actions stay top right and the card text starts below them, so they do not cover the name */
 @media screen and (max-width: 800px) {
-  td.relative > img.copyimage { position: static !important; display: inline-block; width: 22px !important; height: 22px !important; margin: 0 6px 4px 0; }
+  td.relative { padding-top: 36px !important; }
 }
