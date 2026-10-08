@@ -7,6 +7,11 @@ base_dir="$HOME/BirdSongs/Extracted/By_Date"
 max_files_species="${MAX_FILES_SPECIES:-1000}"
 cd "$base_dir" || exit 1
 
+# automatic purge protection (top N per species + confirmed reviews) first; no fresh list = nothing deleted
+"$HOME"/BirdNET-Pi/birdnet/bin/python3 "$HOME"/BirdNET-Pi/scripts/purge_protection.py || exit 1
+exec 8> /tmp/birdnet_purge.lock
+flock 8
+
 # If max_files_species is not higher than 1, exit
 if [[ "$max_files_species" -lt 1 ]]; then
     exit 0

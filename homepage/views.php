@@ -31,6 +31,14 @@ if(is_authenticated() && (!isset($_SESSION['behind']) || !isset($_SESSION['behin
   }
   $_SESSION['behind'] = $num_commits_behind;
   $_SESSION['behind_time'] = time();
+  // release awareness: newest vX.Y.Z tag on the fork vs the newest one this installation contains (once a day)
+  $_SESSION['release_installed'] = trim((string)shell_exec("sudo -u".$user." git -C ".$home."/BirdNET-Pi describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null"));
+  $latest = '';
+  foreach (explode("\n", (string)shell_exec("timeout 10 sudo -u".$user." git -C ".$home."/BirdNET-Pi ls-remote --tags --refs origin 'v*' 2>/dev/null")) as $l) {
+    if (preg_match('~refs/tags/(v\d+\.\d+\.\d+)$~', trim($l), $m) && ($latest === '' || version_compare(substr($m[1], 1), substr($latest, 1), '>'))) $latest = $m[1];
+  }
+  $_SESSION['release_new'] = ($latest !== '' && $_SESSION['release_installed'] !== ''
+    && version_compare(substr($latest, 1), substr($_SESSION['release_installed'], 1), '>')) ? $latest : '';
 }
 if(isset($_SESSION['behind'])&&intval($_SESSION['behind']) >= 99) {?>
   <style>
@@ -64,6 +72,10 @@ elseif ($config["LONGITUDE"] == "0.000") {
 $current_view = $_GET['view'] ?? 'Now';
 $update_badge = (isset($_SESSION['behind']) && intval($_SESSION['behind']) >= 50 && ($config['SILENCE_UPDATE_INDICATOR'] ?? 0) != 1)
   ? ' <span class="updatenumber">' . $_SESSION['behind'] . '</span>' : '';
+if (($_SESSION['release_new'] ?? '') !== '' && ($config['SILENCE_UPDATE_INDICATOR'] ?? 0) != 1) {
+  // a new release outranks the commits-behind count
+  $update_badge = ' <span class="updatenumber" title="New release ' . htmlspecialchars($_SESSION['release_new']) . ' available">1</span>';
+}
 $updatediv = $update_badge;
 $menu = array(
   array('Now', 'Now'),
@@ -75,7 +87,7 @@ $menu = array(
   // Station Setup only while the first-run questions are unanswered; afterwards everything is in Settings
   array('Settings', array('Settings' => 'Basic Settings', 'Advanced' => 'Advanced Settings')
                     + (file_exists($home . '/BirdNET-Pi/firstrun_pending') ? array('Setup' => 'Station Setup') : array())),
-  array('System', array('System Controls' => 'System Controls', 'Services' => 'Services', 'System Info' => 'System Info',
+  array('System', array('Doctor' => 'Station Doctor', 'System Controls' => 'System Controls', 'Services' => 'Services', 'System Info' => 'System Info',
                         'View Log' => 'View Log', 'File' => 'File Manager', 'Webterm' => 'Web Terminal', 'Adminer' => 'Database Maintenance')),
 );
 function nav_link($view, $label, $current, $badge = '') {
@@ -211,6 +223,8 @@ if(isset($_GET['view'])){
   }
   if($_GET['view'] == "Spectrogram"){include('spectrogram.php');}
   if($_GET['view'] == "Raw Recording"){include('scripts/raw_recording.php');}
+  if($_GET['view'] == "Bird"){include('scripts/species_page.php');}
+  if($_GET['view'] == "Doctor"){ensure_authenticated(); include('scripts/doctor.php');}
   if($_GET['view'] == "View Log"){echo "<body style=\"scroll:no;overflow-x:hidden;\"><iframe style=\"width:calc( 100% + 1em);\" src=\"log\"></iframe></body>";}
   // the Overview is split in two pages (owner 2026-10-08): Now (default) = most recent detection, 5 most
   // recent, currently analysing; All Detections = the totals and today's chart. "Overview" = Now.

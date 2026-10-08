@@ -183,6 +183,13 @@ if [ -f $HOME/BirdNET-Pi/templates/livestream.service ] && ! grep -q '^StartLimi
   systemctl daemon-reload
 fi
 
+if ! grep -E '^PURGE_PROTECT_TOP_N=' /etc/birdnet/birdnet.conf &>/dev/null;then
+  echo "## PURGE_PROTECT_TOP_N: the best N detections of every species are never purged (plus confirmed reviews)" >> /etc/birdnet/birdnet.conf
+  echo "PURGE_PROTECT_TOP_N=3" >> /etc/birdnet/birdnet.conf
+fi
+# Review loop: one verdict per detection (yes / no / unsure), additive table
+sqlite3 $HOME/BirdNET-Pi/scripts/birds.db "CREATE TABLE IF NOT EXISTS detection_reviews (File_Name VARCHAR(100) PRIMARY KEY, Sci_Name VARCHAR(100), Com_Name VARCHAR(100), Date DATE, Confidence FLOAT, Verdict TEXT NOT NULL CHECK (Verdict IN ('yes','no','unsure')), Reviewed_At TEXT);" 2>/dev/null || true
+
 if ! grep -E '^APPRISE_NOTIFY_REGION_RARE=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "## APPRISE_NOTIFY_REGION_RARE: 1 = species the location model does not expect here go to the Rare notification channel" >> /etc/birdnet/birdnet.conf
   echo "APPRISE_NOTIFY_REGION_RARE=1" >> /etc/birdnet/birdnet.conf

@@ -47,6 +47,11 @@ function update() {
     <button type="submit" name="submit" value="sudo reboot" onclick="return confirm('Are you sure you want to reboot?')">Reboot</button>
   </div>
   <div>
+    <?php if (($_SESSION['release_new'] ?? '') !== '') { ?>
+    <p><b>New release <?php echo htmlspecialchars($_SESSION['release_new']); ?></b> is available (installed: <?php echo htmlspecialchars($_SESSION['release_installed'] ?: 'unknown'); ?>).
+    <a href="https://github.com/EvaldoOliveira/BirdNET-Pi/releases/tag/<?php echo rawurlencode($_SESSION['release_new']); ?>" target="_blank">What's new</a> —
+    Update installs the <?php echo htmlspecialchars(get_config()['UPDATE_BRANCH'] ?? 'stable'); ?> branch.</p>
+    <?php } ?>
     <button type="submit" name="submit" id="updatebtn" value="update_birdnet.sh" onclick="return update();">Update <?php if(isset($_SESSION['behind']) && $_SESSION['behind'] != "0" && $_SESSION['behind'] != "with"){?><div class="updatenumber"><?php echo $_SESSION['behind']; ?></div><?php } ?></button>
   </div>
   <div>

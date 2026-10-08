@@ -10,10 +10,17 @@ if [ "${used//%}" -ge "$purge_threshold" ]; then
   case $FULL_DISK in
     purge) echo "Removing oldest data"
         cd ${EXTRACTED}/By_Date/
-        curl localhost/views.php?view=Species%20Stats &>/dev/null
+        # automatic purge protection (top N per species + confirmed reviews); no fresh list = no purge
+        if ! "$HOME"/BirdNET-Pi/birdnet/bin/python3 "$HOME"/BirdNET-Pi/scripts/purge_protection.py; then
+            echo "purge protection could not be refreshed - nothing deleted"
+            exit 1
+        fi
         if ! grep -qxFe \#\#start $HOME/BirdNET-Pi/scripts/disk_check_exclude.txt; then
             exit
         fi
+        # the protection list is not rewritten while this purge reads it
+        exec 8> /tmp/birdnet_purge.lock
+        flock 8
         dircount=$(find ${EXTRACTED}/By_Date/* -maxdepth 0 -type d | wc -l)
         if [ "$dircount" -gt 0 ]; then
             filestodelete=$(($(find ${EXTRACTED}/By_Date/* -type f | wc -l) / dircount))

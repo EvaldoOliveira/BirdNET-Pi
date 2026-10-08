@@ -214,8 +214,7 @@ array_push($excludelines, $results['Date']."/".$comname."/".$results['File_Name'
 <?php
 }
 
-$file = file_get_contents($home."/BirdNET-Pi/scripts/disk_check_exclude.txt");
-file_put_contents($home."/BirdNET-Pi/scripts/disk_check_exclude.txt", "##start"."\n".implode("\n",$excludelines)."\n".substr($file, strpos($file, "##end")));
+// the automatic protection (##start..##end) is written by purge_protection.py: top N per species + confirmed
 ?>
     </table>
   </form>

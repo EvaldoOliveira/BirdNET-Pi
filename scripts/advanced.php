@@ -191,6 +191,14 @@ if(isset($_GET['submit'])) {
     }
 }
 
+if (isset($_GET["purge_protect_top_n"])) {
+    $purge_protect_top_n = max(1, min(100, intval($_GET["purge_protect_top_n"])));
+    if (preg_match("/^PURGE_PROTECT_TOP_N=/m", $contents)) {
+        $contents = preg_replace("/^PURGE_PROTECT_TOP_N=.*/m", "PURGE_PROTECT_TOP_N=$purge_protect_top_n", $contents);
+    } else {
+        $contents .= "\n## PURGE_PROTECT_TOP_N: the best N detections of every species are never purged (plus confirmed reviews)\nPURGE_PROTECT_TOP_N=$purge_protect_top_n\n";
+    }
+}
 if (isset($_GET["max_files_species"])) {
     $max_files_species = $_GET["max_files_species"];
     if (strcmp($max_files_species, $config['MAX_FILES_SPECIES']) !== 0) {
@@ -368,6 +376,9 @@ $newconfig = get_config();
       <label for="purge_threshold">Purge Threshold (Disk Used %):</label>
       <input name="purge_threshold" type="number" style="width:6em;" min="20" max="99" step="1" value="<?php print($newconfig['PURGE_THRESHOLD']);?>"/>
       <p>Defines how full the disk should be before the purge operations occur.<br>Note: This variable is still active if Keep is set. This means that the servies will be stopped at the purge threshold.</p><br>
+      <label for="purge_protect_top_n">Always protect the best detections of each species:</label>
+      <input name="purge_protect_top_n" type="number" style="width:6em;" min="1" max="100" step="1" value="<?php print(intval($newconfig['PURGE_PROTECT_TOP_N'] ?? 3) ?: 3);?>"/>
+      <p>The N highest-confidence detections of every species, and every detection reviewed "Yes, this bird", are never deleted by the purge or by the per-species limit below. The list is refreshed right before each purge; if it cannot be refreshed nothing is deleted.</p><br>
       <label for="max_files_species">Number of files to keep for each species :</label>
       <input name="max_files_species" type="number" style="width:6em;" min="0" step="1" value="<?php print($newconfig['MAX_FILES_SPECIES']);?>"/>
       </td></tr><tr><td>

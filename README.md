@@ -37,7 +37,9 @@ This edition extends BirdNET-Pi with capabilities intended for long-term acousti
    while the display runs.
 5. **Custom Bird by bird Confidence Override.** Adjust levels for common incorrect detections so that a real bird is detected, instead of being always ignored or blacklisted
 6. **Normal and Prio Notification.** Separation of notifications so that if for e.g. in Telegram they can be sent to separate channels, so
-   that a Normal is muted and Prio is noisy.
+   that a Normal is muted and Prio is noisy. Each tier has its own **quiet hours** (e.g. 22:00 to 06:00) and a
+   **repetition limit**, and **region-rare alerts** send to Prio, with the reason, any species the V3 location model
+   does not expect here — never at this place (*vagrant here*) or not in this season (*out of season here*).
 7. **Auto stop/restore services when microphone is removed/inserted.** Recording and analysis stop when the USB
    microphone is unplugged and start again, with the microphone reconfigured, as soon as it is plugged back in.
 8. **Station species lists.** Choose *None* (the model's species distribution), one of your own lists, or a
@@ -49,6 +51,21 @@ This edition extends BirdNET-Pi with capabilities intended for long-term acousti
 10. **Mobile friendly interface.** On a phone the menu folds into a ☰ button, the header stays on one line, pages use
    the whole screen and the cards and buttons are sized for touch; the live spectrogram keeps at least 45 seconds on
    screen so its detection labels show on a narrow display too.
+11. **Station Doctor.** *System › Station Doctor* checks the station in one page — services, microphone, recording,
+   analysis backlog, latest detection, disk and purge protection, quarantined recordings, model files, location
+   profile, version, clock, power and temperature — and offers a one-click restart for what is down. The same checks
+   are available as JSON (`scripts/doctor.php?format=json`) for external monitoring.
+12. **New release badge.** Once a day the station compares the newest release of this edition with the installed
+   one; a new release shows a badge in the menu and a note with its release notes in *System Controls*.
+13. **A page for every species.** One click on the page icon next to a species name opens everything about it: totals,
+   the last 12 months as a calendar, activity by month and by hour, the season the location model expects here, the
+   best clips, the latest detections, the species' threshold, notification tier and lists, and its reviews.
+14. **Review of detections.** The ? icon on a detection asks *Is this the bird?* — *Yes*, *Not this bird* or
+   *Can't tell* (keys Y / N / U). Confirmed clips are protected from the disk purge; rejected detections leave the
+   best detections and the species page counts; three rejections in 90 days suggest a species threshold.
+15. **Automatic purge protection.** The best detections of every species (3 by default, *Advanced Settings*) and every
+   confirmed one are never deleted when disk space is freed. The list is refreshed right before each purge, and if it
+   cannot be refreshed nothing is deleted.
 
 ### How to get this edition
 

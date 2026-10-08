@@ -121,8 +121,9 @@ function get_label($record, $sort_by, $date=null) {
 }
 
 function get_db() {
+  static $_db;
   if (!isset($_db)) {
-    $_db = new SQLite3('./scripts/birds.db', SQLITE3_OPEN_READONLY);
+    $_db = new SQLite3(__ROOT__ . '/scripts/birds.db', SQLITE3_OPEN_READONLY);
     $_db->busyTimeout(1000);
   }
   return $_db;
@@ -130,7 +131,8 @@ function get_db() {
 
 function fetch_species_array($sort_by, $date=null) {
   $db = get_db();
-  $where = (isset($date)) ? "WHERE Date == \"$date\"" : "";
+  // rejected detections (Review: "not this bird") are not a species' best detection
+  $where = "WHERE 1" . ((isset($date)) ? " AND Date == \"$date\"" : "") . not_rejected_sql();
   if ($sort_by === "occurrences") {
     $statement = $db->prepare("SELECT Date, Time, File_Name, Com_Name, Sci_Name, COUNT(*) as Count, MAX(Confidence) as MaxConfidence FROM detections $where GROUP BY Sci_Name ORDER BY COUNT(*) DESC");
   } elseif ($sort_by === "confidence") {
@@ -147,7 +149,7 @@ function fetch_species_array($sort_by, $date=null) {
 
 function fetch_best_detection($com_name) {
   $db = get_db();
-  $statement = $db->prepare("SELECT Com_Name, Sci_Name, COUNT(*), MAX(Confidence), File_Name, Date, Time from detections WHERE Com_Name = \"$com_name\"");
+  $statement = $db->prepare("SELECT Com_Name, Sci_Name, COUNT(*), MAX(Confidence), File_Name, Date, Time from detections WHERE Com_Name = \"$com_name\"" . not_rejected_sql());
   ensure_db_ok($statement);
   $result = $statement->execute();
   return $result;
@@ -504,6 +506,32 @@ function get_wikiaves_url($sciname) {
   return $slug === '' ? '' : "https://www.wikiaves.com.br/wiki/$slug";
 }
 
+// Review loop: verdict of one detection file ('' = not reviewed), and the SQL that leaves rejected
+// detections ("not this bird") out of a query on detections — empty while the table does not exist yet
+function review_verdicts() {
+  static $verdicts = null;
+  if ($verdicts === null) {
+    $verdicts = array();
+    $db = get_db();
+    if ($db->querySingle("SELECT 1 FROM sqlite_master WHERE type='table' AND name='detection_reviews'")) {
+      $res = $db->query('SELECT File_Name, Verdict FROM detection_reviews');
+      while ($res && ($r = $res->fetchArray(SQLITE3_NUM))) $verdicts[$r[0]] = $r[1];
+    }
+  }
+  return $verdicts;
+}
+function review_verdict($file_name) {
+  return review_verdicts()[$file_name] ?? '';
+}
+function not_rejected_sql() {
+  static $sql = null;
+  if ($sql === null) {
+    $sql = get_db()->querySingle("SELECT 1 FROM sqlite_master WHERE type='table' AND name='detection_reviews'")
+      ? " AND File_Name NOT IN (SELECT File_Name FROM detection_reviews WHERE Verdict = 'no')" : '';
+  }
+  return $sql;
+}
+
 // Species links shown next to every scientific name (owner 2026-10-08): WikiAves first when the names are
 // CBRO (Portuguese Brazil) and the bird is Brazilian, then eBird and Birds of the World
 // Action icons of one detection (delete, change species, protect from purge, frequency shift), the same
@@ -516,6 +544,11 @@ function detection_actions($file, $positioned = true, $style = '', $width = 25) 
     $list = $home . '/BirdNET-Pi/scripts/disk_check_exclude.txt';
     $locked = is_file($list) ? array_flip(file($list, FILE_IGNORE_NEW_LINES)) : array();
   }
+  $verdict = review_verdict(basename($file));
+  $rv = array('' => array('images/review.svg', 'Review: is this the bird? (not reviewed)'),
+              'yes' => array('images/review_yes.svg', 'Reviewed: yes, this bird (protected from purge)'),
+              'no' => array('images/review_no.svg', 'Reviewed: not this bird'),
+              'unsure' => array('images/review_unsure.svg', "Reviewed: can't tell"))[$verdict];
   $f = htmlspecialchars(json_encode($file), ENT_QUOTES);
   $lock = isset($locked[$file])
     ? array('del', 'images/lock.svg', 'This file is excluded from being purged.')
@@ -524,6 +557,7 @@ function detection_actions($file, $positioned = true, $style = '', $width = 25) 
     ? array('unshift', 'images/unshift.svg', 'This file has been shifted down in frequency.')
     : array('shift', 'images/shift.svg', 'This file is not shifted in frequency.');
   $icons = array(
+    array("reviewDetection($f, this)", $rv[0], $rv[1], '155px'),
     array("deleteDetection($f)", 'images/delete.svg', 'Delete Detection', '120px'),
     array("changeDetection($f)", 'images/bird.svg', 'Change Detection', '85px'),
     array("toggleLock($f, &quot;$lock[0]&quot;, this)", $lock[1], $lock[2], '45px'),
@@ -557,7 +591,9 @@ function species_links($sciname, $style = '', $width = 20) {
   }
   $wiki_lang = explode('_', $lang)[0];
   $links[] = array("https://$wiki_lang.wikipedia.org/wiki/" . str_replace(' ', '_', $sciname), 'Wikipedia', 'images/wiki.png');
-  $html = '';
+  // the station's own species page first (same frame)
+  $html = '<a href="views.php?view=Bird&amp;sci=' . rawurlencode($sciname) . '"><img style="' . htmlspecialchars($style, ENT_QUOTES)
+    . '" title="Species page" src="images/species.svg" width="' . intval($width) . '"></a> ';
   foreach ($links as $l) {
     $html .= '<a href="' . htmlspecialchars($l[0], ENT_QUOTES) . '" target="_blank"><img style="' . htmlspecialchars($style, ENT_QUOTES)
       . '" title="' . $l[1] . '" src="' . $l[2] . '" width="' . intval($width) . '"></a> ';

@@ -201,3 +201,47 @@ function changeDetection(filename,copylink=false) {
   xhttp.open("GET", "play.php?getlabels=true", true);
   xhttp.send();
 }
+
+// Review loop: is this the bird? Yes (confirmed, protected from purge) / Not this bird (left out of the best
+// detections and the species page counts) / Can't tell / Clear the verdict
+function reviewDetection(filename, elem) {
+  var old = document.getElementById('reviewDialog');
+  if (old) old.remove();
+  var d = document.createElement('dialog');
+  d.id = 'reviewDialog';
+  d.style.cssText = 'border-radius:8px;padding:16px;max-width:320px;text-align:center';
+  var name = filename.split('/')[1] ? filename.split('/')[1].replace(/_/g, ' ') : '';
+  d.innerHTML = '<p style="margin-top:0"><b>Is this the bird?</b><br><small>' + name + '</small></p>' +
+    '<button data-v="yes">Yes, this bird</button> <button data-v="no">Not this bird</button><br><br>' +
+    '<button data-v="unsure">Can\'t tell</button> <button data-v="clear">Clear</button> <button data-v="">Cancel</button>' +
+    '<p style="margin-bottom:0"><small>Yes protects the clip from the disk purge; Not this bird leaves it out of the best ' +
+    'detections and the species page counts. Keys: Y / N / U, Esc cancels.</small></p>';
+  document.body.appendChild(d);
+  function send(v) {
+    d.close(); d.remove();
+    if (!v) return;
+    var icons = {yes: 'images/review_yes.svg', no: 'images/review_no.svg', unsure: 'images/review_unsure.svg', clear: 'images/review.svg'};
+    var titles = {yes: 'Reviewed: yes, this bird (protected from purge)', no: 'Reviewed: not this bird',
+                  unsure: "Reviewed: can't tell", clear: 'Review: is this the bird? (not reviewed)'};
+    var before = elem.getAttribute('src');
+    elem.setAttribute('src', 'images/spinner.gif');
+    var x = new XMLHttpRequest();
+    x.onload = function () {
+      if (this.responseText == 'OK') {
+        elem.setAttribute('src', icons[v]);
+        elem.setAttribute('title', titles[v]);
+      } else {
+        elem.setAttribute('src', before);
+        alert(this.responseText);
+      }
+    };
+    x.open('GET', 'play.php?review=' + encodeURIComponent(filename) + '&verdict=' + v, true);
+    x.send();
+  }
+  d.querySelectorAll('button').forEach(function (b) { b.onclick = function () { send(b.dataset.v); }; });
+  d.addEventListener('keydown', function (e) {
+    var k = {y: 'yes', n: 'no', u: 'unsure'}[e.key.toLowerCase()];
+    if (k) { e.preventDefault(); send(k); }
+  });
+  d.showModal();
+}

@@ -266,7 +266,7 @@ $result = $db->query($sql);
   $lastSeen = $row['LastSeen'] ?? '';
   $lastSeenSort = $lastSeen ? (strtotime($lastSeen) ?: 0) : 0;
 
-  $common_link = "<a href='views.php?view=Recordings&species=" . rawurlencode($row['Sci_Name']) . "'>{$common}</a>";
+  $common_link = "<a href='views.php?view=Bird&sci=" . rawurlencode($row['Sci_Name']) . "'>{$common}</a>";
 
   $is_confirmed   = in_array($identifier_sci, $confirmed_species, true);
   $is_excluded    = in_array($identifier_sci, $excluded_species, true);

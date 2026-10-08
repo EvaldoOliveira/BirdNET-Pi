@@ -44,6 +44,9 @@ if(isset($_GET['excludefile'])) {
   if(!file_exists($home."/BirdNET-Pi/scripts/disk_check_exclude.txt")) {
     file_put_contents($home."/BirdNET-Pi/scripts/disk_check_exclude.txt", "##start\n##end\n");
   }
+  // shared with purge_protection.py and the purge scripts: never edit the list while they use it
+  $purge_lock = fopen('/tmp/birdnet_purge.lock', 'a');
+  if ($purge_lock) flock($purge_lock, LOCK_EX);
   if(isset($_GET['exclude_add'])) {
     $myfile = fopen($home."/BirdNET-Pi/scripts/disk_check_exclude.txt", "a") or die("Unable to open file!");
     $txt = $_GET['excludefile'];
@@ -66,6 +69,31 @@ if(isset($_GET['excludefile'])) {
     echo "OK";
     die();
   }
+}
+
+// Review loop: one verdict per detection — yes (confirmed: protected from purge), no (not this bird: left out of
+// the best detections and the species page counts), unsure; "clear" removes it
+if(isset($_GET['review']) && isset($_GET['verdict'])) {
+  ensure_authenticated('You must be authenticated to review detections.');
+  $file_name = basename($_GET['review']);
+  $verdict = $_GET['verdict'];
+  if (!in_array($verdict, array('yes', 'no', 'unsure', 'clear'), true)) { echo "Error"; die(); }
+  $rw = new SQLite3('./scripts/birds.db', SQLITE3_OPEN_READWRITE);
+  $rw->busyTimeout(5000);
+  $rw->exec("CREATE TABLE IF NOT EXISTS detection_reviews (File_Name VARCHAR(100) PRIMARY KEY, Sci_Name VARCHAR(100), Com_Name VARCHAR(100), Date DATE, Confidence FLOAT, Verdict TEXT NOT NULL CHECK (Verdict IN ('yes','no','unsure')), Reviewed_At TEXT)");
+  if ($verdict === 'clear') {
+    $st = $rw->prepare('DELETE FROM detection_reviews WHERE File_Name = :f');
+    $st->bindValue(':f', $file_name);
+  } else {
+    $st = $rw->prepare("INSERT OR REPLACE INTO detection_reviews (File_Name, Sci_Name, Com_Name, Date, Confidence, Verdict, Reviewed_At)
+      SELECT File_Name, Sci_Name, Com_Name, Date, Confidence, :v, datetime('now', 'localtime') FROM detections WHERE File_Name = :f LIMIT 1");
+    $st->bindValue(':f', $file_name);
+    $st->bindValue(':v', $verdict);
+  }
+  $ok = $st->execute() !== false && ($verdict === 'clear' || $rw->changes() > 0);
+  $rw->close();
+  echo $ok ? "OK" : "Error - detection not found";
+  die();
 }
 
 if(isset($_GET['getlabels'])) {
