@@ -429,14 +429,46 @@ function setConf(species, input) {
       setTimeout(() => { input.style.outline = ''; }, 1500);
     });
 }
+/* confirmation modal for the Confirmed / Whitelist / Exclude columns (owner 2026-10-08) */
+function askModal(title, text, okLabel) {
+  return new Promise(resolve => {
+    let m = document.getElementById('spModal');
+    if (!m) {
+      m = document.createElement('div');
+      m.id = 'spModal';
+      m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:50;';
+      m.innerHTML = '<div style="background:#fff;color:#000;border-radius:6px;max-width:440px;padding:16px 18px;box-shadow:0 4px 18px rgba(0,0,0,0.35);text-align:left;">'
+        + '<h3 id="spModalTitle" style="margin:0 0 8px;text-align:left"></h3><p id="spModalText" style="margin:0 0 14px"></p>'
+        + '<div style="text-align:right"><button id="spModalCancel" style="padding:6px 12px;margin-right:6px">Cancel</button>'
+        + '<button id="spModalOk" style="padding:6px 12px;font-weight:bold;background:rgb(219,255,235);border-radius:4px"></button></div></div>';
+      document.body.appendChild(m);
+    }
+    document.getElementById('spModalTitle').textContent = title;
+    document.getElementById('spModalText').textContent = text;
+    document.getElementById('spModalOk').textContent = okLabel;
+    m.style.display = 'flex';
+    const done = v => { m.style.display = 'none'; resolve(v); };
+    document.getElementById('spModalOk').onclick = () => done(true);
+    document.getElementById('spModalCancel').onclick = () => done(false);
+    m.onclick = e => { if (e.target === m) done(false); };
+  });
+}
+const SPECIES_TOGGLE_TEXT = {
+  confirmed: { add: ['Confirm species', 'Mark NAME as confirmed: you have verified that it occurs at this station.', 'Confirm'],
+               del: ['Remove confirmation', 'NAME will no longer be marked as confirmed.', 'Remove'] },
+  whitelist: { add: ['Whitelist species', 'NAME will be detected even when the location filter does not expect it here and now.', 'Whitelist'],
+               del: ['Remove from the whitelist', 'The location filter applies to NAME again.', 'Remove'] },
+  exclude:   { add: ['Exclude species', 'NAME will no longer be detected. Its past detections are kept; untick to detect it again.', 'Exclude'],
+               del: ['Detect again', 'NAME leaves the exclude list and will be detected again.', 'Detect again'] },
+};
 function toggleSpecies(list, species, action) {
-  if (list === 'exclude' && action === 'add') {
-    const parts = species.split('_');   // "Scientific name_Common name"
-    const name = parts.length > 1 ? parts.slice(1).join('_') + ' (' + parts[0] + ')' : species;
-    if (!confirm('Exclude ' + name + '?\n\nIt will no longer be detected. Its past detections are kept; untick to detect it again.')) return;
-  }
-  get(scriptsBase + 'species_tools.php?toggle=' + list + '&species=' + encodeURIComponent(species) + '&action=' + action)
-    .then(t => { if (t.trim() === 'OK') location.reload(); });
+  const parts = species.split('_');   // "Scientific name_Common name"
+  const name = parts.length > 1 ? parts.slice(1).join('_') + ' (' + parts[0] + ')' : species;
+  const t = (SPECIES_TOGGLE_TEXT[list] || {})[action];
+  const go = () => get(scriptsBase + 'species_tools.php?toggle=' + list + '&species=' + encodeURIComponent(species) + '&action=' + action)
+    .then(r => { if (r.trim() === 'OK') location.reload(); });
+  if (!t) { go(); return; }
+  askModal(t[0], t[1].replace('NAME', name), t[2]).then(ok => { if (ok) go(); });
 }
 function deleteSpecies(species) {
   let parts = species.split(' + '); let sci_species = parts[0]; let com_species = parts[1];
