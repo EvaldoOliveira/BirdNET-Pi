@@ -153,9 +153,9 @@ if(isset($_GET['ajax_left_chart']) && $_GET['ajax_left_chart'] == "true") {
 <table class="totals">
   <tr>
     <th>Total</th>
-    <th>Today</th>
-    <th>Species Detected Today</th>
-    <th>Total Number of Species</th>
+    <th># Today</th>
+    <th>Species Today</th>
+    <th>Total # Species</th>
   </tr>
   <tr>
     <td><?php echo $chart_data['totalcount'];?></td>
