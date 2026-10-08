@@ -158,6 +158,7 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
 <?php foreach ($timezones as $tz) { echo '<option' . ($tz === $current_tz ? ' selected' : '') . '>' . $h($tz) . '</option>'; } ?>
     </select></label>
     <p><small>Detections are stamped with this timezone. Get coordinates on <a href="https://latlong.net" target="_blank">latlong.net</a>.</small></p>
+    <br>
     <label>BirdWeather ID (optional): <input name="birdweather_id" type="text" value="<?php echo $h($config['BIRDWEATHER_ID'] ?? ''); ?>"></label><br>
   </td></tr></table><br>
   <table class="settingstable"><tr><td>
