@@ -149,6 +149,13 @@ if(isset($_GET['ajax_left_chart']) && $_GET['ajax_left_chart'] == "true") {
 
   $chart_data = get_summary();
   $_SESSION['chart_data'] = $chart_data;
+  // species detected today for the first time (never before today)
+  $new_today = 0;
+  $stmt_new = get_db()->prepare("SELECT COUNT(DISTINCT Sci_Name) AS n FROM detections WHERE Date = DATE('now', 'localtime')
+    AND Sci_Name NOT IN (SELECT DISTINCT Sci_Name FROM detections WHERE Date < DATE('now', 'localtime'))");
+  if ($stmt_new !== false && ($res_new = $stmt_new->execute()) !== false) {
+    $new_today = (int)($res_new->fetchArray(SQLITE3_ASSOC)['n'] ?? 0);
+  }
 ?>
 <table class="totals">
   <tr>
@@ -156,12 +163,14 @@ if(isset($_GET['ajax_left_chart']) && $_GET['ajax_left_chart'] == "true") {
     <th>#Today</th>
     <th>Sp. Total</th>
     <th>Sp. Today</th>
+    <th>New Sp. Today</th>
   </tr>
   <tr>
     <td><?php echo $chart_data['totalcount'];?></td>
     <td><form action="" method="GET"><button type="submit" name="view" value="Todays Detections"><?php echo $chart_data['todaycount'];?></button></form></td>
     <td><form action="" method="GET"><button type="submit" name="view" value="Species Stats"><?php echo $chart_data['totalspeciestally'];?></button></form></td>
     <td><form action="" method="GET"><input type="hidden" name="view" value="Recordings"><button type="submit" name="date" value="<?php echo date('Y-m-d');?>"><?php echo $chart_data['speciestally'];?></button></form></td>
+    <td><?php echo $new_today; ?></td>
   </tr>
 </table>
 <?php
@@ -309,7 +318,9 @@ function display_species($species_list, $title, $show_last_seen=false) {
     $species_count = count($species_list);
     if ($species_count > 0): ?>
         <div class="<?php echo strtolower(str_replace(' ', '_', $title)); ?>">
+            <?php if ($title !== 'New Species') { // the new species count is in the totals (New Sp. Today) ?>
             <h2 style="text-align:center;"><?php echo $species_count; ?> <?php echo strtolower($title); ?> detected today!</h2>
+            <?php } ?>
             <?php if ($species_count > 5): ?>
                 <table><tr><td style="text-align:center;"><form action="" method="GET"><input type="hidden" name="view" value="Recordings"><button type="submit" name="date" value="<?php echo date('Y-m-d');?>">Open Today's recordings page</button></form></td></tr></table>
             <?php else: ?>

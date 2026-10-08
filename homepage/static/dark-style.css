@@ -1081,3 +1081,4 @@ pre#timer.bash {
 .sidenav ~ .views .overview-stats .new_species table,
 .sidenav ~ .views .overview-stats .rare_species table { margin-left: auto !important; margin-right: 8px !important; }
 .sidenav ~ .views .overview-stats .chart { clear: both; }
+.sidenav ~ .views .overview-stats .new_species table { margin-top: 2px; }
