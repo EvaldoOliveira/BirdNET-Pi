@@ -1102,3 +1102,7 @@ body.sidenav-collapsed .sidenav ~ .views iframe { left: 40px; width: calc(100% -
 .overview-stats.part-records #detections_table,
 .overview-stats.part-records #spectrogramimage,
 .overview-stats.part-records #customimage { display: none !important; }
+
+/* Species Management: the header row stays on top while scrolling, like a frozen row in a spreadsheet */
+#speciesTable { overflow: visible !important; }
+#speciesTable thead th { position: sticky; top: 0; z-index: 3; background-color: rgb(159, 226, 155); box-shadow: 0 2px 3px rgba(0, 0, 0, 0.15); }
