@@ -72,12 +72,8 @@ Write the card.
 Connect the keyboard, mouse, monitor and USB microphone, put the card in the Pi and plug in the power.
 Wait until the desktop appears (the first start takes a few minutes).
 
-**3. Open this page on the Pi.** Start the web browser (*Chromium*, in the menu at the top left or the globe icon)
-and open **github.com/EvaldoOliveira/BirdNET-Pi**, so you can copy the command below instead of typing it.
-
-**4. Install.** Open the **Terminal** (the black window icon at the top, or menu › *Accessories* › *Terminal*),
-copy this command from the browser, paste it into the Terminal (right click › *Paste*, or Ctrl+Shift+V) and press
-**Enter**:
+**3. Install.** Open the **Terminal** (the black window icon at the top, or menu › *Accessories* › *Terminal*),
+type this command exactly as shown and press **Enter**:
 ```
 curl -fsSL https://raw.githubusercontent.com/EvaldoOliveira/BirdNET-Pi/stable/newinstaller.sh | bash
 ```
@@ -89,7 +85,7 @@ station name, location (check the latitude/longitude — get yours at [latlong.n
 time zone, model (**V3** recommended), language of the bird names, web password, and optionally a BirdWeather ID
 and a notification address. The microphone is set up automatically. At the end the Pi restarts by itself.
 
-**5. Open the station.** After the restart, open the web browser on the Pi and go to **`http://localhost`**.
+**4. Open the station.** After the restart, open the web browser on the Pi and go to **`http://localhost`**.
 From a phone, tablet or computer on the same network, use **`http://birdnetpi.local`** (or the Pi's IP address).
 If the installer did not ask the questions, a setup page asks them now. Detections appear on the *Overview* within
 a few minutes.
@@ -97,11 +93,11 @@ a few minutes.
 **Updates:** *Tools › System Controls › Update* installs new released versions.
 
 *Without keyboard and monitor:* choose *Raspberry Pi OS (64-bit) Lite* in step 1, also turn on **Enable SSH** in
-the **Services** tab, and do step 4 from another computer on the same network with `ssh <username>@birdnetpi.local`.
+the **Services** tab, and do step 3 from another computer on the same network with `ssh <username>@birdnetpi.local`.
 
 *To prepare several stations without typing:* copy
 [`docs/birdnet-setup.conf.example`](https://raw.githubusercontent.com/EvaldoOliveira/BirdNET-Pi/main/docs/birdnet-setup.conf.example)
-to the card's *bootfs* drive as `birdnet-setup.conf`, fill in the answers, then do steps 2–5.
+to the card's *bootfs* drive as `birdnet-setup.conf`, fill in the answers, then do steps 2–4.
 
 ---
 
