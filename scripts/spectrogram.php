@@ -262,7 +262,7 @@ function applyText(text,x,y,opacity) {
     opacity = 0.6;
   }
   CTX.textAlign = "center";
-  CTX.font = 'bold 15px Roboto Flex';
+  CTX.font = 'bold 11px Roboto Flex';  // was 15px (owner 2026-10-08)
   CTX.lineWidth = 4;
   CTX.lineJoin = "round";
   CTX.strokeStyle = "rgba(0, 0, 0, "+opacity+")";
@@ -299,8 +299,8 @@ function loadDetectionIfNewExists() {
           applyText(detection.common_name, x, y, detection.confidence);
         }
         // stagger Y placement
-        add+= 15;
-        if(add >= 60) {
+        add+= 12;  // line step for the 11px labels
+        if(add >= 48) {
            add = 0;
         }
       }
