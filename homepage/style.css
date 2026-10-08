@@ -1012,3 +1012,12 @@ pre#timer.bash {
 .sidenav ~ .views .stats,
 .sidenav ~ .views .splist { margin-left: 0 !important; margin-right: auto !important; }
 .sidenav ~ .views .overview-stats { justify-content: flex-start; }
+.sidenav ~ .views > h3,
+.sidenav ~ .views .centered,
+.sidenav ~ .views .history > form,
+.sidenav ~ .views div[style*="text-align: center"],
+.sidenav ~ .views div[style*="text-align:center"] { text-align: left !important; }
+.sidenav ~ .views .overview div img,
+.sidenav ~ .views .history img,
+.sidenav ~ .views .chart img { margin-left: 0 !important; margin-right: auto !important; }
+.sidenav ~ .views .right-column { text-align: left; }
