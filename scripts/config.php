@@ -1056,8 +1056,4 @@ echo "Update Settings";
 ?>
       </button></div>
       </form>
-      <form action="" method="GET">
-      <div class="float">
-        <button type="submit" name="view" value="Advanced">Advanced Settings</button>
-      </div></form>
 </div>
