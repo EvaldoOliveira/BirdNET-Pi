@@ -146,6 +146,12 @@ Pilot station, São Paulo (BirdNET+ V3, Portuguese Brazil (CBRO) names).
 | **Notifications — Normal and Rare tiers** | |
 | ![Notifications](docs/screenshots/notifications.png) | |
 
+On a phone (the menu opens from the ☰ button):
+
+| Now | Today's Detections | All Detections |
+|---|---|---|
+| ![Now on a phone](docs/screenshots/mobile-now.png) | ![Today's Detections on a phone](docs/screenshots/mobile-todays.png) | ![All Detections on a phone](docs/screenshots/mobile-all-detections.png) |
+
 ### Reporting issues
 
 - Matters specific to **this edition** (the stories above, the upgrade package): please open an
