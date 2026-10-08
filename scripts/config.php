@@ -132,13 +132,15 @@ if(isset($_GET["latitude"])){
       $notification_default_tier = 'normal';
     }
   }
-  // Regional include list (owner 2026-10-07): '' = none (default, outside Brazil) or one shipped list
-  // model/include_lists/<region>.txt, e.g. BR-SP; choosing one rebuilds include_species_list.txt
-  // (Custom Species List) as the state's birds + the model's non-bird classes (state_include_list.py)
-  if(isset($_GET['include_region'])) {
-    $include_region = $_GET['include_region'];
-    if($include_region !== '' && !(preg_match('/^[A-Z]{2}-[A-Z]{2}$/', $include_region) && is_file($home."/BirdNET-Pi/model/include_lists/".$include_region.".txt"))) {
-      $include_region = '';
+  // Species list filter (owner 2026-10-08): '' = none (the model's species distribution decides), BR-<UF> =
+  // a Brazilian state (built once into species_lists/), or a list of ~/BirdNET-Pi/species_lists/ —
+  // scripts/select_species_list.py links include_species_list.txt to it
+  if(isset($_GET['species_list'])) {
+    $species_list = $_GET['species_list'];
+    $is_state = preg_match('/^BR-[A-Z]{2}$/', $species_list) && is_file($home."/BirdNET-Pi/model/include_lists/".$species_list.".txt");
+    $is_file = preg_match('/^[A-Za-z0-9_-]+$/', $species_list) && is_file($home."/BirdNET-Pi/species_lists/".$species_list.".txt");
+    if($species_list !== '' && !$is_state && !$is_file) {
+      $species_list = '';
     }
   }
   if(isset($_GET['apprise_notify_each_detection'])) {
@@ -287,11 +289,11 @@ if(isset($_GET["latitude"])){
       $contents .= "\nNOTIFICATION_EMAIL=\"$notification_email\"\n";
     }
   }
-  if(isset($include_region)) {
-    if(preg_match("/^INCLUDE_REGION=/m", $contents)) {
-      $contents = preg_replace("/^INCLUDE_REGION=.*/m", "INCLUDE_REGION=$include_region", $contents);
+  if(isset($species_list)) {
+    if(preg_match("/^SPECIES_LIST=/m", $contents)) {
+      $contents = preg_replace("/^SPECIES_LIST=.*/m", "SPECIES_LIST=$species_list", $contents);
     } else {
-      $contents .= "\n## INCLUDE_REGION is the regional include list (model/include_lists/<region>.txt, e.g. BR-SP); empty = none\nINCLUDE_REGION=$include_region\n";
+      $contents .= "\n## SPECIES_LIST is the species list filter: empty = none, BR-<UF> = a Brazilian state, or a list of species_lists/\nSPECIES_LIST=$species_list\n";
     }
   }
   if(isset($notification_default_tier)) {
@@ -347,9 +349,9 @@ if(isset($_GET["latitude"])){
   $fh = fopen("/etc/birdnet/birdnet.conf", "w");
   fwrite($fh, $contents);
   fclose($fh);
-  // a new state rebuilds the Custom Species List: the state's birds + the model's non-bird classes
-  if (isset($include_region) && $include_region !== ($config['INCLUDE_REGION'] ?? '')) {
-    syslog_shell_exec("python3 ".escapeshellarg($home."/BirdNET-Pi/scripts/state_include_list.py"), $user);
+  // another species list: select_species_list.py builds a state list once and links the active list to it
+  if (isset($species_list) && $species_list !== ($config['SPECIES_LIST'] ?? '')) {
+    syslog_shell_exec("python3 ".escapeshellarg($home."/BirdNET-Pi/scripts/select_species_list.py"), $user);
   }
   // settings saved here answer the first-run questions too: stop opening the Overview on the wizard
   if (file_exists($home.'/BirdNET-Pi/firstrun_pending')) { @unlink($home.'/BirdNET-Pi/firstrun_pending'); }
@@ -647,26 +649,64 @@ function runProcess() {
           <td></td>
         </tr>
         <tr>
-          <td><label for="include_region">Brazilian states include list:</label></td>
-          <td><select name="include_region" id="include_region">
-            <option value="">None (default)</option>
+          <td><label for="species_list">Species list filter:</label></td>
+          <td><select name="species_list" id="species_list">
             <?php
+            $cur_list = $config['SPECIES_LIST'] ?? '';
+            echo "<option value=''" . ($cur_list === '' ? ' selected' : '') . ">None — use the model's species distribution</option>";
+            $own = array();
+            foreach (glob($home."/BirdNET-Pi/species_lists/*.txt") as $f) { $own[] = basename($f, '.txt'); }
+            sort($own);
             $br_states = ['AC' => 'Acre', 'AL' => 'Alagoas', 'AP' => 'Amapá', 'AM' => 'Amazonas', 'BA' => 'Bahia', 'CE' => 'Ceará',
                           'DF' => 'Distrito Federal', 'ES' => 'Espírito Santo', 'GO' => 'Goiás', 'MA' => 'Maranhão', 'MT' => 'Mato Grosso',
                           'MS' => 'Mato Grosso do Sul', 'MG' => 'Minas Gerais', 'PA' => 'Pará', 'PB' => 'Paraíba', 'PR' => 'Paraná',
                           'PE' => 'Pernambuco', 'PI' => 'Piauí', 'RJ' => 'Rio de Janeiro', 'RN' => 'Rio Grande do Norte',
                           'RS' => 'Rio Grande do Sul', 'RO' => 'Rondônia', 'RR' => 'Roraima', 'SC' => 'Santa Catarina', 'SP' => 'São Paulo',
                           'SE' => 'Sergipe', 'TO' => 'Tocantins'];
-            $cur_region = $config['INCLUDE_REGION'] ?? '';
+            if ($own) {
+              echo "<optgroup label='Station lists (species_lists/)'>";
+              foreach ($own as $n) {
+                $label = (strpos($n, 'BR-') === 0 && isset($br_states[substr($n, 3)])) ? "$n — " . $br_states[substr($n, 3)] : $n;
+                echo "<option value='" . htmlspecialchars($n, ENT_QUOTES) . "'" . ($cur_list === $n ? ' selected' : '') . ">" . htmlspecialchars($label) . "</option>";
+              }
+              echo "</optgroup>";
+            }
+            echo "<optgroup label='Brazilian states (WikiAves records, CBRO names)'>";
             foreach ($br_states as $uf => $uf_name) {
               $region = "BR-$uf";
-              if (!is_file($home."/BirdNET-Pi/model/include_lists/$region.txt")) continue;
-              $sel = $cur_region === $region ? ' selected' : '';
-              echo "<option value='$region'$sel>$uf_name ($uf)</option>";
+              if (in_array($region, $own, true) || !is_file($home."/BirdNET-Pi/model/include_lists/$region.txt")) continue;
+              echo "<option value='$region'" . ($cur_list === $region ? ' selected' : '') . ">$uf_name ($uf)</option>";
             }
+            echo "</optgroup>";
             ?>
           </select></td>
-          <td>(Optional) Replaces the Custom Species List with the birds recorded in the state plus all non-bird classes of the model; the previous list is kept as a .bak file</td>
+          <td>None: every species the location filter allows. A station list is applied as it is and edited in Tools › Included. A Brazilian state is built once (its birds + the model's non-bird classes) and then kept as a station list you can edit.</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td colspan="2">
+            <input type="text" id="save_list_name" placeholder="name" style="width:10em">
+            <button type="button" class="testbtn" onclick="speciesListAction('save')">Save current list as…</button>
+            <input type="file" id="load_list_file" accept=".txt" style="display:none" onchange="speciesListAction('load')">
+            <button type="button" class="testbtn" onclick="document.getElementById('load_list_file').click()">Load a list (.txt)…</button>
+            <small>— one "Scientific name_Common name" per line; the list keeps the file name</small>
+            <script>
+              function speciesListAction(action) {
+                const fd = new FormData();
+                fd.append('action', action);
+                if (action === 'save') {
+                  const n = document.getElementById('save_list_name').value.trim();
+                  if (!/^[A-Za-z0-9_-]+$/.test(n)) { alert('Name: letters, digits, - and _ only'); return; }
+                  fd.append('name', n);
+                } else {
+                  const f = document.getElementById('load_list_file').files[0];
+                  if (!f) return;
+                  fd.append('list', f);
+                }
+                fetch('scripts/species_lists.php', { method: 'POST', body: fd }).then(r => r.text()).then(t => { alert(t); location.reload(); });
+              }
+            </script>
+          </td>
         </tr>
       </table>
       <p>Set your Latitude and Longitude to 4 decimal places. Get your coordinates <a href="https://latlong.net" target="_blank">here</a>.</p>

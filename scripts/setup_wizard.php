@@ -82,7 +82,7 @@ if (isset($_POST['wizard_save'])) {
       $contents = wizard_set_key($contents, 'SF_THRESH', $model === $model_v3 ? '0.1' : '0.03');
     }
     $contents = wizard_set_key($contents, 'DATABASE_LANG', $lang);
-    $contents = wizard_set_key($contents, 'INCLUDE_REGION', $state === '' ? '' : "BR-$state");
+    $contents = wizard_set_key($contents, 'SPECIES_LIST', $state === '' ? '' : "BR-$state");
     if (strpos($lang, 'pt') === 0 || $state !== '') $contents = wizard_set_key($contents, 'INFO_SITE', '"EBIRD"');
     $contents = wizard_set_key($contents, 'BIRDWEATHER_ID', $bw);
     $update_caddy = false;
@@ -98,10 +98,10 @@ if (isset($_POST['wizard_save'])) {
       shell_exec('sudo timedatectl set-timezone ' . escapeshellarg($tz));
       if (file_exists('/etc/timezone')) shell_exec('echo ' . escapeshellarg($tz) . ' | sudo tee /etc/timezone > /dev/null');
     }
-    // a new state rebuilds the Custom Species List: the state's birds + the model's non-bird classes
+    // a new state selects (and builds once) its species list: the state's birds + the model's non-bird classes
     $new_region = $state === '' ? '' : "BR-$state";
-    if ($new_region !== ($config['INCLUDE_REGION'] ?? '')) {
-      shell_exec('sudo -u ' . escapeshellarg($user) . ' python3 ' . escapeshellarg($home . '/BirdNET-Pi/scripts/state_include_list.py') . ' > /dev/null 2>&1');
+    if ($new_region !== ($config['SPECIES_LIST'] ?? '')) {
+      shell_exec('sudo -u ' . escapeshellarg($user) . ' python3 ' . escapeshellarg($home . '/BirdNET-Pi/scripts/select_species_list.py') . ' > /dev/null 2>&1');
     }
     if ($model !== $old_model || $lang !== $old_lang) {
       shell_exec('sudo -u ' . escapeshellarg($user) . ' ' . escapeshellarg($home . '/BirdNET-Pi/scripts/install_language_label.sh') . ' > /dev/null 2>&1');
@@ -115,7 +115,7 @@ if (isset($_POST['wizard_save'])) {
 }
 
 $cur_lang = $config['DATABASE_LANG'] ?? 'en';
-$cur_state = preg_replace('/^BR-/', '', $config['INCLUDE_REGION'] ?? '');
+$cur_state = preg_match('/^BR-[A-Z]{2}$/', $config['SPECIES_LIST'] ?? '') ? substr($config['SPECIES_LIST'], 3) : '';
 $cur_model = ($config['MODEL'] ?? '') === $model_v24 ? 'V2.4' : 'V3';
 $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
 ?>

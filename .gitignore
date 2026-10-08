@@ -53,3 +53,5 @@ whitelist_species_list.txt
 # Installs without it run the plain fork (no station layer).
 /custom
 /firstrun_pending
+# station species lists (Settings > Species list filter)
+species_lists/

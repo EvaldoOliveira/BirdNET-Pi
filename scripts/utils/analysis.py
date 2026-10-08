@@ -169,8 +169,8 @@ def run_analysis(file):
 
     conf = get_settings()
     min_confidence = conf.getfloat('CONFIDENCE')
-    # INCLUDE_REGION (a Brazilian state) is no separate filter: state_include_list.py writes the state's
-    # birds plus the model's non-bird classes into include_species_list.txt, where the user sees it
+    # include_species_list.txt is the active species list (a link into species_lists/, chosen in
+    # Settings > Location > Species list filter — scripts/select_species_list.py); empty = none
     model = load_global_model()
     names = get_language(conf['DATABASE_LANG'])
 

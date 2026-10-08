@@ -58,7 +58,7 @@ backup() {
   log "Starting backup, this might take a while"
   CMD='tar --create -f "$ARCHIVE"'
   for obj in  "${optional[@]}";do
-    [ -f $obj ] && CMD="$CMD -C $(dirname "$obj") $(basename "$obj")"
+    [ -e $obj ] && CMD="$CMD -C $(dirname "$obj") $(basename "$obj")"
   done
   for obj in  "${required[@]}";do
     CMD="$CMD -C $(dirname "$obj") $(basename "$obj")"
@@ -70,7 +70,7 @@ backup() {
 estimated_backup_size() {
   CMD='du -s -c -b '
   for obj in  "${optional[@]}";do
-    [ -f $obj ] && CMD="$CMD $obj"
+    [ -e $obj ] && CMD="$CMD $obj"
   done
   for obj in  "${required[@]}";do
     CMD="$CMD $obj"
@@ -135,7 +135,10 @@ restore() {
   done
   log "Trying to restore optional files"
   for obj in  "${optional[@]}";do
-    if [ -f "${UNPACK}/$(basename "$obj")" ] ; then
+    if [ -e "${UNPACK}/$(basename "$obj")" ] || [ -L "${UNPACK}/$(basename "$obj")" ]; then
+      # a folder (species_lists) replaces the station's one; the active list may be a link into it
+      [ -d "${UNPACK}/$(basename "$obj")" ] && rm -rf "$obj"
+      rm -f "$obj" 2> /dev/null
       mv "${UNPACK}/$(basename "$obj")" "$(dirname "$obj")/"
     else
       echo No $(basename "$obj") found, moving on
@@ -172,6 +175,7 @@ optional=("/home/$BIRDNET_USER/BirdNET-Pi/apprise.txt"
 "/home/$BIRDNET_USER/BirdNET-Pi/scripts/disk_check_exclude.txt"
 "/home/$BIRDNET_USER/BirdNET-Pi/exclude_species_list.txt"
 "/home/$BIRDNET_USER/BirdNET-Pi/confirmed_species_list.txt"
+"/home/$BIRDNET_USER/BirdNET-Pi/species_lists"
 "/home/$BIRDNET_USER/BirdNET-Pi/include_species_list.txt")
 
 [ $ACTION == "backup" ] && backup_check

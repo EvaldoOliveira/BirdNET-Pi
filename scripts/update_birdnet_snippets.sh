@@ -156,10 +156,20 @@ if ! grep -E '^BIRDDB_ENABLED=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "BIRDDB_ENABLED=0" >> /etc/birdnet/birdnet.conf
 fi
 
-# INCLUDE_REGION used to be a separate filter joined to the Custom Species List: build the list once
-# from the state, keeping the species already in it (the previous list is also kept as a .bak)
-if grep -qE '^INCLUDE_REGION=BR-[A-Z]{2}' /etc/birdnet/birdnet.conf && ! [ -f $HOME/BirdNET-Pi/include_species_list.state ]; then
-  sudo -u $USER python3 $HOME/BirdNET-Pi/scripts/state_include_list.py --merge || true
+# Species lists (owner 2026-10-08): station lists live in ~/BirdNET-Pi/species_lists/ and SPECIES_LIST picks
+# the active one (include_species_list.txt becomes a link to it). A station's own list becomes
+# species_lists/custom.txt and stays selected; otherwise a Brazilian state chosen before (INCLUDE_REGION).
+if ! grep -qE '^SPECIES_LIST=' /etc/birdnet/birdnet.conf; then
+  sudo -u $USER mkdir -p $HOME/BirdNET-Pi/species_lists
+  selected=$(grep -oE '^INCLUDE_REGION=BR-[A-Z]{2}' /etc/birdnet/birdnet.conf | cut -d= -f2)
+  if [ -s $HOME/BirdNET-Pi/include_species_list.txt ] && ! [ -L $HOME/BirdNET-Pi/include_species_list.txt ]; then
+    sudo -u $USER cp $HOME/BirdNET-Pi/include_species_list.txt $HOME/BirdNET-Pi/species_lists/custom.txt
+    selected=custom
+  fi
+  echo "## SPECIES_LIST is the species list filter: empty = none, BR-<UF> = a Brazilian state, or a list of species_lists/" >> /etc/birdnet/birdnet.conf
+  echo "SPECIES_LIST=$selected" >> /etc/birdnet/birdnet.conf
+  sudo -u $USER python3 $HOME/BirdNET-Pi/scripts/select_species_list.py || true
+  rm -f $HOME/BirdNET-Pi/include_species_list.state
 fi
 
 if ! grep -E '^BIRDWEATHER_ENABLED=' /etc/birdnet/birdnet.conf &>/dev/null;then

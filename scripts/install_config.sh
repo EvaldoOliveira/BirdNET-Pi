@@ -52,8 +52,9 @@ DATA_MODEL_VERSION=1
 ## and SHADOW_ENABLED its switch (0 = off, the default) — Basic Settings > Models
 SHADOW_MODEL_NAME=
 SHADOW_ENABLED=0
-## INCLUDE_REGION is the regional include list (model/include_lists/<region>.txt, e.g. BR-SP); empty = none
-INCLUDE_REGION=${FR_REGION}
+## SPECIES_LIST is the species list filter (Settings > Location): empty = none (the model's species
+## distribution decides), BR-<UF> = a Brazilian state, or the name of a list in ~/BirdNET-Pi/species_lists/
+SPECIES_LIST=${FR_REGION}
 
 #---------------------  BirdWeather Station Information -----------------------#
 #_____________The variable below can be set to have your BirdNET-Pi____________#
