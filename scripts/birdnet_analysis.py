@@ -124,6 +124,26 @@ def process_file(file_name, report_queue):
         log.exception(f'Unexpected error: {stderr}', exc_info=e)
 
 
+QUARANTINE_KEEP = 200
+
+
+def quarantine(file_name):
+    # a recording whose reporting failed is kept aside instead of staying in StreamData (where every restart would
+    # analyse it again) or being lost; the newest QUARANTINE_KEEP files are kept, older ones are removed
+    try:
+        if not os.path.exists(file_name):
+            return
+        qdir = os.path.join(get_settings()['RECS_DIR'], 'quarantine')
+        os.makedirs(qdir, exist_ok=True)
+        os.replace(file_name, os.path.join(qdir, os.path.basename(file_name)))
+        log.warning('reporting failed: %s moved to %s', os.path.basename(file_name), qdir)
+        kept = sorted((os.path.join(qdir, f) for f in os.listdir(qdir)), key=os.path.getmtime, reverse=True)
+        for old in kept[QUARANTINE_KEEP:]:
+            os.remove(old)
+    except Exception as e:
+        log.error('could not quarantine %s: %s', file_name, e)
+
+
 def handle_reporting_queue(queue):
     while True:
         msg = queue.get()
@@ -147,6 +167,7 @@ def handle_reporting_queue(queue):
         except BaseException as e:
             stderr = e.stderr.decode('utf-8') if isinstance(e, CalledProcessError) else ""
             log.exception(f'Unexpected error: {stderr}', exc_info=e)
+            quarantine(file.file_name)
 
         queue.task_done()
 

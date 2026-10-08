@@ -133,10 +133,14 @@ def write_to_db(file: ParseFileName, detection: Detection):
         try:
             con = sqlite3.connect(DB_PATH)
             cur = con.cursor()
-            cur.execute("INSERT INTO detections VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            # safe to repeat: a recording analysed again (restart after an error) does not add the same row twice
+            file_name = os.path.basename(detection.file_name_extr)
+            cur.execute("INSERT INTO detections SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? "
+                        "WHERE NOT EXISTS (SELECT 1 FROM detections WHERE Date = ? AND Time = ? AND Sci_Name = ? AND File_Name = ?)",
                         (detection.date, detection.time, detection.scientific_name, detection.common_name, detection.confidence,
                          conf['LATITUDE'], conf['LONGITUDE'], conf['CONFIDENCE'], str(detection.week), conf['SENSITIVITY'],
-                         conf['OVERLAP'], os.path.basename(detection.file_name_extr)))
+                         conf['OVERLAP'], file_name,
+                         detection.date, detection.time, detection.scientific_name, file_name))
             # (Date, Time, Sci_Name, Com_Name, str(score),
             # Lat, Lon, Cutoff, Week, Sens,
             # Overlap, File_Name))
