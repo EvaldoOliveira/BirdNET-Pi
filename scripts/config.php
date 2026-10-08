@@ -680,33 +680,7 @@ function runProcess() {
             echo "</optgroup>";
             ?>
           </select></td>
-          <td>None: every species the location filter allows. A station list is applied as it is and edited in Tools › Included. A Brazilian state is built once (its birds + the model's non-bird classes) and then kept as a station list you can edit.</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td colspan="2">
-            <input type="text" id="save_list_name" placeholder="name" style="width:10em">
-            <button type="button" class="testbtn" onclick="speciesListAction('save')">Save current list as…</button>
-            <input type="file" id="load_list_file" accept=".txt" style="display:none" onchange="speciesListAction('load')">
-            <button type="button" class="testbtn" onclick="document.getElementById('load_list_file').click()">Load a list (.txt)…</button>
-            <small>— one "Scientific name_Common name" per line; the list keeps the file name</small>
-            <script>
-              function speciesListAction(action) {
-                const fd = new FormData();
-                fd.append('action', action);
-                if (action === 'save') {
-                  const n = document.getElementById('save_list_name').value.trim();
-                  if (!/^[A-Za-z0-9_-]+$/.test(n)) { alert('Name: letters, digits, - and _ only'); return; }
-                  fd.append('name', n);
-                } else {
-                  const f = document.getElementById('load_list_file').files[0];
-                  if (!f) return;
-                  fd.append('list', f);
-                }
-                fetch('scripts/species_lists.php', { method: 'POST', body: fd }).then(r => r.text()).then(t => { alert(t); location.reload(); });
-              }
-            </script>
-          </td>
+          <td>None: every species the location filter allows. A station list is applied as it is and edited in Tools › Custom Species List, where lists are also saved and loaded. A Brazilian state is built once (its birds + the model's non-bird classes) and then kept as a station list you can edit.</td>
         </tr>
       </table>
       <p>Set your Latitude and Longitude to 4 decimal places. Get your coordinates <a href="https://latlong.net" target="_blank">here</a>.</p>
