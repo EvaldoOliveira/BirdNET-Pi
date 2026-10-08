@@ -242,7 +242,7 @@ FREQSHIFT_LO=3000
 FREQSHIFT_RECONNECT_DELAY=4000
 
 ## SPECTROGRAM_HEIGHT is the height of the live spectrogram in percent of the page height (vh)
-SPECTROGRAM_HEIGHT=80
+SPECTROGRAM_HEIGHT=70
 
 ## SPECTROGRAM_PALETTE is the colour palette of the spectrograms: birdnet, viridis, inferno, ocean, grayscale, soxheat
 SPECTROGRAM_PALETTE=birdnet

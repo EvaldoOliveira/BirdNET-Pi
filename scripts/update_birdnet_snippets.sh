@@ -79,7 +79,7 @@ if ! grep -E '^DATA_MODEL_VERSION=' /etc/birdnet/birdnet.conf &>/dev/null;then
 fi
 
 if ! grep -E '^SPECTROGRAM_HEIGHT=' /etc/birdnet/birdnet.conf &>/dev/null;then
-    echo "SPECTROGRAM_HEIGHT=80" >> /etc/birdnet/birdnet.conf
+    echo "SPECTROGRAM_HEIGHT=70" >> /etc/birdnet/birdnet.conf
 fi
 
 if ! grep -E '^APPRISE_NOTIFICATION_TITLE_RARE=' /etc/birdnet/birdnet.conf &>/dev/null;then

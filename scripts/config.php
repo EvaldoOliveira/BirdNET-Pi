@@ -975,7 +975,7 @@ mailto://{user}:{password}@gmail.com
       </select><br>
       Applies to the live waterfall and to the SoX images (Overview, detections). Also selectable at the top left of the Spectrogram page.<br><br>
       <label for="spectrogram_height">Live spectrogram height (% of the page): </label>
-      <input name="spectrogram_height" type="number" style="width:5em;" min="20" max="100" step="1" value="<?php print(is_numeric($config['SPECTROGRAM_HEIGHT'] ?? null) ? $config['SPECTROGRAM_HEIGHT'] : 80);?>" required/><br><br>
+      <input name="spectrogram_height" type="number" style="width:5em;" min="20" max="100" step="1" value="<?php print(is_numeric($config['SPECTROGRAM_HEIGHT'] ?? null) ? $config['SPECTROGRAM_HEIGHT'] : 70);?>" required/><br><br>
       <b>Colour sensitivity</b> (live waterfall; the SoX images follow floor and range)<br>
       <label for="spectrogram_floor_db">Floor (dB, −120…−40): </label>
       <input name="spectrogram_floor_db" type="number" style="width:5em;" min="-120" max="-40" step="5" value="<?php print(is_numeric($config['SPECTROGRAM_FLOOR_DB'] ?? null) ? $config['SPECTROGRAM_FLOOR_DB'] : -100);?>" required/>

@@ -15,7 +15,7 @@ if(!empty($config['FREQSHIFT_RECONNECT_DELAY']) && is_numeric($config['FREQSHIFT
 if(!empty($config['SPECTROGRAM_HEIGHT']) && is_numeric($config['SPECTROGRAM_HEIGHT'])){
     $SPECTROGRAM_HEIGHT = ($config['SPECTROGRAM_HEIGHT']);
 }else{
-    $SPECTROGRAM_HEIGHT = 80;
+    $SPECTROGRAM_HEIGHT = 70;
 }
 
 // US-41: colour palette of the live waterfall (and of the SoX images, see
