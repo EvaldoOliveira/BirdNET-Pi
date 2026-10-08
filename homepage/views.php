@@ -74,7 +74,7 @@ $menu = array(
   // Station Setup only while the first-run questions are unanswered; afterwards everything is in Settings
   array('Settings', array('Settings' => 'Basic Settings', 'Advanced' => 'Advanced Settings')
                     + (file_exists($home . '/BirdNET-Pi/firstrun_pending') ? array('Setup' => 'Station Setup') : array())),
-  array('Scheduled Recordings', array('Raw Recording' => 'Raw Recording')),
+  array('Scheduling', array('Raw Recording' => 'Raw Recording')),
   array('System', array('System Controls' => 'System Controls', 'Services' => 'Services', 'System Info' => 'System Info',
                         'View Log' => 'View Log', 'File' => 'File Manager', 'Webterm' => 'Web Terminal', 'Adminer' => 'Database Maintenance')),
 );
