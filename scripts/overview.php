@@ -152,16 +152,16 @@ if(isset($_GET['ajax_left_chart']) && $_GET['ajax_left_chart'] == "true") {
 ?>
 <table class="totals">
   <tr>
-    <th>Total</th>
-    <th># Today</th>
-    <th>Species Today</th>
-    <th>Total # Species</th>
+    <th>#Total</th>
+    <th>#Today</th>
+    <th>Sp. Total</th>
+    <th>Sp. Today</th>
   </tr>
   <tr>
     <td><?php echo $chart_data['totalcount'];?></td>
     <td><form action="" method="GET"><button type="submit" name="view" value="Todays Detections"><?php echo $chart_data['todaycount'];?></button></form></td>
-    <td><form action="" method="GET"><input type="hidden" name="view" value="Recordings"><button type="submit" name="date" value="<?php echo date('Y-m-d');?>"><?php echo $chart_data['speciestally'];?></button></form></td>
     <td><form action="" method="GET"><button type="submit" name="view" value="Species Stats"><?php echo $chart_data['totalspeciestally'];?></button></form></td>
+    <td><form action="" method="GET"><input type="hidden" name="view" value="Recordings"><button type="submit" name="date" value="<?php echo date('Y-m-d');?>"><?php echo $chart_data['speciestally'];?></button></form></td>
   </tr>
 </table>
 <?php
