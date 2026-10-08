@@ -592,10 +592,6 @@ h1 {
   <input id="contrast_input" type="range" min="0.5" max="2" step="0.1" style="width:110px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_CONTRAST; ?>">
   <span id="contrast_value" style="display:inline-block;width:2.5em;"><?php echo $SPECTROGRAM_CONTRAST; ?></span>
   <span id="specopts_status" style="margin-left:6px;color:#9f9;"></span>
-  <span id="specheight" style="display:block;margin-top:4px;">
-    <label for="height_input">Height (% of page): </label>
-    <input id="height_input" type="number" min="20" max="100" step="1" style="width:4.5em;" value="<?php echo $SPECTROGRAM_HEIGHT; ?>">
-  </span>
 </div>
 
 <div class="centered">
@@ -663,6 +659,11 @@ h1 {
 <audio style="display:none" controls="" crossorigin="anonymous" id='player' preload="none"><source id="playersrc" src="stream"></audio>
 <h1 id="loading-h1">Loading...</h1>
 <canvas></canvas>
+<!-- height of the spectrogram, below it (owner 2026-10-08) -->
+<div id="specheight" style="text-align:left;padding:4px 8px;font-size:12px;">
+    <label for="height_input">Height (% of page): </label>
+    <input id="height_input" type="number" min="20" max="100" step="1" style="width:4.5em;" value="<?php echo $SPECTROGRAM_HEIGHT; ?>">
+  </div>
 
 <script>
 var rtsp_stream_select = document.getElementById("rtsp_stream_select");
