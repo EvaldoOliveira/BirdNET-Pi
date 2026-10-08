@@ -1099,3 +1099,9 @@ iframe { top: 54px; left: 0; height: calc(100vh - 54px) !important; height: calc
 @media screen and (max-width: 800px) {
   iframe { top: 48px; height: calc(100vh - 48px) !important; height: calc(100dvh - 48px) !important; }
 }
+
+/* Recordings / Best Recordings: smaller species buttons and sort buttons (owner 2026-10-08) */
+.play td.spec, .play table td { padding: 3px 8px; }
+.play td.spec button, .play table button { font-size: 13px; padding: 2px 4px; }
+.sortbutton { font-size: medium; padding: 2px; margin-top: 4px; }
+.sortbutton img { width: 22px; height: 22px; }
