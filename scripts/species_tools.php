@@ -241,7 +241,7 @@ $result = $db->query($sql);
       <tr>
         <th onclick="sortTable(0)">Common Name</th>
         <th onclick="sortTable(1)">Scientific Name</th>
-        <th onclick="sortTable(2)">Max Confidence</th>
+        <th onclick="sortTable(2)">Top Confidence</th>
         <th onclick="sortTable(3)" title="Minimum confidence for this species; empty = the global Minimum Confidence (<?php echo htmlspecialchars(sprintf('%.2f', $global_conf)); ?>)">Min. Confidence</th>
         <th onclick="sortTable(4)">Last Seen</th>
         <th onclick="sortTable(5)">Probability</th>
