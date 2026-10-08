@@ -504,9 +504,9 @@ function get_wikiaves_url($sciname) {
   return $slug === '' ? '' : "https://www.wikiaves.com.br/wiki/$slug";
 }
 
-// Species links shown next to every scientific name (owner 2026-10-08): eBird and Birds of the World
-// for the birds eBird knows, Wikipedia in the station language, and WikiAves when the names are CBRO
-// (Portuguese Brazil) and the bird is Brazilian. $style/$width are the page's icon style.
+// Species links shown next to every scientific name (owner 2026-10-08): WikiAves first when the names are
+// CBRO (Portuguese Brazil) and the bird is Brazilian, then eBird and Birds of the World
+// for the birds eBird knows, and Wikipedia in the station language. $style/$width are the page's icon style.
 function species_links($sciname, $style = '', $width = 20) {
   static $ebirds = null;
   if ($ebirds === null) {
@@ -515,6 +515,9 @@ function species_links($sciname, $style = '', $width = 20) {
   $config = get_config();
   $lang = $config['DATABASE_LANG'] ?? 'en';
   $links = array();
+  if ($lang === 'pt_BR' && ($wikiaves = get_wikiaves_url($sciname)) !== '') {
+    $links[] = array($wikiaves, 'WikiAves', 'images/wikiaves.png');
+  }
   $code = $ebirds[$sciname] ?? '';
   if ($code !== '') {
     $links[] = array("https://ebird.org/species/$code?siteLanguage=$lang", 'eBird', 'images/ebird.png');
@@ -522,9 +525,6 @@ function species_links($sciname, $style = '', $width = 20) {
   }
   $wiki_lang = explode('_', $lang)[0];
   $links[] = array("https://$wiki_lang.wikipedia.org/wiki/" . str_replace(' ', '_', $sciname), 'Wikipedia', 'images/wiki.png');
-  if ($lang === 'pt_BR' && ($wikiaves = get_wikiaves_url($sciname)) !== '') {
-    $links[] = array($wikiaves, 'WikiAves', 'images/wikiaves.png');
-  }
   $html = '';
   foreach ($links as $l) {
     $html .= '<a href="' . htmlspecialchars($l[0], ENT_QUOTES) . '" target="_blank"><img style="' . htmlspecialchars($style, ENT_QUOTES)
