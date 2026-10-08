@@ -179,15 +179,15 @@ if(!isset($_GET['species']) && !isset($_GET['filename'])){
 <div class="play">
 <?php if(in_array($view, array("byspecies", "bydate", "date"), true)) {
   // top left: only the button to the other way of browsing
-  $switch = $view == "byspecies" ? array("bydate", "By Date") : array("byspecies", "By Species"); ?>
-<form action="views.php" method="GET" style="text-align:left;margin:6px 8px;">
+  // a species list (all, or one date's) offers By Date; the list of dates offers By Species
+  $switch = $view == "bydate" ? array("byspecies", "By Species") : array("bydate", "By Date"); ?>
+<form action="views.php" method="GET" style="float:left;margin:6px 8px;">
   <input type="hidden" name="view" value="Recordings">
   <button type="submit" name="<?php echo $switch[0]; ?>" value="<?php echo $switch[0]; ?>" style="width:auto;padding:6px 14px;font-weight:bold;background-color:rgb(219, 255, 235);border-radius:4px;box-shadow:0 0 6px rgba(0,0,0,0.15);"><?php echo $switch[1]; ?></button>
 </form>
 <?php } ?>
 <?php if($view == "byspecies" || $view == "date") { ?>
-<div style="width: auto;
-   text-align: center">
+<div class="sortbar" style="width: auto; text-align: right; margin: 0 8px;">
    <form action="views.php" method="GET">
       <input type="hidden" name="view" value="Recordings">
       <input type="hidden" name="<?php echo $view; ?>" value="<?php echo $_GET['date']; ?>">
@@ -205,8 +205,8 @@ if(!isset($_GET['species']) && !isset($_GET['filename'])){
       </button>
    </form>
 </div>
-<br>
 <?php } ?>
+<div style="clear:both"></div>
 <form action="views.php" method="GET">
 <input type="hidden" name="view" value="Recordings">
 <table>
