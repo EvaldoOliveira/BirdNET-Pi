@@ -3,17 +3,18 @@
 # on Raspberry Pi OS Bookworm/Trixie) before the first boot, then run the installer with
 # BIRDNET_UNATTENDED=1 (or answer only the questions missing here). Missing keys = the
 # installer's default (location and state from the network, model V3, no password).
-SITE_NAME=Minha estação
-LATITUDE=-23.5505
-LONGITUDE=-46.6333
+SITE_NAME=My station
+# decimal degrees: north and east positive, south and west negative (example: New York)
+LATITUDE=40.7128
+LONGITUDE=-74.0060
 # timezone of the detections (a fresh Raspberry Pi OS is on Europe/London)
-TIMEZONE=America/Sao_Paulo
+TIMEZONE=America/New_York
 # V3 (BirdNET+ V3.0, recommended) or V2.4
 MODEL=V3
-# en, pt_BR (Brazil, CBRO names), pt_PT (Portugal), es, de, fr, ... (model/l18n)
-LANGUAGE=pt_BR
-# Brazilian state for the include list (UF), or none
-STATE=SP
+# language of the bird names: en, es, de, fr, pt_BR (Brazil), pt_PT (Portugal), ... (model/l18n)
+LANGUAGE=en
+# Brazil only: state (UF, e.g. SP) whose include list limits the species; none elsewhere
+STATE=none
 # web password for Tools / Settings (empty = no password)
 WEB_PASSWORD=
 # live stream password (empty = random)

@@ -305,10 +305,5 @@ The bird names are in English by default, but other localized versions are avail
 [Internationalization](docs/translations.md)
 
 
-## Screenshots
-![Overview](docs/overview.png)
-![Spectrogram](docs/spectrogram.png)
-
-
 ## :thinking:
 Are you a lucky ducky with a spare Raspberry Pi? [Try Folding@home!](https://foldingathome.org/)

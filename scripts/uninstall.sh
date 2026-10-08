@@ -53,8 +53,31 @@ remove_scripts() {
   done
 }
 
+# what this edition installs outside the repository: the microphone hot-plug (unit + udev rule), the
+# shared microphone device, the sound-repository upload timer and the installer's sudoers rules
+remove_edition_files() {
+  for unit in birdnet_mic_hotplug.service sound_repo_upload.timer sound_repo_upload.service; do
+    sudo systemctl disable --now "$unit" 2> /dev/null
+    sudo rm -f "/usr/lib/systemd/system/$unit" "/etc/systemd/system/$unit"
+  done
+  sudo systemctl daemon-reload
+  if [ -f /etc/udev/rules.d/79-birdnet-mic.rules ];then
+    sudo rm -f /etc/udev/rules.d/79-birdnet-mic.rules
+    sudo udevadm control --reload-rules
+  fi
+  sudo rm -f /etc/alsa/conf.d/60-birdnet-mic.conf
+  # only the file the installer wrote (one line), never a client.conf of the user's own
+  if [ "$(cat ${HOME}/.config/pulse/client.conf 2> /dev/null)" = "autospawn = no" ];then
+    rm -f ${HOME}/.config/pulse/client.conf
+  fi
+  sudo rm -f /etc/sudoers.d/010_caddy-nopasswd
+}
+
 remove_services
 remove_scripts
+remove_edition_files
 if [ -d /etc/birdnet ];then sudo rm -drf /etc/birdnet;fi
 if [ -f ${HOME}/BirdNET-Pi/birdnet.conf ];then sudo rm -f ${HOME}/BirdNET-Pi/birdnet.conf;fi
+# last: the installer's passwordless-sudo rule for this user (nothing after this needs sudo)
+sudo rm -f /etc/sudoers.d/zz-birdnet-${USER}-nopasswd
 echo "Uninstall finished. Remove this directory with 'rm -drfv' to finish."
