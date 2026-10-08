@@ -24,6 +24,11 @@ foreach (glob($home . '/BirdNET-Pi/model/include_lists/BR-*.txt') as $f) {
   $states[] = substr(basename($f, '.txt'), 3);
 }
 sort($states);
+$station_lists = array();
+foreach (glob($home . '/BirdNET-Pi/species_lists/*.txt') as $f) {
+  $station_lists[] = basename($f, '.txt');
+}
+sort($station_lists);
 $timezones = DateTimeZone::listIdentifiers();
 $current_tz = trim(shell_exec('timedatectl show --value --property=Timezone 2>/dev/null'));
 
@@ -50,16 +55,20 @@ if (isset($_POST['wizard_save'])) {
   $lang = $p['language'] ?? 'en';
   if ($lang === 'pt') $lang = 'pt_BR';
   if (!in_array($lang, $langs, true)) $errors[] = 'No species names for that language';
-  $state = strtoupper($p['state'] ?? '');
+  // species list filter, the same choice as Settings: '' none, a station list, BR-<UF>, or AUTO (the state
+  // of the coordinates: OpenStreetMap online, the shipped IBGE boundaries offline)
+  $sel = (string)($p['species_list'] ?? '');
   $state_detected = false;
-  if ($state === 'AUTO' && empty($errors)) {
-    // the state of the coordinates: OpenStreetMap online, the shipped IBGE boundaries offline
-    $state = trim((string)shell_exec('python3 ' . escapeshellarg($home . '/BirdNET-Pi/scripts/locate_state.py') . ' '
+  if ($sel === 'AUTO' && empty($errors)) {
+    $uf = trim((string)shell_exec('python3 ' . escapeshellarg($home . '/BirdNET-Pi/scripts/locate_state.py') . ' '
       . escapeshellarg((string)(float)$lat) . ' ' . escapeshellarg((string)(float)$lon) . ' 2>/dev/null'));
+    $sel = in_array($uf, $states, true) ? "BR-$uf" : '';
     $state_detected = true;
   }
-  if ($state === 'AUTO') $state = '';
-  if ($state !== '' && !in_array($state, $states, true)) $errors[] = 'No include list for that state';
+  if ($sel === 'AUTO') $sel = '';
+  $is_state = preg_match('/^BR-[A-Z]{2}$/', $sel) && in_array(substr($sel, 3), $states, true);
+  if ($sel !== '' && !$is_state && !in_array($sel, $station_lists, true)) $errors[] = 'No such species list';
+  $state = $is_state ? substr($sel, 3) : '';
   $pwd = $p['password'] ?? '';
   if ($pwd !== '' && !preg_match('/^[A-Za-z0-9]+$/', $pwd)) $errors[] = 'The password may only contain letters and digits';
   if ($pwd !== ($p['password2'] ?? '')) $errors[] = 'The two passwords differ';
@@ -82,7 +91,7 @@ if (isset($_POST['wizard_save'])) {
       $contents = wizard_set_key($contents, 'SF_THRESH', $model === $model_v3 ? '0.1' : '0.03');
     }
     $contents = wizard_set_key($contents, 'DATABASE_LANG', $lang);
-    $contents = wizard_set_key($contents, 'SPECIES_LIST', $state === '' ? '' : "BR-$state");
+    $contents = wizard_set_key($contents, 'SPECIES_LIST', $sel);
     if (strpos($lang, 'pt') === 0 || $state !== '') $contents = wizard_set_key($contents, 'INFO_SITE', '"EBIRD"');
     $contents = wizard_set_key($contents, 'BIRDWEATHER_ID', $bw);
     $update_caddy = false;
@@ -98,9 +107,8 @@ if (isset($_POST['wizard_save'])) {
       shell_exec('sudo timedatectl set-timezone ' . escapeshellarg($tz));
       if (file_exists('/etc/timezone')) shell_exec('echo ' . escapeshellarg($tz) . ' | sudo tee /etc/timezone > /dev/null');
     }
-    // a new state selects (and builds once) its species list: the state's birds + the model's non-bird classes
-    $new_region = $state === '' ? '' : "BR-$state";
-    if ($new_region !== ($config['SPECIES_LIST'] ?? '')) {
+    // another species list: a state is built once (its birds + the model's non-bird classes), then linked
+    if ($sel !== ($config['SPECIES_LIST'] ?? '')) {
       shell_exec('sudo -u ' . escapeshellarg($user) . ' python3 ' . escapeshellarg($home . '/BirdNET-Pi/scripts/select_species_list.py') . ' > /dev/null 2>&1');
     }
     if ($model !== $old_model || $lang !== $old_lang) {
@@ -115,7 +123,15 @@ if (isset($_POST['wizard_save'])) {
 }
 
 $cur_lang = $config['DATABASE_LANG'] ?? 'en';
-$cur_state = preg_match('/^BR-[A-Z]{2}$/', $config['SPECIES_LIST'] ?? '') ? substr($config['SPECIES_LIST'], 3) : '';
+$cur_list = (string)($config['SPECIES_LIST'] ?? '');
+// no list yet: offer the Brazilian state of the station's coordinates, preselected
+$detected_state = '';
+if ($cur_list === '' && is_numeric($config['LATITUDE'] ?? '') && is_numeric($config['LONGITUDE'] ?? '')) {
+  $uf = trim((string)shell_exec('python3 ' . escapeshellarg($home . '/BirdNET-Pi/scripts/locate_state.py') . ' '
+    . escapeshellarg((string)(float)$config['LATITUDE']) . ' ' . escapeshellarg((string)(float)$config['LONGITUDE']) . ' 2>/dev/null'));
+  if (in_array($uf, $states, true)) $detected_state = "BR-$uf";
+}
+$preselect = $cur_list !== '' ? $cur_list : $detected_state;
 $cur_model = ($config['MODEL'] ?? '') === $model_v24 ? 'V2.4' : 'V3';
 $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
 ?>
@@ -126,7 +142,7 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
     <h2>Saved</h2>
     <p>The station restarts its services with the new settings. Detections start appearing on the
     <a href="views.php?view=Overview">Overview</a> in a few minutes<?php echo $update_caddy ? ' — Tools and Settings now ask for the user <b>birdnet</b> and your password' : ''; ?>.</p>
-    <?php if ($state_detected) { echo '<p>Brazilian states include list detected from the coordinates: <b>' . ($state === '' ? 'none (outside Brazil)' : $h($state)) . '</b>.</p>'; } ?>
+    <?php if ($state_detected) { echo '<p>Species list from the coordinates: <b>' . ($state === '' ? 'none (outside Brazil)' : 'BR-' . $h($state)) . '</b>.</p>'; } ?>
   </td></tr></table>
 <?php } else { ?>
 <?php if ($pending) { ?>
@@ -161,10 +177,16 @@ foreach ($langs as $l) {
 ?>
     </select></label>
     <br>
-    <label>Brazilian states include list: <select name="state">
-      <option value="AUTO"<?php echo $pending ? ' selected' : ''; ?>>Detect from the coordinates</option>
-      <option value=""<?php echo (!$pending && $cur_state === '') ? ' selected' : ''; ?>>None (outside Brazil)</option>
-<?php foreach ($states as $s) { echo '<option' . (!$pending && $s === $cur_state ? ' selected' : '') . '>' . $h($s) . '</option>'; } ?>
+    <label>Species list filter: <select name="species_list">
+      <option value=""<?php echo $preselect === '' ? ' selected' : ''; ?>>None — use the model's species distribution</option>
+      <option value="AUTO">Detect the Brazilian state from the coordinates</option>
+<?php if ($station_lists) { echo '<optgroup label="Station lists">';
+  foreach ($station_lists as $n) { echo '<option value="' . $h($n) . '"' . ($n === $preselect ? ' selected' : '') . '>' . $h($n) . '</option>'; }
+  echo '</optgroup>'; } ?>
+      <optgroup label="Brazilian states (WikiAves records, CBRO names)">
+<?php foreach ($states as $uf) { $v = "BR-$uf"; if (in_array($v, $station_lists, true)) continue;
+  echo '<option value="' . $v . '"' . ($v === $preselect ? ' selected' : '') . '>' . $v . ($v === $detected_state ? ' (from the coordinates)' : '') . '</option>'; } ?>
+      </optgroup>
     </select></label>
   </td></tr></table><br>
   <table class="settingstable"><tr><td>

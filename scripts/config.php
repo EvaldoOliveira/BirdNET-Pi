@@ -509,7 +509,6 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
           <td colspan="4"><input name="overlap" type="number" style="width:5em;" min="0.0" max="2.9" step="0.1" value="<?php print($config['OVERLAP']);?>"/> s <small>[0.0–2.9] — shared: the recording is cut once, both models analyse the same 3 s windows</small></td>
         </tr>
       </table>
-      <button type="submit" name="swap_models" value="1" class="testbtn" onclick="return confirm('Swap the official and the shadow model (each keeps its own confidence, sensitivity and location threshold)? Services restart.');">Swap official ↔ shadow</button>
       <span onclick="document.getElementById('shadowhelp').style.display='unset'" style="text-decoration:underline;cursor:pointer">[more info]</span>
       <p><small>Thresholds are NOT comparable between generations — <?php foreach($model_defaults as $m => $d) { echo "<b>" . str_replace("_", " ", preg_replace('/_Model_FP16|_Global_10K|-preview3\.1/', '', $m)) . "</b>: $d. "; } ?>Calibrate from a shadow period before judging false positives. Untick <b>active</b> to run only the official model while keeping the shadow settings; None removes the shadow model. The same three fields for the official model also appear in Advanced Settings (same keys).</small></p>
       <p id="shadowhelp" style='display:none'>A shadow model analyses every recording right after the model selected above and writes what it would have detected to a database of its own (<code>scripts/birds_shadow.db</code>). It never extracts audio, never notifies and never touches the detections of the station, so a new model can be compared with the current one for weeks before switching. <b>BirdNET-Plus_V3.0-preview3.1_Global_10K</b> is the developer preview model of the BirdNET Live app (32 kHz, about 10,000 classes including amphibians, mammals and insects, its own location filter). It needs ONNX Runtime and is downloaded (about 80 MB) the first time it is used. It has no human voice class yet, so the privacy filter does not work while it is the selected model.</p>
@@ -648,6 +647,7 @@ function runProcess() {
           <td><input name="longitude" type="number" style="width:6em;" max="180" min="-180" step="0.0001" value="<?php print($config['LONGITUDE']);?>" required/></td>
           <td></td>
         </tr>
+        <tr><td colspan="3" style="height:12px"></td></tr>
         <tr>
           <td><label for="species_list">Species list filter:</label></td>
           <td><select name="species_list" id="species_list">
@@ -680,11 +680,18 @@ function runProcess() {
             echo "</optgroup>";
             ?>
           </select></td>
-          <td>None: every species the location filter allows. A station list is applied as it is and edited in Tools › Custom Species List, where lists are also saved and loaded. A Brazilian state is built once (its birds + the model's non-bird classes) and then kept as a station list you can edit.</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td colspan="2"><small>
+            <b>None</b> — every species the model's location filter allows for this place and week; use it outside Brazil or to detect species not yet registered in your area.<br>
+            <b>Station list</b> — only the species of that list; edit, save and load lists in Tools › Custom Species List.<br>
+            <b>Brazilian state</b> — only the birds with WikiAves records in the state (CBRO names) plus the model's non-bird classes; built once, then kept as a station list you can edit.
+          </small></td>
         </tr>
       </table>
       <p>Set your Latitude and Longitude to 4 decimal places. Get your coordinates <a href="https://latlong.net" target="_blank">here</a>.</p>
-      <p>Species list filter: with a Brazilian state, only the bird species with WikiAves records in that state are accepted (names per CBRO; non-bird classes are not filtered). Leave <i>None</i> outside Brazil or if you want to detect species that have not been registered yet in your area.</p>
       </td></tr></table><br>
       <table class="settingstable" style="width:100%"><tr><td>
       <h2>Notifications - Global</h2>

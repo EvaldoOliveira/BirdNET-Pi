@@ -30,96 +30,118 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<div class="left-column">
-<?php echo $message ?>
-</div>
-<?php if ($species_list == "include") {
+<style>
+  .splist { width: 90%; margin: 10px auto; }
+  .splist-row { display: flex; align-items: center; gap: 2%; }
+  .splist-box { flex: 1 1 0; min-width: 0; }
+  .splist-box form { width: 100%; }
+  .splist-box select { width: 100%; height: 60vh; }
+  .splist-box input[type=text] { width: 100%; box-sizing: border-box; }
+  .splist-mid { flex: 0 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  .splist button { padding: 12px; background-color: rgb(219, 255, 235); }
+  .splist-note { margin-top: 14px; text-align: left; }
+  .splist-tools { margin-top: 14px; display: grid; grid-template-columns: max-content max-content; justify-content: start; gap: 8px 10px; align-items: center; }
+  .splist-tools button { padding: 6px 12px; text-align: left; }
+  .splist .smaller { display: none; }
+  @media screen and (max-width: 1000px) {
+    .splist-mid { display: none; }
+    .splist .smaller { display: block; margin-top: 6px; }
+  }
+</style>
+<?php
+$active = '';
+if ($species_list == "include") {
   // station species lists (owner 2026-10-08): which one is active, save it under a name or load another
   $real = (string)realpath($selectedfilename);
   $active = strpos($real, '/species_lists/') !== false ? basename($real, '.txt') : '';
+}
 ?>
-<div class="left-column">
-  <p>Active list: <b><?php echo $active !== '' ? htmlspecialchars($active) : 'none (Settings › Location › Species list filter)'; ?></b></p>
-            <input type="text" id="save_list_name" placeholder="name" style="width:10em">
-            <button type="button" class="testbtn" onclick="speciesListAction('save')">Save current list as…</button>
-            <br>
-            <select id="station_lists">
-              <?php
-              $own = array();
-              foreach (glob(dirname(__DIR__) . '/species_lists/*.txt') as $f) { $own[] = basename($f, '.txt'); }
-              echo "<optgroup label='Station lists'>";
-              foreach ($own as $n) {
-                echo '<option value="' . htmlspecialchars($n, ENT_QUOTES) . '"' . ($n === $active ? ' selected' : '') . '>' . htmlspecialchars($n) . '</option>';
-              }
-              echo "</optgroup><optgroup label='Brazilian states (built when loaded)'>";
-              foreach (glob(dirname(__DIR__) . '/model/include_lists/BR-*.txt') as $f) {
-                $n = basename($f, '.txt');
-                if (!in_array($n, $own, true)) echo '<option value="' . $n . '">' . $n . '</option>';
-              }
-              echo "</optgroup>";
-              ?>
-            </select>
-            <button type="button" class="testbtn" onclick="speciesListAction('activate')">Load this list</button>
-            <script>
-              function speciesListAction(action) {
-                const fd = new FormData();
-                fd.append('action', action);
-                if (action === 'save') {
-                  const n = document.getElementById('save_list_name').value.trim();
-                  if (!/^[A-Za-z0-9_-]+$/.test(n)) { alert('Name: letters, digits, - and _ only'); return; }
-                  fd.append('name', n);
-                } else if (action === 'activate') {
-                  const sel = document.getElementById('station_lists').value;
-                  if (!sel) return;
-                  fd.append('name', sel);
-                }
-                fetch('scripts/species_lists.php', { method: 'POST', body: fd }).then(r => r.text()).then(t => { alert(t); location.reload(); });
-              }
-            </script>
-</div>
-<?php } ?>
+<div class="splist">
+<div class="splist-row">
+  <div class="splist-box">
+    <form action="" method="GET" id="add">
+      <h3>All Species Labels</h3>
+      <input autocomplete="off" type="text" placeholder="Search Species..." id="species_searchterm" name="species_searchterm">
+      <select name="species[]" id="species" multiple size="25">
+        <?php
+        foreach($eachlabel as $lines){echo
+        "<option value=\"".$lines."\">$lines</option>";
+        } ?>
+      </select>
+      <input type="hidden" name="add" value="add">
+    </form>
+    <div class="smaller">
+      <button type="submit" name="view" value=<?php echo "\"$title\"" ?> form="add">>>ADD>></button>
+    </div>
+  </div>
 
-<div class="customlabels column1">
-<form action="" method="GET" id="add">
-  <h3>All Species Labels</h3>
-  <input autocomplete="off" size="28" type="text" placeholder="Search Species..." id="species_searchterm" name="species_searchterm">
-  <select name="species[]" id="species" multiple size="25">
+  <div class="splist-mid">
+    <button type="submit" name="view" value=<?php echo "\"$title\"" ?> form="add">>>ADD>></button>
+    <button type="submit" name="view" value=<?php echo "\"$title\"" ?> form="del">REMOVE</button>
+  </div>
+
+  <div class="splist-box">
+    <form action="" method="GET" id="del">
+      <h3><?php echo "$title" ?> Species List<?php if ($active !== '') echo ' — ' . htmlspecialchars($active); ?></h3>
+      <input style="visibility:hidden" autocomplete="off" type="text" id="dummy" name="dummy">
+      <select name="species[]" id="value2" multiple size="25">
+      <?php
+      if (count($eachselected) == 0) echo '<option disabled value="base">Please Select</option>';
+      foreach($eachselected as $lines){echo
+        "<option value=\"".$lines."\">$lines</option>";
+      } ?>
+      </select>
+      <input type="hidden" name="del" value="del">
+    </form>
+    <div class="smaller">
+      <button type="submit" name="view" value=<?php echo "\"$title\"" ?> form="del">REMOVE</button>
+    </div>
+  </div>
+</div>
+
+<div class="splist-note"><?php echo $message ?></div>
+
+<?php if ($species_list == "include") { ?>
+<div class="splist-tools">
+  <span>Active list:</span>
+  <b><?php echo $active !== '' ? htmlspecialchars($active) : 'none (Settings › Location › Species list filter)'; ?></b>
+  <button type="button" onclick="speciesListAction('save')">Save current list as…</button>
+  <input type="text" id="save_list_name" placeholder="name" style="width:14em">
+  <button type="button" onclick="speciesListAction('activate')">Load this list</button>
+  <select id="station_lists">
     <?php
-    foreach($eachlabel as $lines){echo
-    "<option value=\"".$lines."\">$lines</option>";
-    } ?>
+    $own = array();
+    foreach (glob(dirname(__DIR__) . '/species_lists/*.txt') as $f) { $own[] = basename($f, '.txt'); }
+    echo "<optgroup label='Station lists'>";
+    foreach ($own as $n) {
+      echo '<option value="' . htmlspecialchars($n, ENT_QUOTES) . '"' . ($n === $active ? ' selected' : '') . '>' . htmlspecialchars($n) . '</option>';
+    }
+    echo "</optgroup><optgroup label='Brazilian states (built when loaded)'>";
+    foreach (glob(dirname(__DIR__) . '/model/include_lists/BR-*.txt') as $f) {
+      $n = basename($f, '.txt');
+      if (!in_array($n, $own, true)) echo '<option value="' . $n . '">' . $n . '</option>';
+    }
+    echo "</optgroup>";
+    ?>
   </select>
-  <input type="hidden" name="add" value="add">
-</form>
-<div class="customlabels smaller">
-  <button type="submit" name="view" value=<?php echo "\"$title\"" ?> form="add">>>ADD>></button>
 </div>
-</div>
-
-<div class="customlabels column2">
-  <table><td>
-  <button type="submit" name="view" value=<?php echo "\"$title\"" ?> form="add">>>ADD>></button>
-  <br><br>
-  <button type="submit" name="view" value=<?php echo "\"$title\"" ?> form="del">REMOVE</button>
-  </td></table>
-</div>
-
-<div class="customlabels column3">
-<form action="" method="GET" id="del">
-  <h3><?php echo "$title" ?> Species List</h3>
-  <input style="visibility:hidden" autocomplete="off" size="18" type="text" id="dummy" name="dummy">
-  <select name="species[]" id="value2" multiple size="25">
-  <?php
-  if (count($eachselected) == 0) echo '<option disabled value="base">Please Select</option>';
-  foreach($eachselected as $lines){echo
-    "<option value=\"".$lines."\">$lines</option>";
-  } ?>
-  </select>
-  <input type="hidden" name="del" value="del">
-</form>
-<div class="customlabels smaller">
-  <button type="submit" name="view" value=<?php echo "\"$title\"" ?> form="del">REMOVE</button>
-</div>
+<script>
+  function speciesListAction(action) {
+    const fd = new FormData();
+    fd.append('action', action);
+    if (action === 'save') {
+      const n = document.getElementById('save_list_name').value.trim();
+      if (!/^[A-Za-z0-9_-]+$/.test(n)) { alert('Name: letters, digits, - and _ only'); return; }
+      fd.append('name', n);
+    } else {
+      const sel = document.getElementById('station_lists').value;
+      if (!sel) return;
+      fd.append('name', sel);
+    }
+    fetch('scripts/species_lists.php', { method: 'POST', body: fd }).then(r => r.text()).then(t => { alert(t); location.reload(); });
+  }
+</script>
+<?php } ?>
 </div>
 
 <script>

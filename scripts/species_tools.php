@@ -240,13 +240,13 @@ $result = $db->query($sql);
         <th>Stats</th>
         <th onclick="sortTable(3)">Count</th>
         <th onclick="sortTable(4)">Max Confidence</th>
-        <th onclick="sortTable(5)">Last Seen</th>
-        <th onclick="sortTable(6)">Probability</th>
-        <th onclick="sortTable(7)">Confirmed</th>
-        <th onclick="sortTable(8)">Excluded</th>
-        <th onclick="sortTable(9)">Whitelisted</th>
-        <th onclick="sortTable(10)">Notification</th>
-        <th onclick="sortTable(11)" title="Minimum confidence for this species; empty = the global Minimum Confidence (<?php echo htmlspecialchars(sprintf('%.2f', $global_conf)); ?>)">Min. Confidence</th>
+        <th onclick="sortTable(5)" title="Minimum confidence for this species; empty = the global Minimum Confidence (<?php echo htmlspecialchars(sprintf('%.2f', $global_conf)); ?>)">Min. Confidence</th>
+        <th onclick="sortTable(6)">Last Seen</th>
+        <th onclick="sortTable(7)">Probability</th>
+        <th onclick="sortTable(8)">Notification</th>
+        <th onclick="sortTable(9)">Confirmed</th>
+        <th onclick="sortTable(10)">Excluded</th>
+        <th onclick="sortTable(11)">Whitelisted</th>
         <th>Delete</th>
       </tr>
     </thead>
@@ -317,13 +317,13 @@ $result = $db->query($sql);
      . "<td>{$chart_cell}</td>"
      . "<td>{$count}</td>"
      . "<td data-sort='{$max_confidence}'>{$max_confidence}%</td>"
+     . "<td data-sort='{$conf_sort}'>".$conf_cell."</td>"
      . "<td data-sort=\"{$lastSeenSort}\">{$lastSeen}</td>"
      . "<td class='threshold' data-sort='0'>0.0000</td>"
+     . "<td data-sort='{$species_tier}'>".$tier_cell."</td>"
      . "<td data-sort='".($is_confirmed?0:1)."'>".$confirm_cell."</td>"
      . "<td data-sort='".($is_excluded?0:1)."'>".$excl_cell."</td>"
      . "<td data-sort='".($is_whitelisted?0:1)."'>".$white_cell."</td>"
-     . "<td data-sort='{$species_tier}'>".$tier_cell."</td>"
-     . "<td data-sort='{$conf_sort}'>".$conf_cell."</td>"
      . "<td><img style='cursor:pointer;max-width:20px' src='images/delete.svg' onclick=\"deleteSpecies('".addslashes($row['Sci_Name'])." + ".addslashes($row['Com_Name'])."')\"></td>"
      . "</tr>";
 } ?>
