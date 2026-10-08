@@ -574,8 +574,8 @@ h1 {
 
 <img id="spectrogramimage" style="width:100%;display:none" src="spectrogram.png?nocache=<?php echo $time;?>">
 
-<!-- above the spectrogram, right: stream choice, Silent and Height (owner 2026-10-08) -->
-<div class="centered" style="text-align:right;padding:2px 8px;font-size:12px;">
+<!-- above the spectrogram: stream choice and Silent on the left, Height on the right (owner 2026-10-08) -->
+<div class="centered" style="display:flex;justify-content:space-between;align-items:center;padding:2px 8px;font-size:12px;">
 	<?php
 	if (isset($RTSP_Stream_Config) && !empty($RTSP_Stream_Config)) {
 		?>
@@ -617,8 +617,7 @@ h1 {
     <label for="silent_input" title="Draw the spectrogram without sending the audio to the speakers">Silent: </label>
     <input name="silent" type="checkbox" id="silent_input">
   </div>
-  &nbsp;&nbsp;
-  <span id="specheight">
+  <span id="specheight" style="margin-left:auto;">
     <label for="height_input">Height (% of page): </label>
     <input id="height_input" type="number" min="20" max="100" step="1" style="width:4.5em;" value="<?php echo $SPECTROGRAM_HEIGHT; ?>">
   </span>
