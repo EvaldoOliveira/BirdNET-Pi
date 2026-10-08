@@ -1092,3 +1092,10 @@ pre#timer.bash {
 #todaystats table.totals { width: auto; font-size: 12px; margin: 0 !important; }
 #todaystats table.totals th, #todaystats table.totals td { text-align: center; white-space: nowrap; padding: 1.5px 6px; }
 #todaystats table.totals button { font-size: 12px; padding: 0 4px; }
+
+/* The page frame reaches the bottom of the screen (owner 2026-10-08): on phones "100%" is measured without
+   the browser's toolbars, which left a green band below the content */
+iframe { top: 54px; bottom: 0; left: 0; height: auto !important; }
+@media screen and (max-width: 800px) {
+  iframe { top: 48px; }
+}
