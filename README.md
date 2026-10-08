@@ -77,8 +77,6 @@ type this command exactly as shown and press **Enter**:
 ```
 curl -fsSL https://raw.githubusercontent.com/EvaldoOliveira/BirdNET-Pi/stable/newinstaller.sh | bash
 ```
-> Until version 0.5.0 is released, use this command instead:
-> `curl -fsSL https://raw.githubusercontent.com/EvaldoOliveira/BirdNET-Pi/main/newinstaller.sh | BIRDNET_BRANCH=main bash`
 
 The installer asks your password once, then a few questions. Press **Enter** to accept each suggested answer:
 station name, location (check the latitude/longitude — get yours at [latlong.net](https://www.latlong.net)),
