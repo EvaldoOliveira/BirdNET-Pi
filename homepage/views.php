@@ -68,6 +68,7 @@ $updatediv = $update_badge;
 $menu = array(
   array('Now', 'Now'),
   array('Spectrogram', 'Spectrogram'),
+  array('RAW Recording', 'Raw Recording'),
   array('Detections', array('Todays Detections' => "Today's Detections", 'All Detections' => 'All Detections', 'Recordings' => 'Detections by...', 'Species Stats' => 'Best Detections')),
   array('Statistics', array('Daily Charts' => 'Daily Charts', 'Streamlit' => 'Species Stats', 'Weekly Report' => 'Weekly Report')),
   array('Species', array('Species Management' => 'Species Management', 'Included' => 'Custom Species List', 'Excluded' => 'Excluded Species', 'Whitelisted' => 'Whitelist')),
@@ -209,6 +210,7 @@ if(isset($_GET['view'])){
     include('scripts/service_controls.php');
   }
   if($_GET['view'] == "Spectrogram"){include('spectrogram.php');}
+  if($_GET['view'] == "Raw Recording"){include('scripts/raw_recording.php');}
   if($_GET['view'] == "View Log"){echo "<body style=\"scroll:no;overflow-x:hidden;\"><iframe style=\"width:calc( 100% + 1em);\" src=\"log\"></iframe></body>";}
   // the Overview is split in two pages (owner 2026-10-08): Now (default) = most recent detection, 5 most
   // recent, currently analysing; All Detections = the totals and today's chart. "Overview" = Now.

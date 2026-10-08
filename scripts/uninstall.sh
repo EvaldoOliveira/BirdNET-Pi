@@ -71,6 +71,7 @@ remove_edition_files() {
     rm -f ${HOME}/.config/pulse/client.conf
   fi
   sudo rm -f /etc/sudoers.d/010_caddy-nopasswd
+  sudo rm -f /etc/cron.d/birdnet_raw_recording
 }
 
 remove_services
