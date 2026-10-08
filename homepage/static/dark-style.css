@@ -1151,3 +1151,16 @@ body.sidenav-collapsed .sidenav ~ .views iframe { left: 40px; width: calc(100% -
 @media screen and (max-width: 800px) {
   td.relative { padding-top: 36px !important; }
 }
+
+/* species-page icon before every common name, and the clickable rows of the daily chart (owner 2026-10-08) */
+a.spicon { display: inline-block; vertical-align: middle; margin-right: 4px; line-height: 0; }
+a.spicon img { display: inline !important; max-width: none; float: none !important; vertical-align: middle; cursor: pointer;
+  transition: transform .1s; }
+a.spicon:hover img { transform: scale(1.2); }
+.chartwrap { position: relative; display: inline-block; max-width: 100%; }
+.chartwrap img { display: block; max-width: 100%; }
+.chartwrap a.chartrow { position: absolute; display: block; border-radius: 3px; }
+.chartwrap a.chartrow:hover { background: rgba(217, 122, 0, .18); outline: 2px solid #d97a00; }
+.chartwrap a.chartrow:hover::after { content: attr(data-label); position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  background: #2b5e22; color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 10px; white-space: nowrap; }
+.charthint { font-size: 12px; opacity: .8; margin: 2px 0 4px; }

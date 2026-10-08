@@ -108,7 +108,7 @@ Once a day the station compares the newest release of this edition with the inst
 <td valign="top">
 
 #### 🐦 A page for every species
-Totals, the last 12 months as a calendar, activity by month and hour, the season the location model expects, the best clips, the latest detections, thresholds, lists and reviews — in one place.
+Totals, the last 12 months as a calendar, activity by month and hour, the season the location model expects, the best clips, the latest detections, thresholds, lists and reviews — in one place. Open it from the green species-card icon before every common name (cards, lists, Species Management), by clicking a species row in the daily charts, or from *Detections › Species Pages* — all species, filterable and sortable.
 </td>
 <td valign="top">
 

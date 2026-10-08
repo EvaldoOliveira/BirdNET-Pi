@@ -573,6 +573,13 @@ function detection_actions($file, $positioned = true, $style = '', $width = 25) 
 }
 
 // for the birds eBird knows, and Wikipedia in the station language. $style/$width are the page's icon style.
+// The species-page icon (a green "ID card" with a bird) shown before every common name: one click opens the
+// species page — totals, calendar, best clips, settings, reviews (owner 2026-10-08)
+function species_icon($sciname, $size = 20) {
+  return '<a class="spicon" href="views.php?view=Bird&amp;sci=' . rawurlencode($sciname) . '" title="Species page: totals, calendar, best clips, settings">'
+    . '<img src="images/species-page.svg" style="width:' . intval($size) . 'px;height:' . intval($size) . 'px" alt="Species page"></a>';
+}
+
 function species_links($sciname, $style = '', $width = 20) {
   static $ebirds = null;
   if ($ebirds === null) {
@@ -591,9 +598,7 @@ function species_links($sciname, $style = '', $width = 20) {
   }
   $wiki_lang = explode('_', $lang)[0];
   $links[] = array("https://$wiki_lang.wikipedia.org/wiki/" . str_replace(' ', '_', $sciname), 'Wikipedia', 'images/wiki.png');
-  // the station's own species page first (same frame)
-  $html = '<a href="views.php?view=Bird&amp;sci=' . rawurlencode($sciname) . '"><img style="' . htmlspecialchars($style, ENT_QUOTES)
-    . '" title="Species page" src="images/species.svg" width="' . intval($width) . '"></a> ';
+  $html = '';
   foreach ($links as $l) {
     $html .= '<a href="' . htmlspecialchars($l[0], ENT_QUOTES) . '" target="_blank"><img style="' . htmlspecialchars($style, ENT_QUOTES)
       . '" title="' . $l[1] . '" src="' . $l[2] . '" width="' . intval($width) . '"></a> ';

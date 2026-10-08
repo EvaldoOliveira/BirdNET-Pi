@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <title>Species page</title>
+  <!-- a species "ID card": green card with a bird portrait and text lines (owner 2026-10-08) -->
+  <rect x="1.5" y="3.5" width="29" height="25" rx="5" fill="#2b5e22" stroke="#173a12" stroke-width="1"/>
+  <rect x="4" y="6.5" width="13.5" height="19" rx="3" fill="#fff6d6"/>
+  <ellipse cx="10.2" cy="18" rx="4.6" ry="3.6" fill="#d97a00"/>
+  <circle cx="13.2" cy="13.6" r="2.7" fill="#d97a00"/>
+  <path d="M15.6 13.1l2 .9-2 .7z" fill="#173a12"/>
+  <path d="M6 18.6l-2.2 2.6 3.3-.6z" fill="#d97a00"/>
+  <circle cx="13.8" cy="13.1" r=".7" fill="#173a12"/>
+  <path d="M8.6 21.4v2.2M11 21.4v2.2" stroke="#173a12" stroke-width="1" stroke-linecap="round"/>
+  <path d="M20 10h7.5M20 14h7.5M20 18h7.5M20 22h5" stroke="#fff6d6" stroke-width="2" stroke-linecap="round"/>
+</svg>

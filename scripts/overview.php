@@ -119,7 +119,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true" && isse
               <?php } ?>
               <form action="" method="GET">
                   <input type="hidden" name="view" value="Species Stats">
-                  <button type="submit" name="species" value="<?php echo $mostrecent['Com_Name'];?>"><?php echo $mostrecent['Com_Name'];?></button>
+                  <?php echo species_icon($mostrecent['Sci_Name'], 22); ?><button type="submit" name="species" value="<?php echo $mostrecent['Com_Name'];?>"><?php echo $mostrecent['Com_Name'];?></button>
                   <br>
                   <i><?php echo $mostrecent['Sci_Name'];?></i>
                   <?php echo species_links($mostrecent['Sci_Name'], 'width: unset !important; display: inline; height: 1em; cursor: pointer;', 25); ?>
@@ -388,7 +388,7 @@ function display_species($species_list, $title, $show_last_seen=false) {
                         <td id="recent_detection_middle_td">
                             <div><form action="" method="GET">
                                     <input type="hidden" name="view" value="Species Stats">
-                                    <button class="a2" type="submit" name="species" value="<?php echo $todaytable['Com_Name']; ?>"><?php echo $todaytable['Com_Name']; ?></button>
+                                    <?php echo species_icon($todaytable['Sci_Name']); ?><button class="a2" type="submit" name="species" value="<?php echo $todaytable['Com_Name']; ?>"><?php echo $todaytable['Com_Name']; ?></button>
                                     <br><i><?php echo $todaytable['Sci_Name']; ?><br>
                                         <?php echo species_links($todaytable['Sci_Name'], 'height: 1em;cursor:pointer;float:unset;display:inline', 25); ?>
                                         <?php if ($show_last_seen): ?>
@@ -414,6 +414,7 @@ function display_species($species_list, $title, $show_last_seen=false) {
 display_species($new_species, 'New Species');
 display_species($rare_species, 'Rare Species', true);
 ?>
+<script src="static/chart-rows.js"></script>
 <div class="chart">
 <script>
   // the totals table starts where the chart's bars start: daily_plot.py draws the bar axes from 12.5 % of
@@ -437,7 +438,9 @@ if($dividedrefresh < 1) {
 }
 $time = time();
 if (file_exists('./Charts/'.$chart)) {
-  echo "<img id='chart' src=\"Charts/$chart?nocache=$time\">";
+  // every species row of the chart opens its species page (row map written by daily_plot.py)
+  echo "<div class='charthint'><img src='images/species-page.svg' style='width:16px;height:16px;vertical-align:middle'> Click a species in the chart to open its page</div>";
+  echo "<div class='chartwrap'><img id='chart' src=\"Charts/$chart?nocache=$time\" onload='chartRowLinks(this)'></div>";
 } 
 ?>
 </div>

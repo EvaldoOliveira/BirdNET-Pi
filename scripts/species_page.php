@@ -11,7 +11,109 @@ $sci = trim(html_entity_decode($_GET['sci'] ?? '', ENT_QUOTES));
 $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
 $db = get_db();
 
-if ($sci === '') { echo '<div class="settings"><p>No species chosen.</p></div>'; return; }
+if ($sci === '') {
+  // Species Pages (menu Species › Species Pages): every species detected here — filter, sort by any column,
+  // jump by initial; a click opens the species page (owner 2026-10-08)
+  $res = $db->query('SELECT Sci_Name, MAX(Com_Name) AS com, COUNT(*) AS n, MIN(Date) AS first, MAX(Date) AS last,'
+    . ' COUNT(DISTINCT Date) AS days, MAX(Confidence) AS maxc FROM detections WHERE 1' . not_rejected_sql() . ' GROUP BY Sci_Name');
+  $rows = array();
+  while ($res && ($r = $res->fetchArray(SQLITE3_ASSOC))) $rows[] = $r;
+  usort($rows, function ($x, $y) { return strcoll(mb_strtolower($x['com']), mb_strtolower($y['com'])); });
+  $today = date('Y-m-d');
+  ?>
+<style>
+.spx { max-width: 1100px; margin: 0 auto; text-align: left; padding: 0 12px; }
+.spx .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+.spx input[type=search] { flex: 1 1 240px; max-width: 360px; padding: 6px 8px; font-size: 15px; }
+.spx .az a { display: inline-block; min-width: 1.3em; text-align: center; padding: 1px 2px; text-decoration: none; font-weight: 600; }
+.spx .az a.off { opacity: .3; pointer-events: none; }
+.spx table { width: 100%; border-collapse: collapse; }
+.spx th { cursor: pointer; text-align: left !important; white-space: nowrap; padding: 6px; position: sticky; top: 0; }
+.spx th:after { content: ' \2195'; opacity: .4; }
+.spx td { text-align: left !important; padding: 5px 6px; border-top: 1px solid rgba(128,128,128,.25); }
+.spx td.num, .spx th.num { text-align: right !important; }
+.spx tr.sprow { cursor: pointer; }
+.spx tr.sprow:hover td { background: rgba(217,122,0,.12); }
+.spx .new { font-size: 11px; background: #d97a00; color: #fff; border-radius: 8px; padding: 0 6px; margin-left: 4px; }
+@media (max-width: 700px) { .spx .hide-m { display: none; } }
+</style>
+<div class="spx">
+  <h2><img src="images/species-page.svg" style="width:30px;height:30px;vertical-align:middle" alt=""> Species Pages</h2>
+  <div class="bar">
+    <input type="search" id="spq" placeholder="Filter by common or scientific name..." oninput="spFilter()" autofocus>
+    <span id="spcount"></span>
+  </div>
+  <div class="az" id="spaz"></div>
+  <table id="sptable">
+    <thead><tr>
+      <th data-k="com">Species</th><th data-k="sci" class="hide-m">Scientific name</th>
+      <th data-k="n" class="num">Detections</th><th data-k="days" class="num hide-m">Days</th>
+      <th data-k="maxc" class="num hide-m">Best</th><th data-k="first" class="hide-m">First seen</th><th data-k="last">Last seen</th>
+    </tr></thead>
+    <tbody>
+    <?php foreach ($rows as $r) {
+      $url = 'views.php?view=Bird&amp;sci=' . rawurlencode($r['Sci_Name']);
+      echo '<tr class="sprow" data-href="' . $url . '" data-com="' . $h(mb_strtolower($r['com'])) . '" data-sci="' . $h(strtolower($r['Sci_Name'])) . '"'
+        . ' data-n="' . intval($r['n']) . '" data-days="' . intval($r['days']) . '" data-maxc="' . round($r['maxc'], 3) . '" data-first="' . $h($r['first']) . '" data-last="' . $h($r['last']) . '">'
+        . '<td>' . species_icon($r['Sci_Name']) . '<a href="' . $url . '">' . $h($r['com']) . '</a>' . ($r['first'] === $today ? '<span class="new">new today</span>' : '') . '</td>'
+        . '<td class="hide-m"><i>' . $h($r['Sci_Name']) . '</i></td><td class="num">' . number_format(intval($r['n'])) . '</td>'
+        . '<td class="num hide-m">' . intval($r['days']) . '</td><td class="num hide-m">' . round($r['maxc'] * 100) . '%</td>'
+        . '<td class="hide-m">' . $h($r['first']) . '</td><td>' . $h($r['last']) . '</td></tr>';
+    } ?>
+    </tbody>
+  </table>
+</div>
+<script>
+(function () {
+  var tbody = document.querySelector('#sptable tbody'), rows = Array.prototype.slice.call(tbody.rows);
+  var sortKey = 'com', asc = true;
+  try { var saved = JSON.parse(localStorage.getItem('sp_sort') || 'null'); if (saved) { sortKey = saved[0]; asc = saved[1]; } } catch (e) {}
+  rows.forEach(function (r) { r.addEventListener('click', function (e) { if (!e.target.closest('a')) location.href = r.dataset.href; }); });
+  function norm(s) { return s.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+  window.spFilter = function () {
+    var q = norm(document.getElementById('spq').value.toLowerCase().trim()), shown = 0;
+    rows.forEach(function (r) {
+      var ok = !q || norm(r.dataset.com).indexOf(q) >= 0 || r.dataset.sci.indexOf(q) >= 0;
+      r.style.display = ok ? '' : 'none'; if (ok) shown++;
+    });
+    document.getElementById('spcount').textContent = shown + ' of ' + rows.length + ' species';
+  };
+  function sort() {
+    var num = ['n', 'days', 'maxc'].indexOf(sortKey) >= 0;
+    rows.sort(function (a, b) {
+      var x = a.dataset[sortKey], y = b.dataset[sortKey];
+      var c = num ? (parseFloat(x) - parseFloat(y)) : norm(x).localeCompare(norm(y));
+      return asc ? c : -c;
+    });
+    rows.forEach(function (r) { tbody.appendChild(r); });
+    try { localStorage.setItem('sp_sort', JSON.stringify([sortKey, asc])); } catch (e) {}
+  }
+  document.querySelectorAll('#sptable th').forEach(function (th) {
+    th.addEventListener('click', function () {
+      if (sortKey === th.dataset.k) asc = !asc; else { sortKey = th.dataset.k; asc = ['com', 'sci'].indexOf(sortKey) >= 0; }
+      sort();
+    });
+  });
+  // A–Z: jump to the first species with that initial (common name order)
+  var az = document.getElementById('spaz'), initials = {};
+  rows.forEach(function (r) { initials[norm(r.dataset.com).charAt(0).toUpperCase()] = true; });
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(function (l) {
+    var a = document.createElement('a'); a.textContent = l; a.href = '#';
+    if (!initials[l]) a.className = 'off';
+    a.onclick = function (e) {
+      e.preventDefault(); document.getElementById('spq').value = ''; spFilter();
+      if (sortKey !== 'com' || !asc) { sortKey = 'com'; asc = true; sort(); }
+      var t = rows.filter(function (r) { return norm(r.dataset.com).charAt(0).toUpperCase() === l; })[0];
+      if (t) { t.scrollIntoView({ block: 'start' }); t.style.outline = '2px solid #d97a00'; setTimeout(function () { t.style.outline = ''; }, 1500); }
+    };
+    az.appendChild(a);
+  });
+  sort(); spFilter();
+})();
+</script>
+<?php
+  return;
+}
 $nr = not_rejected_sql();
 $q = function ($sql, $one = false) use ($db, $sci) {
   $st = $db->prepare($sql);
@@ -119,7 +221,7 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
 .sp .clip { position: relative; padding-top: 32px; }
 </style>
 <div class="sp">
-  <h2><?php echo $h($com); ?></h2>
+  <h2><img src="images/species-page.svg" width="30" height="30" alt="" style="vertical-align:middle"> <?php echo $h($com); ?></h2>
   <i><?php echo $h($sci); ?></i> <?php echo species_links($sci, 'width: unset !important; display: inline; height: 1em; cursor: pointer;', 20); ?>
   <p><b><?php echo number_format(intval($sum['n'])); ?></b> detections on <b><?php echo intval($sum['days']); ?></b> day<?php echo intval($sum['days']) == 1 ? '' : 's'; ?> ·
     first <?php echo $h($sum['first']); ?> · last <?php echo $h($sum['last']); ?> ·

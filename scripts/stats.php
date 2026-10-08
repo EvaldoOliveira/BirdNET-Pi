@@ -152,7 +152,7 @@ while($results=$result3->fetchArray(SQLITE3_ASSOC)){
   $info_url = get_info_url($results['Sci_Name']);
   $url = $info_url['URL'];
   $url_title = $info_url['TITLE'];
-  echo str_pad("<h3>$species</h3>
+  echo str_pad("<h3>" . species_icon($sciname, 22) . " $species</h3>
     <table><tr>
   <td class=\"relative\">" . detection_actions($date . '/' . $comname . '/' . $results['File_Name']) . "<i>$sciname</i>
   " . species_links($sciname, 'width: unset !important; display: inline; height: 1em; cursor: pointer;', 20) . "<br>
@@ -206,7 +206,7 @@ array_push($excludelines, $results['Date']."/".$comname."/".$results['File_Name'
 ?>
       <tr>
       <td class="relative"><?php echo detection_actions($results['Date'] . '/' . $comname . '/' . $results['File_Name']); ?>
-        <button type="submit" name="species" value="<?php echo $results['Com_Name'];?>"><?php echo $results['Com_Name'];?></button><br>
+        <?php echo species_icon($results['Sci_Name']); ?><button type="submit" name="species" value="<?php echo $results['Com_Name'];?>"><?php echo $results['Com_Name'];?></button><br>
         <i><?php echo $results['Sci_Name']; ?></i> <?php echo species_links($results['Sci_Name'], 'width: unset !important; display: inline; height: 1em; cursor: pointer;', 20); ?><br><b>Occurrences:</b> <?php echo $results['Count'];?><br>
       <b>Max Confidence:</b> <?php echo $percent = round((float)round($results['MaxConfidence'],2) * 100 ) . '%';?><br>
       <b>Best Detection:</b> <?php echo $results['Date']." ".$results['Time'];?><br><div class='custom-audio-player' data-audio-src="<?php echo $filename; ?>" data-image-src="<?php echo $filename.".png"; ?>"></div></td>

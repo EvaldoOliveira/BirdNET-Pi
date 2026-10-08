@@ -80,7 +80,7 @@ $updatediv = $update_badge;
 $menu = array(
   array('Now', 'Now'),
   array('Spectrogram', 'Spectrogram'),
-  array('Detections', array('Todays Detections' => "Today's Detections", 'All Detections' => 'All Detections', 'Recordings' => 'Detections by...', 'Species Stats' => 'Best Detections')),
+  array('Detections', array('Todays Detections' => "Today's Detections", 'All Detections' => 'All Detections', 'Recordings' => 'Detections by...', 'Species Stats' => 'Best Detections', 'Bird' => 'Species Pages')),
   array('Statistics', array('Daily Charts' => 'Daily Charts', 'Streamlit' => 'Species Stats', 'Weekly Report' => 'Weekly Report')),
   array('Species', array('Species Management' => 'Species Management', 'Included' => 'Custom Species List', 'Excluded' => 'Excluded Species', 'Whitelisted' => 'Whitelist')),
   array('Scheduling', array('Raw Recording' => 'Raw Recording')),

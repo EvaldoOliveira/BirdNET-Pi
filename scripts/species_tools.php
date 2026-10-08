@@ -316,7 +316,7 @@ $result = $db->query($sql);
     }
     
   echo "<tr data-comname=\"{$common}\" data-sciname=\"{$scient}\">"
-     . "<td>{$common_link}</td>"
+     . "<td style='white-space:nowrap'>" . species_icon($row['Sci_Name']) . " {$common_link}</td>"
      . "<td>{$scient_link}</td>"
      . "<td data-sort='{$max_confidence}'>{$max_confidence}%</td>"
      . "<td data-sort='{$conf_sort}'>".$conf_cell."</td>"

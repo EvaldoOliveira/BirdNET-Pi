@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import sqlite3
 import textwrap
@@ -185,6 +186,21 @@ def create_plot(df_plt_today, now, is_top=None):
     # Save combined plot
     save_name = os.path.expanduser(f"~/BirdSongs/Extracted/Charts/{name}-{now.strftime('%Y-%m-%d')}.png")
     plt.savefig(save_name)
+    # clickable rows: every species row of the chart (bars + hours) as fractions of the image, so the web page can
+    # put a link to the species page over it (owner 2026-10-08)
+    try:
+        fig_w, fig_h = f.get_size_inches() * f.dpi
+        x0 = 0.0  # the species name labels left of the bars belong to the row too
+        x1 = axs[1].get_window_extent().x1 / fig_w
+        rows = []
+        for i, sci in enumerate(freq_order):
+            (_, ya), (_, yb) = axs[0].transData.transform([(0, i - 0.5), (0, i + 0.5)])
+            rows.append({'sci': sci, 'com': names_key[sci], 'left': round(x0, 4), 'right': round(x1, 4),
+                         'top': round(1 - max(ya, yb) / fig_h, 4), 'bottom': round(1 - min(ya, yb) / fig_h, 4)})
+        with open(save_name[:-4] + '.json', 'w') as jf:
+            json.dump(rows, jf)
+    except Exception as e:
+        print(f'chart row map not written: {e}')
     plt.show()
     plt.close()
 

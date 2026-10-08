@@ -377,7 +377,7 @@ $sciname = $name;
 $info_url = get_info_url($sciname);
 $url = $info_url['URL'];
 echo "<table>
-  <tr><th>$com_name<br><span style=\"font-weight:normal;\">
+  <tr><th>" . species_icon($sciname, 22) . " $com_name<br><span style=\"font-weight:normal;\">
   <i>$sciname</i></span><br>
     " . species_links($sciname, '', 20) . "
   </th></tr>";
@@ -481,7 +481,7 @@ echo "<table>
     $info_url = get_info_url($sciname);
     $url = $info_url['URL'];
     echo "<table>
-      <tr><th>$name<br>
+      <tr><th>" . species_icon($sciname, 22) . " $name<br>
       <i>$sciname</i><br>
           " . species_links($sciname, '', 20) . "
       </th></tr>";

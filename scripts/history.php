@@ -160,13 +160,15 @@ function submitID() {
 $time = time();
 
 if (file_exists('./Charts/'.$chart)) {
-  echo "<img src=\"/Charts/$chart?nocache=$time\" >";
+  echo "<script src='static/chart-rows.js'></script>";
+  echo "<div class='charthint'><img src='images/species-page.svg' style='width:16px;height:16px;vertical-align:middle'> Click a species in the chart to open its page</div>";
+  echo "<div class='chartwrap'><img src=\"/Charts/$chart?nocache=$time\" onload='chartRowLinks(this)'></div>";
 } else {
   echo "<p>No Charts for $theDate</p>";
 }
 echo "<hr>";
 if (file_exists('./Charts/'.$chart2)) {
-  echo "<img src=\"/Charts/$chart2?nocache=$time\">";
+  echo "<div class='chartwrap'><img src=\"/Charts/$chart2?nocache=$time\" onload='chartRowLinks(this)'></div>";
 } else {
   echo "<p>No Charts For $theDate</p>";
 }

@@ -237,7 +237,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
             <?php } ?>
 
             <?php echo $todaytable['Time'];?><br>   
-          <b><a class="a2" href="<?php echo $url;?>" target="top"><?php echo $todaytable['Com_Name'];?></a></b><br>
+          <?php echo species_icon($todaytable['Sci_Name']); ?><b><a class="a2" href="<?php echo $url;?>" target="top"><?php echo $todaytable['Com_Name'];?></a></b><br>
           <i><?php echo $todaytable['Sci_Name'];?></i>
           <?php echo species_links($todaytable['Sci_Name'], 'cursor:pointer;float:unset;display:inline', 20); ?>
           <img style=";cursor:pointer;float:unset;display:inline" title="View species stats" onclick="generateMiniGraph(this, '<?php echo $comnamegraph; ?>')" width=20 src="images/chart.svg"><br>
@@ -257,7 +257,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
             <div>
             <form action="" method="GET">
                     <input type="hidden" name="view" value="Species Stats">
-          <button class="a2" type="submit" name="species" value="<?php echo $todaytable['Com_Name'];?>"><?php echo $todaytable['Com_Name'];?></button>
+          <?php echo species_icon($todaytable['Sci_Name']); ?><button class="a2" type="submit" name="species" value="<?php echo $todaytable['Com_Name'];?>"><?php echo $todaytable['Com_Name'];?></button>
 	            <br><i>
           <?php echo $todaytable['Sci_Name'];?>
 	                <br>
