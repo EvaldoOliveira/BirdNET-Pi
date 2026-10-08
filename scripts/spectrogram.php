@@ -568,34 +568,14 @@ h1 {
   transform: translate(-50%, -50%);
   margin: 0;
 }
+  #specopts .specrow { margin: 3px 0; }
+  #specopts label { display: inline-block; min-width: 4.5em; }
 </style>
 
 <img id="spectrogramimage" style="width:100%;display:none" src="spectrogram.png?nocache=<?php echo $time;?>">
 
-<!-- US-41: palette picklist + height box, top-left of the spectrogram pane -->
-<div id="specopts" style="text-align:left;padding:2px 8px;font-size:12px;position:relative;">
-  <label for="palette_select">Palette: </label>
-  <select id="palette_select" class="testbtn">
-    <?php foreach ($SPECTROGRAM_PALETTES as $key => $label) {
-      echo '<option value="' . $key . '"' . ($key == $SPECTROGRAM_PALETTE ? ' selected="selected"' : '') . '>' . $label . '</option>';
-    } ?>
-  </select>
-  &nbsp;&nbsp;
-  <label for="floor_input" title="Signal at or below this level takes the darkest colour">Floor </label>
-  <input id="floor_input" type="range" min="-120" max="-40" step="5" style="width:110px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_FLOOR_DB; ?>">
-  <span id="floor_value" style="display:inline-block;width:4em;"><?php echo $SPECTROGRAM_FLOOR_DB; ?> dB</span>
-  &nbsp;
-  <label for="range_input" title="Width of the colour scale above the floor">Range </label>
-  <input id="range_input" type="range" min="30" max="120" step="5" style="width:110px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_RANGE_DB; ?>">
-  <span id="range_value" style="display:inline-block;width:4em;"><?php echo $SPECTROGRAM_RANGE_DB; ?> dB</span>
-  &nbsp;
-  <label for="contrast_input" title="Gamma of the colour ramp: below 1 lifts faint sounds, above 1 keeps only the strong ones">Contrast </label>
-  <input id="contrast_input" type="range" min="0.5" max="2" step="0.1" style="width:110px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_CONTRAST; ?>">
-  <span id="contrast_value" style="display:inline-block;width:2.5em;"><?php echo $SPECTROGRAM_CONTRAST; ?></span>
-  <span id="specopts_status" style="margin-left:6px;color:#9f9;"></span>
-</div>
-
-<div class="centered">
+<!-- above the spectrogram, right: stream choice, Silent and Height (owner 2026-10-08) -->
+<div class="centered" style="text-align:right;padding:2px 8px;font-size:12px;">
 	<?php
 	if (isset($RTSP_Stream_Config) && !empty($RTSP_Stream_Config)) {
 		?>
@@ -633,16 +613,52 @@ h1 {
 		<?php
 	}
 	?>
-  <!-- Gain slider removed (owner 2026-09-17): colour sensitivity lives in the top bar (floor / range / contrast) -->
   <div style="display:inline" id="silent" >
     <label for="silent_input" title="Draw the spectrogram without sending the audio to the speakers">Silent: </label>
     <input name="silent" type="checkbox" id="silent_input">
   </div>
-    &mdash;
+  &nbsp;&nbsp;
+  <span id="specheight">
+    <label for="height_input">Height (% of page): </label>
+    <input id="height_input" type="number" min="20" max="100" step="1" style="width:4.5em;" value="<?php echo $SPECTROGRAM_HEIGHT; ?>">
+  </span>
+</div>
+
+<audio style="display:none" controls="" crossorigin="anonymous" id='player' preload="none"><source id="playersrc" src="stream"></audio>
+<h1 id="loading-h1">Loading...</h1>
+<canvas></canvas>
+<!-- below the spectrogram, one control per line: palette, floor, range, contrast (owner 2026-10-08) -->
+<div id="specopts" style="text-align:left;padding:4px 8px;font-size:12px;">
+  <div class="specrow">
+  <label for="palette_select">Palette: </label>
+  <select id="palette_select" class="testbtn">
+    <?php foreach ($SPECTROGRAM_PALETTES as $key => $label) {
+      echo '<option value="' . $key . '"' . ($key == $SPECTROGRAM_PALETTE ? ' selected="selected"' : '') . '>' . $label . '</option>';
+    } ?>
+  </select>
+  </div>
+  <div class="specrow">
+  <label for="floor_input" title="Signal at or below this level takes the darkest colour">Floor </label>
+  <input id="floor_input" type="range" min="-120" max="-40" step="5" style="width:110px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_FLOOR_DB; ?>">
+  <span id="floor_value" style="display:inline-block;width:4em;"><?php echo $SPECTROGRAM_FLOOR_DB; ?> dB</span>
+  </div>
+  <div class="specrow">
+  <label for="range_input" title="Width of the colour scale above the floor">Range </label>
+  <input id="range_input" type="range" min="30" max="120" step="5" style="width:110px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_RANGE_DB; ?>">
+  <span id="range_value" style="display:inline-block;width:4em;"><?php echo $SPECTROGRAM_RANGE_DB; ?> dB</span>
+  </div>
+  <div class="specrow">
+  <label for="contrast_input" title="Gamma of the colour ramp: below 1 lifts faint sounds, above 1 keeps only the strong ones">Contrast </label>
+  <input id="contrast_input" type="range" min="0.5" max="2" step="0.1" style="width:110px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_CONTRAST; ?>">
+  <span id="contrast_value" style="display:inline-block;width:2.5em;"><?php echo $SPECTROGRAM_CONTRAST; ?></span>
+  <span id="specopts_status" style="margin-left:6px;color:#9f9;"></span>
+  </div>
+  <div class="specrow">
   <div style="display:inline" id="comp" >
     <label>Compression: </label>
     <input name="compression" type="checkbox" id="compression" disabled>
   </div>
+  &nbsp;
   <div style="display:inline" id="fshift" >
     <label>Freq shift: </label>
     <?php 
@@ -655,16 +671,8 @@ h1 {
     <input name="freqshift" type="checkbox" id="freqshift" <?php echo($freqshift_state); ?>  disabled>
     <img id="livestream_freqshift_spinner" src=images/spinner.gif style="height: 25px; vertical-align: top; display: none">
   </div>
-</div>
-
-<audio style="display:none" controls="" crossorigin="anonymous" id='player' preload="none"><source id="playersrc" src="stream"></audio>
-<h1 id="loading-h1">Loading...</h1>
-<canvas></canvas>
-<!-- height of the spectrogram, below it (owner 2026-10-08) -->
-<div id="specheight" style="text-align:left;padding:4px 8px;font-size:12px;">
-    <label for="height_input">Height (% of page): </label>
-    <input id="height_input" type="number" min="20" max="100" step="1" style="width:4.5em;" value="<?php echo $SPECTROGRAM_HEIGHT; ?>">
   </div>
+</div>
 
 <script>
 var rtsp_stream_select = document.getElementById("rtsp_stream_select");
