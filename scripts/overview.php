@@ -415,6 +415,20 @@ display_species($new_species, 'New Species');
 display_species($rare_species, 'Rare Species', true);
 ?>
 <div class="chart">
+<script>
+  // the totals table starts where the chart's bars start: daily_plot.py draws the bar axes from 12.5 % of
+  // the image width (subplots_adjust left=0.125), the species labels sit before that (owner 2026-10-08)
+  function alignTotalsToChart() {
+    var img = document.getElementById('chart'), col = document.querySelector('.overview-stats .left-column');
+    var t = col ? col.querySelector('table') : null;
+    if (!img || !t || !img.offsetWidth) return;
+    col.style.justifyContent = 'flex-start';
+    var x = img.getBoundingClientRect().left + img.offsetWidth * 0.125 - col.getBoundingClientRect().left;
+    t.style.setProperty('margin-left', Math.max(0, Math.round(x)) + 'px', 'important');
+  }
+  window.addEventListener('resize', alignTotalsToChart);
+  new MutationObserver(alignTotalsToChart).observe(document.body, { childList: true, subtree: true });
+</script>
 <?php
 $refresh = $config['RECORDING_LENGTH'];
 $dividedrefresh = $refresh/4;
