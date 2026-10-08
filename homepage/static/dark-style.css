@@ -1117,3 +1117,18 @@ body > iframe { top: 54px; left: 0; height: calc(100vh - 54px) !important; heigh
 @media screen and (max-width: 800px) {
   .sidenav ~ .views iframe { left: 0; width: 100%; top: 40px; height: calc(100% - 40px); }
 }
+
+/* collapsible side menu (owner 2026-10-08) */
+.sidenav-collapse { display: block; width: 100%; text-align: right; padding: 2px 12px; font-size: 18px; color: #f5f5f5; background: transparent; }
+.sidenav-collapse:hover { background-color: #3b3b3b; }
+@media screen and (min-width: 801px) {
+body.sidenav-collapsed .sidenav { width: 40px; overflow: hidden; }
+body.sidenav-collapsed .sidenav > :not(.sidenav-collapse) { display: none; }
+body.sidenav-collapsed .sidenav-collapse { text-align: center; padding: 2px 0; }
+body.sidenav-collapsed .sidenav ~ .views { margin-left: 48px; }
+body.sidenav-collapsed .sidenav ~ .views iframe { left: 40px; width: calc(100% - 40px); }
+}
+@media screen and (max-width: 800px) {
+  .sidenav-collapse { display: none; }
+}
+}

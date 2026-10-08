@@ -87,6 +87,8 @@ function nav_link($view, $label, $current, $badge = '') {
 <?php if ($current_view !== 'Kiosk') { ?>
 <button type="button" class="sidenav-toggle" onclick="document.body.classList.toggle('sidenav-open')" title="Menu">&#9776;</button>
 <nav class="sidenav" id="sidenav">
+<button type="button" class="sidenav-collapse" id="sidenav_collapse" title="Collapse / expand the menu"
+  onclick="toggleSidenav()">&laquo;</button>
 <?php
 foreach ($menu as $entry) {
   if (!is_array($entry[1])) {
@@ -104,6 +106,18 @@ foreach ($menu as $entry) {
 ?>
 </nav>
 <script>
+  // collapse the side menu to a narrow column (☰ expands it again), remembered per browser (owner 2026-10-08)
+  function applySidenav(collapsed) {
+    document.body.classList.toggle('sidenav-collapsed', collapsed);
+    var b = document.getElementById('sidenav_collapse');
+    if (b) b.innerHTML = collapsed ? '&#9776;' : '&laquo;';
+  }
+  function toggleSidenav() {
+    var collapsed = !document.body.classList.contains('sidenav-collapsed');
+    try { window.localStorage.setItem('sidenav_collapsed', collapsed ? '1' : '0'); } catch (e) {}
+    applySidenav(collapsed);
+  }
+  try { applySidenav(window.localStorage.getItem('sidenav_collapsed') === '1'); } catch (e) {}
   // a normal click loads the page in this frame (the header, live audio etc. stay); middle click, Ctrl/Cmd
   // click and "open in new tab" use the real link
   document.querySelectorAll('#sidenav a.navitem').forEach(function (a) {
