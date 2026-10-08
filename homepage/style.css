@@ -1070,3 +1070,4 @@ iframe { top: 54px; left: 0; height: calc(100vh - 54px) !important; height: calc
 .sortbutton { font-size: 13px !important; padding: 3px 8px !important; margin-top: 4px; border-radius: 3px; }
 .sortbutton.active { color: black !important; font-weight: bold; }
 .sortbutton:hover { color: black !important; }
+.sortbutton.modebutton.inactive { opacity: 0.55; font-weight: normal; }
