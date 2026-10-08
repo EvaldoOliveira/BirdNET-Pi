@@ -6,7 +6,7 @@
 * {
   font-family: 'Roboto Flex', sans-serif;
   box-sizing: border-box;
-  font-size: medium;
+  font-size: 14px;  /* base type smaller than the browser's 16px (owner 2026-10-08) */
   color: #f5f5f5;
 }
 
