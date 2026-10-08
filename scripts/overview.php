@@ -321,7 +321,8 @@ function display_species($species_list, $title, $show_last_seen=false) {
             <?php if ($title !== 'New Species') { // the new species count is in the totals (New Sp. Today) ?>
             <h2 style="text-align:center;"><?php echo $species_count; ?> <?php echo strtolower($title); ?> detected today!</h2>
             <?php } ?>
-            <?php if ($species_count > 5): ?>
+            <?php if ($species_count > 5 && $title === 'New Species'): // no recordings button for new species (owner 2026-10-08) ?>
+            <?php elseif ($species_count > 5): ?>
                 <table><tr><td style="text-align:center;"><form action="" method="GET"><input type="hidden" name="view" value="Recordings"><button type="submit" name="date" value="<?php echo date('Y-m-d');?>">Open Today's recordings page</button></form></td></tr></table>
             <?php else: ?>
                 <table>
