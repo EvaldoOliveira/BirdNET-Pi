@@ -126,7 +126,7 @@ function setModalText(iter, title, text, authorlink) {
 </script>  
 <div class="column center">
 <?php if(!isset($_GET['species'])){
-?><p class="centered">Choose a species to load images from Flickr.</p>
+?><p class="centered">Choose a species to see its best recording.</p>
 <?php
 };?>
 <?php if(isset($_GET['species'])){
