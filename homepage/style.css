@@ -1021,3 +1021,7 @@ pre#timer.bash {
 .sidenav ~ .views .history img,
 .sidenav ~ .views .chart img { margin-left: 0 !important; margin-right: auto !important; }
 .sidenav ~ .views .right-column { text-align: left; }
+.sidenav ~ .views h3,
+.sidenav ~ .views .history form,
+.sidenav ~ .views .right-column,
+.sidenav ~ .views .right-column > * { text-align: left; }
