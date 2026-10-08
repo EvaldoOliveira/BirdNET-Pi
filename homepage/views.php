@@ -68,13 +68,13 @@ $updatediv = $update_badge;
 $menu = array(
   array('Now', 'Now'),
   array('Spectrogram', 'Spectrogram'),
-  array('RAW Recording', 'Raw Recording'),
   array('Detections', array('Todays Detections' => "Today's Detections", 'All Detections' => 'All Detections', 'Recordings' => 'Detections by...', 'Species Stats' => 'Best Detections')),
   array('Statistics', array('Daily Charts' => 'Daily Charts', 'Streamlit' => 'Species Stats', 'Weekly Report' => 'Weekly Report')),
   array('Species', array('Species Management' => 'Species Management', 'Included' => 'Custom Species List', 'Excluded' => 'Excluded Species', 'Whitelisted' => 'Whitelist')),
   // Station Setup only while the first-run questions are unanswered; afterwards everything is in Settings
   array('Settings', array('Settings' => 'Basic Settings', 'Advanced' => 'Advanced Settings')
                     + (file_exists($home . '/BirdNET-Pi/firstrun_pending') ? array('Setup' => 'Station Setup') : array())),
+  array('Scheduled Recordings', array('Raw Recording' => 'Raw Recording')),
   array('System', array('System Controls' => 'System Controls', 'Services' => 'Services', 'System Info' => 'System Info',
                         'View Log' => 'View Log', 'File' => 'File Manager', 'Webterm' => 'Web Terminal', 'Adminer' => 'Database Maintenance')),
 );
