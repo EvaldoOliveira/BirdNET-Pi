@@ -104,6 +104,8 @@ if (get_included_files()[0] === __FILE__) {
   <button onclick="hideDialog()">Close</button>
 </dialog>
 <script src="static/dialog-polyfill.js"></script>
+<script src="static/custom-audio-player.js"></script>
+<script src="static/detection-actions.js"></script>
 <script>
 var dialog = document.querySelector('dialog');
 dialogPolyfill.registerDialog(dialog);
@@ -151,15 +153,14 @@ while($results=$result3->fetchArray(SQLITE3_ASSOC)){
   $url_title = $info_url['TITLE'];
   echo str_pad("<h3>$species</h3>
     <table><tr>
-  <td class=\"relative\"><a target=\"_blank\" href=\"index.php?filename=".$results['File_Name']."\"><img title=\"Open in new tab\" class=\"copyimage\" width=25 src=\"images/copy.png\"></a><i>$sciname</i>
+  <td class=\"relative\">" . detection_actions($date . '/' . $comname . '/' . $results['File_Name']) . "<i>$sciname</i>
   " . species_links($sciname, 'width: unset !important; display: inline; height: 1em; cursor: pointer;', 20) . "<br>
   Occurrences: $count<br>
   Max Confidence: $maxconf<br>
   Best Recording: $date $time<br><br>
-  <video onplay='setLiveStreamVolume(0)' onended='setLiveStreamVolume(1)' onpause='setLiveStreamVolume(1)' controls poster=\"$filename.png\" title=\"$filename\"><source src=\"$filename\"></video></td>
+  <div class='custom-audio-player' data-audio-src=\"$filename\" data-image-src=\"$filename.png\"></div></td>
   </tr>
-    </table>
-  <p>Loading Images from Flickr</p>", '6096');
+    </table>", '6096');
   
   echo "<script>document.getElementsByTagName(\"h3\")[0].scrollIntoView();</script>";
   
@@ -203,10 +204,11 @@ array_push($excludelines, $results['Date']."/".$comname."/".$results['File_Name'
 array_push($excludelines, $results['Date']."/".$comname."/".$results['File_Name'].".png");
 ?>
       <tr>
-      <td class="relative"><a target="_blank" href="index.php?filename=<?php echo $results['File_Name']; ?>"><img title="Open in new tab" class="copyimage" width=25 src="images/copy.png"></a>
-        <button type="submit" name="species" value="<?php echo $results['Com_Name'];?>"><?php echo $results['Com_Name'];?></button><br><b>Occurrences:</b> <?php echo $results['Count'];?><br>
+      <td class="relative"><?php echo detection_actions($results['Date'] . '/' . $comname . '/' . $results['File_Name']); ?>
+        <button type="submit" name="species" value="<?php echo $results['Com_Name'];?>"><?php echo $results['Com_Name'];?></button><br>
+        <i><?php echo $results['Sci_Name']; ?></i> <?php echo species_links($results['Sci_Name'], 'width: unset !important; display: inline; height: 1em; cursor: pointer;', 20); ?><br><b>Occurrences:</b> <?php echo $results['Count'];?><br>
       <b>Max Confidence:</b> <?php echo $percent = round((float)round($results['MaxConfidence'],2) * 100 ) . '%';?><br>
-      <b>Best Recording:</b> <?php echo $results['Date']." ".$results['Time'];?><br><video onplay='setLiveStreamVolume(0)' onended='setLiveStreamVolume(1)' onpause='setLiveStreamVolume(1)' controls poster="<?php echo $filename.".png";?>" preload="none" title="<?php echo $filename;?>"><source src="<?php echo $filename;?>" type="audio/mp3"></video></td>
+      <b>Best Recording:</b> <?php echo $results['Date']." ".$results['Time'];?><br><div class='custom-audio-player' data-audio-src="<?php echo $filename; ?>" data-image-src="<?php echo $filename.".png"; ?>"></div></td>
       </tr>
 <?php
 }
