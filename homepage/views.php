@@ -71,7 +71,9 @@ $menu = array(
   array('Detections', array('Todays Detections' => "Today's Detections", 'Recordings' => 'Recordings', 'Species Stats' => 'Best Recordings')),
   array('Statistics', array('Streamlit' => 'Species Stats', 'Daily Charts' => 'Daily Charts', 'Weekly Report' => 'Weekly Report')),
   array('Species', array('Species Management' => 'Species Management', 'Included' => 'Custom Species List', 'Excluded' => 'Excluded Species', 'Whitelisted' => 'Whitelist')),
-  array('Settings', array('Settings' => 'Basic Settings', 'Advanced' => 'Advanced Settings', 'Setup' => 'Station Setup')),
+  // Station Setup only while the first-run questions are unanswered; afterwards everything is in Settings
+  array('Settings', array('Settings' => 'Basic Settings', 'Advanced' => 'Advanced Settings')
+                    + (file_exists($home . '/BirdNET-Pi/firstrun_pending') ? array('Setup' => 'Station Setup') : array())),
   array('System', array('System Controls' => 'System Controls', 'Services' => 'Services', 'System Info' => 'System Info',
                         'View Log' => 'View Log', 'File' => 'File Manager', 'Webterm' => 'Web Terminal', 'Adminer' => 'Database Maintenance')),
 );
