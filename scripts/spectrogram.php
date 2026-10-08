@@ -560,11 +560,6 @@ canvas {
   height: <?php echo $SPECTROGRAM_HEIGHT; ?>vh;
 }
 
-/* phones: the height box goes below the palette and colour controls instead of over them */
-@media screen and (max-width: 800px) {
-  #specheight { position: static !important; display: block; margin-top: 4px; }
-}
-
 h1 {
   position: absolute;
   top: 50%;
@@ -597,7 +592,7 @@ h1 {
   <input id="contrast_input" type="range" min="0.5" max="2" step="0.1" style="width:110px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_CONTRAST; ?>">
   <span id="contrast_value" style="display:inline-block;width:2.5em;"><?php echo $SPECTROGRAM_CONTRAST; ?></span>
   <span id="specopts_status" style="margin-left:6px;color:#9f9;"></span>
-  <span id="specheight" style="position:absolute;right:8px;top:2px;">
+  <span id="specheight" style="display:block;margin-top:4px;">
     <label for="height_input">Height (% of page): </label>
     <input id="height_input" type="number" min="20" max="100" step="1" style="width:4.5em;" value="<?php echo $SPECTROGRAM_HEIGHT; ?>">
   </span>
