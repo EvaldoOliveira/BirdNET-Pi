@@ -424,7 +424,7 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
       $model_defaults = array(
         "BirdNET_GLOBAL_6K_V2.4_Model_FP16" => "upstream defaults: confidence 0.7, sensitivity 1.25, location 0.03",
         "BirdNET_6K_GLOBAL_MODEL" => "legacy 6K model: confidence 0.7, sensitivity 1.25",
-        "BirdNET-Plus_V3.0-preview3.1_Global_10K" => "defaults: confidence 0.25, sensitivity 1.0, location 0.03");
+        "BirdNET-Plus_V3.0-preview3.1_Global_10K" => "defaults: confidence 0.25, sensitivity 1.0, location 0.1");
       ?>
       <table class="modelstable">
         <tr><th></th><th>Model</th><th>Min. confidence<br><small>[0.01–0.99]</small></th><th>Sensitivity<br><small>[0.5–1.5]</small></th><th>Location threshold<br><small>[0.0005–0.99]</small></th></tr>

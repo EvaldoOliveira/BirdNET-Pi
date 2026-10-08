@@ -44,7 +44,7 @@ LONGITUDE=${FR_LONGITUDE:-$LONGITUDE}
 #_It's recommended that you only change these values through the web interface.#
 
 MODEL=${FR_MODEL:-BirdNET-Plus_V3.0-preview3.1_Global_10K}
-SF_THRESH=0.03
+SF_THRESH=${FR_SF_THRESH:-0.1}
 DATA_MODEL_VERSION=1
 ## SHADOW_MODEL_NAME is a second model analysing the same audio into birds_shadow.db (empty = none)
 ## and SHADOW_ENABLED its switch (0 = off, the default) — Basic Settings > Models
