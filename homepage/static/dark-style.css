@@ -1043,3 +1043,12 @@ pre#timer.bash {
 .overview-stats .left-column table { font-size: 12px; width: 100%; }
 .overview-stats .left-column th, .overview-stats .left-column td { padding: 3px 5px; }
 .overview-stats .left-column button { font-size: 12px; padding: 2px 6px; }
+
+/* Every page's content aligned to the left, against the side menu (owner 2026-10-08) */
+.sidenav ~ .views table,
+.sidenav ~ .views .centered,
+.sidenav ~ .views .settings,
+.sidenav ~ .views .play,
+.sidenav ~ .views .stats,
+.sidenav ~ .views .splist { margin-left: 0 !important; margin-right: auto !important; }
+.sidenav ~ .views .overview-stats { justify-content: flex-start; }
