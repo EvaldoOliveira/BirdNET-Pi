@@ -996,3 +996,10 @@ pre#timer.bash {
   .banner button { padding: 4px 8px; font-size: 13px; }
   .banner audio { max-width: 45vw; }
 }
+
+/* Overview totals beside the chart (owner 2026-10-08): smaller and narrower, so the side menu leaves
+   room for the species names of the chart */
+.overview-stats .left-column { flex: 0 0 auto; max-width: 160px; padding-left: 4px; }
+.overview-stats .left-column table { font-size: 12px; width: 100%; }
+.overview-stats .left-column th, .overview-stats .left-column td { padding: 3px 5px; }
+.overview-stats .left-column button { font-size: 12px; padding: 2px 6px; }
