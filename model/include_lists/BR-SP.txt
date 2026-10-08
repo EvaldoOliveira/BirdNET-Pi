@@ -5,6 +5,7 @@ Acrochordopus burmeisteri_Piolhinho-chiador
 Actitis macularius_Maçarico-pintado
 Aegolius harrisii_Caburé-acanelado
 Agelaioides badius_Asa-de-telha
+Agelasticus cyanopus_Carretão-do-oeste
 Alectrurus tricolor_Galito
 Alipiopsitta xanthops_Papagaio-galego
 Alopochelidon fucata_Andorinha-morena
@@ -211,6 +212,7 @@ Crax fasciolata_Mutum-de-penacho
 Crotophaga ani_Anu-preto
 Crotophaga major_Anu-coroca
 Cryptopezus nattereri_Pinto-do-mato
+Crypturellus noctivagus_Jaó-do-sul
 Crypturellus obsoletus_Inhambuguaçu
 Crypturellus parvirostris_Inhambu-chororó
 Crypturellus tataupa_Inhambu-chintã
@@ -260,6 +262,7 @@ Dysithamnus stictothorax_Choquinha-de-peito-pintado
 Dysithamnus xanthopterus_Choquinha-de-asa-ferrugem
 Egretta caerulea_Garça-azul
 Egretta thula_Garça-branca-pequena
+Elaenia albiceps_Guaracava-de-crista-branca
 Elaenia chiriquensis_Chibum
 Elaenia cristata_Guaracava-de-topete-uniforme
 Elaenia flavogaster_Guaracava-de-barriga-amarela
@@ -296,6 +299,7 @@ Florisuga mellivora_Beija-flor-azul-de-rabo-branco
 Fluvicola albiventer_Lavadeira-de-cara-branca
 Fluvicola nengeta_Lavadeira-mascarada
 Formicarius colma_Galinha-do-mato
+Formicivora acutirostris_Bicudinho-do-brejo
 Formicivora melanogaster_Formigueiro-de-barriga-preta
 Formicivora rufa_Papa-formiga-vermelho
 Forpus xanthopterygius_Tuim
@@ -311,6 +315,7 @@ Gallinago undulata_Narcejão
 Gallinula galeata_Galinha-d'água
 Gampsonyx swainsonii_Gaviãozinho
 Geothlypis aequinoctialis_Pia-cobra
+Geothlypis velata_Pia-cobra
 Geotrygon montana_Pariri
 Geotrygon violacea_Juriti-vermelha
 Geranoaetus albicaudatus_Gavião-de-rabo-branco
@@ -348,6 +353,7 @@ Herpetotheres cachinnans_Acauã
 Herpsilochmus atricapillus_Chorozinho-de-chapéu-preto
 Herpsilochmus longirostris_Chorozinho-de-bico-comprido
 Herpsilochmus rufimarginatus_Chorozinho-de-asa-vermelha
+Himantopus mexicanus_Pernilongo-de-dorso-preto
 Hirundinea ferruginea_Gibão-de-couro
 Hirundo rustica_Andorinha-de-bando
 Hoploxypterus cayanus_Mexeriqueira
@@ -449,6 +455,7 @@ Myiarchus tyrannulus_Maria-cavaleira-de-rabo-enferrujado
 Myiobius atricaudus_Assanhadinho-de-cauda-preta
 Myiobius barbatus_Assanhadinho
 Myiodynastes maculatus_Bem-te-vi-rajado
+Myiopagis caniceps_Guaracava-cinzenta
 Myiopagis gaimardii_Maria-pechim
 Myiopagis viridicata_Guaracava-de-crista-alaranjada
 Myiophobus fasciatus_Filipe
@@ -478,6 +485,7 @@ Nonnula rubecula_Macuru
 Notharchus swainsoni_Macuru-de-barriga-castanha
 Nothura maculosa_Codorna-amarela
 Numenius hudsonicus_Maçarico-de-bico-torto
+Numenius phaeopus_Maçarico-galego
 Nyctanassa violacea_Savacu-de-coroa
 Nyctibius grandis_Urutau-grande
 Nyctibius griseus_Urutau
@@ -796,6 +804,7 @@ Turdus subalaris_Sabiá-ferreiro
 Tyrannopsis sulphurea_Suiriri-de-garganta-rajada
 Tyrannus albogularis_Suiriri-de-garganta-branca
 Tyrannus melancholicus_Suiriri
+Tyrannus savana_Tesourinha
 Tyrannus tyrannus_Suiriri-valente
 Vanellus cayanus_Mexeriqueira
 Vanellus chilensis_Quero-quero
