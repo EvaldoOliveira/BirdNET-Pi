@@ -29,8 +29,6 @@ if (isset($_POST['raw_save'])) {
   $start = hms($_POST['start'] ?? '', '04:00:00');
   $end = hms($_POST['end'] ?? '', '10:00:00');
   $segment = max(1, min(240, intval($_POST['segment'] ?? 30)));
-  $name = substr(preg_replace('/[^A-Za-z0-9_-]/', '', $_POST['name'] ?? 'raw'), 0, 30);
-  if ($name === '') $name = 'raw';
   $c = file_get_contents($conf_file);
   $c = set_conf_key($c, 'RAW_REC_ENABLED', $enabled, 'RAW_REC_*: scheduled raw recording (Raw Recording page); 1 = on');
   $c = set_conf_key($c, 'RAW_REC_DAYS', '"' . implode(',', $days) . '"', 'days of the week to record (cron numbers, 0 = Sunday)');
@@ -38,7 +36,6 @@ if (isset($_POST['raw_save'])) {
   $c = set_conf_key($c, 'RAW_REC_START', $start, 'start time HH:MM:SS');
   $c = set_conf_key($c, 'RAW_REC_END', $end, 'end time HH:MM:SS (next day when earlier than the start)');
   $c = set_conf_key($c, 'RAW_REC_SEGMENT_MIN', $segment, 'maximum length of each WAV file in minutes');
-  $c = set_conf_key($c, 'RAW_REC_NAME', $name, 'name at the end of the file names');
   file_put_contents($conf_file, $c);
   $message = trim((string)shell_exec('sudo ' . escapeshellarg($home . '/BirdNET-Pi/scripts/raw_recording_cron.sh') . ' 2>&1'));
   $config = get_config(true);
@@ -56,7 +53,6 @@ $recurrent = ($config['RAW_REC_RECURRENT'] ?? '1') == '1';
 $start = hms($config['RAW_REC_START'] ?? '', '04:00:00');
 $end = hms($config['RAW_REC_END'] ?? '', '10:00:00');
 $segment = intval($config['RAW_REC_SEGMENT_MIN'] ?? 30) ?: 30;
-$name = $config['RAW_REC_NAME'] ?? 'raw';
 $running = trim((string)shell_exec("pgrep -f 'BirdNET-Pi/scripts/raw_recording.sh' 2>/dev/null")) !== '';
 
 // sessions: the .recording logs, newest first, with their WAV files
@@ -64,7 +60,7 @@ $sessions = array();
 foreach (glob($out_dir . '/*.recording') ?: array() as $log) {
   $base = basename($log, '.recording');
   $day = substr($base, 0, 10);
-  $wavs = glob($out_dir . '/' . $day . '_*.wav') ?: array();
+  $wavs = glob($out_dir . '/' . $day . '-*.wav') ?: array();
   $size = 0;
   foreach ($wavs as $w) $size += filesize($w);
   $sessions[] = array($base, count($wavs), $size);
@@ -77,7 +73,7 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
 <table class="settingstable"><tr><td>
   <h2>Raw Recording</h2>
   <p>Long, unprocessed WAV recordings (e.g. the whole dawn chorus) from the station's microphone, made while the
-  analysis keeps running. Files: <code>~/BirdNET-Pi/raw-recording/&lt;date_time&gt;_&lt;name&gt;.wav</code>
+  analysis keeps running. Files: <code>~/BirdNET-Pi/raw-recording/YYYY-MM-DD-&lt;time&gt;-&lt;station&gt;.wav</code>
   (48 kHz, 16-bit) with a <code>.recording</code> session log.</p>
   <?php if ($message !== '') echo '<p><b>' . $h($message) . '</b></p>'; ?>
   <label><input type="checkbox" name="enabled" <?php echo $enabled ? 'checked' : ''; ?>> Scheduled recording on</label><br><br>
@@ -90,7 +86,6 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
   <label style="margin-left:12px">End: <input type="time" step="1" name="end" value="<?php echo $h($end); ?>"></label>
   <small>(an end earlier than the start ends the next day)</small><br><br>
   <label>Segment length (max): <input type="number" name="segment" min="1" max="240" style="width:5em" value="<?php echo $segment; ?>"> minutes per WAV file</label><br><br>
-  <label>Name in the file names: <input type="text" name="name" style="width:10em" value="<?php echo $h($name); ?>"></label><br><br>
   <button type="submit" name="raw_save" value="1">Save schedule</button>
   <button type="submit" name="raw_now" value="1" style="margin-left:8px">Record now (until the end time)</button>
   <?php if ($running) { ?><button type="submit" name="raw_stop" value="1" style="margin-left:8px">Stop recording</button><?php } ?>

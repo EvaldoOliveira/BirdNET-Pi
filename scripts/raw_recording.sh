@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 # Raw recording session (Raw Recording page): long unprocessed WAV files of the dawn chorus or any other
 # window, recorded from the station's shared microphone while the analysis keeps running on it.
-# Format of the owner's recorder (do-maint-rec.sh): <YYYY.MM.DD_HHhMMmSSs>_<name>.wav files of RAW_REC_SEGMENT_MIN
-# minutes at 48 kHz S16_LE, plus a <start>_<name>.recording session log, in ~/BirdNET-Pi/raw-recording/.
+# Files named YYYY-MM-DD-<time>-<station>.wav (time HHhMMmSSs, station = SITE_NAME), RAW_REC_SEGMENT_MIN
+# minutes each at 48 kHz S16_LE, plus a <start>-<station>.recording session log, in ~/BirdNET-Pi/raw-recording/.
 # Started by cron (/etc/cron.d/birdnet_raw_recording, written by raw_recording_cron.sh) at RAW_REC_START;
 # records until RAW_REC_END (next day when the end is earlier than the start).
 # Usage: raw_recording.sh [--now]   (--now: start immediately, still stopping at RAW_REC_END)
 source /etc/birdnet/birdnet.conf
 
 out_dir="$HOME/BirdNET-Pi/raw-recording"
-name="${RAW_REC_NAME:-raw}"
+name="${SITE_NAME:-$(hostname)}"
+name="${name// /_}"
 name="${name//[^A-Za-z0-9_-]/}"
+[ -n "$name" ] || name=$(hostname)
 device="${RAW_REC_DEVICE:-${REC_CARD:-default}}"
 rate="${RAW_REC_RATE:-48000}"
 channels="${CHANNELS:-1}"
@@ -41,11 +43,11 @@ end=$(( today + end_s ))
 [ $end -le $(date +%s) ] && { echo "The end time has already passed"; exit 0; }
 
 mkdir -p "$out_dir"
-session=$(date +%Y.%m.%d_%Hh%Mm%Ss)
-log_file="$out_dir/${session}_${name}.recording"
+session=$(date +%Y-%m-%d-%Hh%Mm%Ss)
+log_file="$out_dir/${session}-${name}.recording"
 {
   echo "############## Start ##############"
-  echo "Recording until:     $(date -d "@$end" +%Y.%m.%d_%Hh%Mm%Ss) in blocks of $segment_s seconds"
+  echo "Recording until:     $(date -d "@$end" +%Y-%m-%d-%Hh%Mm%Ss) in blocks of $segment_s seconds"
   echo "Start of recording:  $session"
   echo "----"
   echo "TARGET_PATH          $out_dir"
@@ -64,15 +66,15 @@ while [ "$(date +%s)" -lt "$end" ]; do
   left=$(( end - $(date +%s) ))
   length=$(( left < segment_s ? left : segment_s ))
   [ $length -lt 1 ] && break
-  stamp=$(date +%Y.%m.%d_%Hh%Mm%Ss)
-  wav="$out_dir/${stamp}_${name}.wav"
+  stamp=$(date +%Y-%m-%d-%Hh%Mm%Ss)
+  wav="$out_dir/${stamp}-${name}.wav"
   if ! arecord -q -D "$device" -f S16_LE -c "$channels" -r "$rate" -d "$length" "$wav" 2>> "$log_file"; then
-    echo "$(date +%Y.%m.%d_%Hh%Mm%Ss) recording error (microphone unplugged?) - retrying in 10 s" >> "$log_file"
+    echo "$(date +%Y-%m-%d-%Hh%Mm%Ss) recording error (microphone unplugged?) - retrying in 10 s" >> "$log_file"
     rm -f "$wav"
     sleep 10
   fi
 done
-echo "############## End $(date +%Y.%m.%d_%Hh%Mm%Ss) ##############" >> "$log_file"
+echo "############## End $(date +%Y-%m-%d-%Hh%Mm%Ss) ##############" >> "$log_file"
 
 # a one-time schedule switches itself off after its session
 if [ "${RAW_REC_RECURRENT:-1}" = "0" ] && [ "$1" != "--now" ]; then
