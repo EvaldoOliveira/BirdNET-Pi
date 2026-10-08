@@ -12,7 +12,7 @@
         $selectedfilename = './scripts/exclude_species_list.txt';
     } elseif ($species_list=="whitelist") {
         $title="Whitelisted";
-        $message="Once the desired species has been highlighted, click it and then click ADD to have it whitelisted. This species will be detected even if below the Species Occurrence Frequency Threshold defined in the settings.<br>This is not a recommended way of working : it is preferable to first try first both Species Occurrence models (v1 and v2.4).";
+        $message="Once the desired species has been highlighted, click it and then click ADD to have it whitelisted.<br>This species will be detected even if below the Species Occurrence Frequency Threshold defined in the settings.<br>This is not a recommended way of working : it is preferable to first try first both Species Occurrence models (v1 and v2.4).";
         $selectedfilename = './scripts/whitelist_species_list.txt';   
     }
     
