@@ -1,6 +1,6 @@
 <?php
 /* Station species lists (Settings > Location > Species list filter): save the active list under a name,
- * load a .txt list into ~/BirdNET-Pi/species_lists/, or make a station list the active one (owner 2026-10-08). POST only, authenticated. */
+ * or make a station list (or a Brazilian state, built on first use) the active one (owner 2026-10-08). POST only, authenticated. */
 error_reporting(E_ERROR);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/common.php';
@@ -35,16 +35,6 @@ if ($action === 'save') {
   if (empty($lines)) die('The current list is empty: nothing to save');
   file_put_contents("$dir/$name.txt", implode("\n", $lines) . "\n");
   echo "Saved as $name (" . count($lines) . " species). Choose it in the Species list filter to use it.";
-} elseif ($action === 'load') {
-  if (!isset($_FILES['list']) || $_FILES['list']['error'] !== UPLOAD_ERR_OK) die('No file received');
-  if ($_FILES['list']['size'] > 2 * 1024 * 1024) die('File too large');
-  $name = preg_replace('/[^A-Za-z0-9_-]/', '_', pathinfo($_FILES['list']['name'], PATHINFO_FILENAME));
-  $name = substr(trim($name, '_'), 0, 40);
-  if ($name === '') die('Invalid file name');
-  $lines = clean_list(file_get_contents($_FILES['list']['tmp_name']));
-  if (empty($lines)) die('No "Scientific name_Common name" lines in the file');
-  file_put_contents("$dir/$name.txt", implode("\n", $lines) . "\n");
-  echo "Loaded $name (" . count($lines) . " species). Choose it in the Species list filter to use it.";
 } elseif ($action === 'activate') {
   // make a station list the active one: SPECIES_LIST in birdnet.conf, then link the active list to it
   $name = $_POST['name'] ?? '';

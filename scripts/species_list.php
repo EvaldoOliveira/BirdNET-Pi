@@ -60,9 +60,6 @@
               ?>
             </select>
             <button type="button" class="testbtn" onclick="speciesListAction('activate')">Load this list</button>
-            <input type="file" id="load_list_file" accept=".txt" style="display:none" onchange="speciesListAction('load')">
-            <button type="button" class="testbtn" onclick="document.getElementById('load_list_file').click()">Upload a list (.txt)…</button>
-            <small>— one "Scientific name_Common name" per line; the list keeps the file name</small>
             <script>
               function speciesListAction(action) {
                 const fd = new FormData();
@@ -75,10 +72,6 @@
                   const sel = document.getElementById('station_lists').value;
                   if (!sel) return;
                   fd.append('name', sel);
-                } else {
-                  const f = document.getElementById('load_list_file').files[0];
-                  if (!f) return;
-                  fd.append('list', f);
                 }
                 fetch('scripts/species_lists.php', { method: 'POST', body: fd }).then(r => r.text()).then(t => { alert(t); location.reload(); });
               }
