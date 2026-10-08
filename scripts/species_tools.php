@@ -213,7 +213,11 @@ $result = $db->query($sql);
 ?>
 <style>
   .circle-icon{display:inline-block;width:12px;height:12px;border:1px solid #777;border-radius:50%;cursor:pointer;}
-  .centered{max-width:1100px;margin:0 auto}
+  /* left-aligned beside the side menu, smaller type (owner 2026-10-08) */
+  .centered{max-width:none;margin:0 4px}
+  #speciesTable{font-size:12px;margin-left:0;margin-right:auto;width:auto}
+  #speciesTable th,#speciesTable td{padding:3px 6px}
+  #speciesTable select,#speciesTable input{font-size:12px}
   #speciesTable th{cursor:pointer}
   .toolbar{display:flex;gap:8px;align-items:center;margin:8px 0}
   .toolbar input[type="text"]{padding:6px 8px;min-width:260px}

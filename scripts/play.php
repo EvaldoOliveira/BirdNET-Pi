@@ -182,7 +182,7 @@ if(!isset($_GET['species']) && !isset($_GET['filename'])){
   $switch = $view == "byspecies" ? array("bydate", "By Date") : array("byspecies", "By Species"); ?>
 <form action="views.php" method="GET" style="text-align:left;margin:6px 8px;">
   <input type="hidden" name="view" value="Recordings">
-  <button type="submit" name="<?php echo $switch[0]; ?>" value="<?php echo $switch[0]; ?>"><?php echo $switch[1]; ?></button>
+  <button type="submit" name="<?php echo $switch[0]; ?>" value="<?php echo $switch[0]; ?>" style="width:auto;padding:6px 14px;font-weight:bold;background-color:rgb(219, 255, 235);border-radius:4px;box-shadow:0 0 6px rgba(0,0,0,0.15);"><?php echo $switch[1]; ?></button>
 </form>
 <?php } ?>
 <?php if($view == "byspecies" || $view == "date") { ?>
