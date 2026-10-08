@@ -1042,3 +1042,7 @@ pre#timer.bash {
 .sidenav ~ .views .overview-stats .rare_species table { margin-left: auto !important; margin-right: 8px !important; }
 .sidenav ~ .views .overview-stats .chart { clear: both; }
 .sidenav ~ .views .overview-stats .new_species table { margin-top: 2px; }
+/* Overview totals centred, half the vertical cell padding (owner 2026-10-08) */
+.sidenav ~ .views .overview-stats .left-column { float: none; display: flex; justify-content: center; max-width: none; }
+.sidenav ~ .views .overview-stats table.totals { margin-left: auto !important; margin-right: auto !important; }
+.overview-stats table.totals th, .overview-stats table.totals td { padding-top: 1.5px; padding-bottom: 1.5px; }
