@@ -1,4 +1,29 @@
 <?php
+?>
+<?php
+// Totals of Today's Detections, the same compact table as the Overview (owner 2026-10-08)
+function render_today_stats($totalcount, $todaycount, $totalspeciestally, $todayspeciestally, $kiosk) {
+  $new_today = 0;
+  $stmt_new = get_db()->prepare("SELECT COUNT(DISTINCT Sci_Name) AS n FROM detections WHERE Date = DATE('now', 'localtime')
+    AND Sci_Name NOT IN (SELECT DISTINCT Sci_Name FROM detections WHERE Date < DATE('now', 'localtime'))");
+  if ($stmt_new !== false && ($res_new = $stmt_new->execute()) !== false) {
+    $new_today = (int)($res_new->fetchArray(SQLITE3_ASSOC)['n'] ?? 0);
+  }
+  $today = date('Y-m-d');
+  $btn = function ($name, $value, $label) use ($kiosk) {
+    if ($kiosk) return $label;
+    $hidden = $name === 'date' ? '<input type="hidden" name="view" value="Recordings">' : '';
+    return '<form action="" method="GET">' . $hidden . '<button type="submit" name="' . $name . '" value="' . $value . '">' . $label . '</button></form>';
+  };
+  echo '<table class="totals"><tr><th>#Total</th><th>#Today</th><th>Sp. Total</th><th>Sp. Today</th><th>New Today</th></tr><tr>'
+    . '<td>' . $totalcount . '</td>'
+    . '<td>' . $btn('date', $today, $todaycount) . '</td>'
+    . '<td>' . $btn('view', 'Species Stats', $totalspeciestally) . '</td>'
+    . '<td>' . $btn('date', $today, $todayspeciestally) . '</td>'
+    . '<td>' . $new_today . '</td></tr></table>';
+}
+?>
+<?php
 
 /* Prevent XSS input */
 $_GET   = filter_input_array(INPUT_GET, FILTER_SANITIZE_STRING);
@@ -271,32 +296,8 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
 }
 
 if(isset($_GET['today_stats'])) {
+  render_today_stats($totalcount, $todaycount, $totalspeciestally, $todayspeciestally, $kiosk);
   ?>
-  <table>
-      <tr>
-  <th>Total</th>
-  <th>Today</th>
-  <th>Last Hour</th>
-  <th>Species Total</th>
-  <th>Species Today</th>
-      </tr>
-      <tr><td><?php echo $totalcount;?></td>
-	      <td><form action="" method="GET"><input type="hidden" name="view" value="Recordings">
-            <?php if($kiosk == false){?><button type="submit" name="date" value="<?php echo date('Y-m-d');?>"><?php echo $todaycount;?></button>
-            <?php } else { echo $todaycount; } ?>
-          </form></td>
-        <td><?php echo $hourcount;?></td>
-        <td><form action="" method="GET">
-            <?php if($kiosk == false){?><button type="submit" name="view" value="Species Stats"><?php echo $totalspeciestally;?></button>
-            <?php } else { echo $totalspeciestally; } ?>
-          </form></td>
-        <td><form action="" method="GET">
-            <input type="hidden" name="view" value="Recordings">
-            <?php if($kiosk == false){?><button type="submit" name="date" value="<?php echo date('Y-m-d');?>"><?php echo $todayspeciestally;?></button>
-            <?php } else { echo $todayspeciestally; } ?>
-          </form></td>
-      </tr>
-    </table>
 <?php   
 die(); 
 }
@@ -372,26 +373,10 @@ if (get_included_files()[0] === __FILE__) {
     showDialog();
   }
   </script>  
-    <h3>Number of Detections</h3>
-    <div id="todaystats" class="overview"><form action="views.php" method="GET"><table>
-      <tr>
-  <th>Total</th>
-  <th>Today</th>
-  <th>Last Hour</th>
-  <th>Species Total</th>
-  <th>Species Today</th>
-      </tr>
-      <tr>
-      <td><?php echo $totalcount;?></td>
-      <td><input type="hidden" name="view" value="Recordings"><?php if($kiosk == false){?><button type="submit" name="date" value="<?php echo date('Y-m-d');?>"><?php echo $todaycount;?></button><?php } else { echo $todaycount; }?></td>
-      <td><?php echo $hourcount;?></td>
-      <td><?php if($kiosk == false){?><button type="submit" name="view" value="Species Stats"><?php echo $totalspeciestally;?></button><?php }else { echo $totalspeciestally; }?></td>
-      <td><input type="hidden" name="view" value="Recordings"><?php if($kiosk == false){?><button type="submit" name="date" value="<?php echo date('Y-m-d');?>"><?php echo $todayspeciestally;?></button><?php } else { echo $todayspeciestally; }?></td>
-      </tr>
-    </table></form></div>
-
-
-    <h3>Today's Detections <?php if($kiosk == false) { ?>— <input autocomplete="off" size="18" type="text" placeholder="Search..." id="searchterm" name="searchterm"><?php } ?></h3>
+    <div class="todaybar" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0;">
+      <div id="todaystats" class="overview"><?php render_today_stats($totalcount, $todaycount, $totalspeciestally, $todayspeciestally, $kiosk); ?></div>
+      <div><b>Today's Detections</b> <?php if($kiosk == false) { ?>— <input autocomplete="off" size="18" type="text" placeholder="Search..." id="searchterm" name="searchterm"><?php } ?></div>
+    </div>
 
     <div style="padding-bottom:10px" id="detections_table"><h3>Loading...</h3></div>
 

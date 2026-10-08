@@ -1049,3 +1049,6 @@ pre#timer.bash {
 .sidenav ~ .views .overview-stats table.totals { width: auto; }
 /* only the centred totals table on the Overview (the narrow-screen copy below it is dropped, owner 2026-10-08) */
 .sidenav ~ .views .overview-stats .center-column { display: none !important; }
+#todaystats table.totals { width: auto; font-size: 12px; margin: 0 !important; }
+#todaystats table.totals th, #todaystats table.totals td { text-align: center; white-space: nowrap; padding: 1.5px 6px; }
+#todaystats table.totals button { font-size: 12px; padding: 0 4px; }
