@@ -44,8 +44,20 @@
             <button type="button" class="testbtn" onclick="speciesListAction('save')">Save current list as…</button>
             <br>
             <select id="station_lists">
-              <?php foreach (glob(dirname(__DIR__) . '/species_lists/*.txt') as $f) { $n = basename($f, '.txt');
-                echo '<option value="' . htmlspecialchars($n, ENT_QUOTES) . '"' . ($n === $active ? ' selected' : '') . '>' . htmlspecialchars($n) . '</option>'; } ?>
+              <?php
+              $own = array();
+              foreach (glob(dirname(__DIR__) . '/species_lists/*.txt') as $f) { $own[] = basename($f, '.txt'); }
+              echo "<optgroup label='Station lists'>";
+              foreach ($own as $n) {
+                echo '<option value="' . htmlspecialchars($n, ENT_QUOTES) . '"' . ($n === $active ? ' selected' : '') . '>' . htmlspecialchars($n) . '</option>';
+              }
+              echo "</optgroup><optgroup label='Brazilian states (built when loaded)'>";
+              foreach (glob(dirname(__DIR__) . '/model/include_lists/BR-*.txt') as $f) {
+                $n = basename($f, '.txt');
+                if (!in_array($n, $own, true)) echo '<option value="' . $n . '">' . $n . '</option>';
+              }
+              echo "</optgroup>";
+              ?>
             </select>
             <button type="button" class="testbtn" onclick="speciesListAction('activate')">Load this list</button>
             <input type="file" id="load_list_file" accept=".txt" style="display:none" onchange="speciesListAction('load')">

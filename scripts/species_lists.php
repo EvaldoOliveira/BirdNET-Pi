@@ -48,7 +48,8 @@ if ($action === 'save') {
 } elseif ($action === 'activate') {
   // make a station list the active one: SPECIES_LIST in birdnet.conf, then link the active list to it
   $name = $_POST['name'] ?? '';
-  if (!preg_match('/^[A-Za-z0-9_-]{1,40}$/', $name) || !is_file("$dir/$name.txt")) die('No such list');
+  $state = preg_match('/^BR-[A-Z]{2}$/', $name) && is_file($home . "/BirdNET-Pi/model/include_lists/$name.txt");
+  if (!preg_match('/^[A-Za-z0-9_-]{1,40}$/', $name) || (!is_file("$dir/$name.txt") && !$state)) die('No such list');
   $conf = file_get_contents('/etc/birdnet/birdnet.conf');
   $conf = preg_match('/^SPECIES_LIST=/m', $conf) ? preg_replace('/^SPECIES_LIST=.*/m', "SPECIES_LIST=$name", $conf)
                                                   : $conf . "\nSPECIES_LIST=$name\n";
