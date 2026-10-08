@@ -74,7 +74,6 @@ if (isset($_POST['wizard_save'])) {
   if ($pwd !== ($p['password2'] ?? '')) $errors[] = 'The two passwords differ';
   $bw = $p['birdweather_id'] ?? '';
   if ($bw !== '' && !preg_match('/^[A-Za-z0-9]+$/', $bw)) $errors[] = 'Invalid BirdWeather ID';
-  $apprise = preg_replace('/[\x00-\x1F\x7F]/', '', $p['apprise_url'] ?? '');
 
   if (empty($errors)) {
     $contents = file_get_contents('/etc/birdnet/birdnet.conf');
@@ -101,7 +100,6 @@ if (isset($_POST['wizard_save'])) {
     }
     // notification titles and bodies stay English (owner 2026-10-07)
     file_put_contents('/etc/birdnet/birdnet.conf', $contents);
-    if ($apprise !== '') file_put_contents($home . '/BirdNET-Pi/apprise.txt', $apprise . "\n");
 
     if ($tz !== $current_tz) {
       shell_exec('sudo timedatectl set-timezone ' . escapeshellarg($tz));
@@ -195,7 +193,6 @@ foreach ($langs as $l) {
       <input name="password" type="password" autocomplete="new-password" pattern="[A-Za-z0-9]*"></label><br>
     <label>Repeat the password: <input name="password2" type="password" autocomplete="new-password" pattern="[A-Za-z0-9]*"></label><br>
     <label>BirdWeather ID (optional): <input name="birdweather_id" type="text" value="<?php echo $h($config['BIRDWEATHER_ID'] ?? ''); ?>"></label><br>
-    <label>Notification URL for Apprise (optional, e.g. tgram://token/chat): <input name="apprise_url" type="text" style="width:40ch"></label>
   </td></tr></table><br>
   <button type="submit" name="wizard_save" value="1">Save and start</button>
   </form>
