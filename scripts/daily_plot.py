@@ -136,6 +136,8 @@ def create_plot(df_plt_today, now, is_top=None):
     plot.set_yticklabels(yticklabels, fontsize=10)
     plot.set(ylabel=None)
     plot.set(xlabel="Detections")
+    plot.xaxis.tick_top()
+    plot.xaxis.set_label_position('top')
 
     # Generate crosstab matrix for heatmap plot
     heat = pd.crosstab(df_plt_selection_today['Sci_Name'], df_plt_selection_today['Hour of Day'])
@@ -170,12 +172,15 @@ def create_plot(df_plt_today, now, is_top=None):
 
     plot.set(ylabel=None)
     plot.set(xlabel="Hour of Day")
-    # Set combined plot layout and titles
-    y = 1 - 8 / (height * 100)
-    plt.suptitle(f"{plot_type} {readings} Last Updated: {now.strftime('%Y-%m-%d %H:%M')}", y=y)
+    # hours along the top of the heatmap, the "Last Updated" line below the chart (owner 2026-10-08)
+    plot.xaxis.tick_top()
+    plot.xaxis.set_label_position('top')
+    f.text(0.5, 6 / (height * 100), f"{plot_type} {readings} Last Updated: {now.strftime('%Y-%m-%d %H:%M')}",
+           ha='center', va='bottom', color=plt.rcParams['text.color'])
     f.tight_layout()
-    top = 1 - 40 / (height * 100)
-    f.subplots_adjust(left=0.125, right=0.9, top=top, wspace=0)
+    top = 1 - 42 / (height * 100)
+    bottom = 30 / (height * 100)
+    f.subplots_adjust(left=0.125, right=0.9, top=top, bottom=bottom, wspace=0)
 
     # Save combined plot
     save_name = os.path.expanduser(f"~/BirdSongs/Extracted/Charts/{name}-{now.strftime('%Y-%m-%d')}.png")
