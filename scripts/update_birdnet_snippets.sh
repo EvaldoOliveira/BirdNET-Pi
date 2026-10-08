@@ -183,6 +183,11 @@ if [ -f $HOME/BirdNET-Pi/templates/livestream.service ] && ! grep -q '^StartLimi
   systemctl daemon-reload
 fi
 
+if ! grep -E '^APPRISE_NOTIFY_REGION_RARE=' /etc/birdnet/birdnet.conf &>/dev/null;then
+  echo "## APPRISE_NOTIFY_REGION_RARE: 1 = species the location model does not expect here go to the Rare notification channel" >> /etc/birdnet/birdnet.conf
+  echo "APPRISE_NOTIFY_REGION_RARE=1" >> /etc/birdnet/birdnet.conf
+fi
+
 if ! grep -E '^BIRDNET_USER=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "## BIRDNET_USER is for scripts to easily find where BirdNET-Pi is installed" >> /etc/birdnet/birdnet.conf
   echo "## DO NOT EDIT!" >> /etc/birdnet/birdnet.conf

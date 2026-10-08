@@ -78,6 +78,8 @@ if(isset($_GET["latitude"])){
       $quiet[$key] = preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $_GET[$param]) ? $_GET[$param] : '';
     }
   }
+  // region-rare alerts (Rare block checkbox; the rare title field is always sent with it)
+  if(isset($_GET['apprise_notification_title_rare'])) { $notify_region_rare = isset($_GET['notify_region_rare']) ? 1 : 0; }
   if(isset($_GET['apprise_notification_title_rare'])) { $apprise_notification_title_rare = str_replace('$(', '', preg_replace('/["`\\\\\x00-\x1F\x7F]/', '', $_GET['apprise_notification_title_rare'])); }
   if(isset($_GET['apprise_notification_body_rare'])) { $apprise_notification_body_rare = htmlspecialchars_decode($_GET['apprise_notification_body_rare'], ENT_QUOTES); }
   $minimum_time_limit = $_GET['minimum_time_limit'];
@@ -223,6 +225,13 @@ if(isset($_GET["latitude"])){
       $contents = preg_replace("/^$key=.*/m", "$key=\"$val\"", $contents);
     } else {
       $contents .= "\n## $key: quiet hours of the notification tier (HH:MM, empty = always notify)\n$key=\"$val\"\n";
+    }
+  }
+  if(isset($notify_region_rare)) {
+    if(preg_match("/^APPRISE_NOTIFY_REGION_RARE=/m", $contents)) {
+      $contents = preg_replace("/^APPRISE_NOTIFY_REGION_RARE=.*/m", "APPRISE_NOTIFY_REGION_RARE=$notify_region_rare", $contents);
+    } else {
+      $contents .= "\n## APPRISE_NOTIFY_REGION_RARE: 1 = species the location model does not expect here (vagrant / out of season) go to the Rare channel\nAPPRISE_NOTIFY_REGION_RARE=$notify_region_rare\n";
     }
   }
   if(isset($apprise_notification_title_rare)) {
@@ -822,6 +831,8 @@ https://discordapp.com/api/webhooks/{WebhookID}/{WebhookToken}
 mailto://{user}:{password}@gmail.com
 ..." style="vertical-align: top; width:100%; margin-top:0" class="testbtn" name="apprise_input_rare" rows="3" type="text" ><?php print($apprise_config_rare);?></textarea><br>
       &nbsp;&nbsp;Empty Rare Apprise/title/body fall back to the Normal ones.<br><br>
+      <label><input type="checkbox" name="notify_region_rare" <?php echo (($config['APPRISE_NOTIFY_REGION_RARE'] ?? '1') == '1') ? 'checked' : ''; ?>> Region-rare alerts</label>
+      <small>— any species the location model does not expect here (in no week: vagrant; not now: out of season) is also sent here, with the reason, once per Repetition limit</small><br><br>
       <label>Quiet hours (Rare): from <input type="time" name="quiet_start_rare" value="<?php echo htmlspecialchars(trim($config['APPRISE_QUIET_START_RARE'] ?? '', '"')); ?>">
       to <input type="time" name="quiet_end_rare" value="<?php echo htmlspecialchars(trim($config['APPRISE_QUIET_END_RARE'] ?? '', '"')); ?>"></label>
       <small>— no Rare notifications in this window (it may cross midnight, e.g. 22:00 to 06:00); empty = always notify</small><br><br>

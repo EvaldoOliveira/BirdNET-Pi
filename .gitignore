@@ -57,3 +57,4 @@ whitelist_species_list.txt
 species_lists/
 # raw recordings (Raw Recording page)
 raw-recording/
+scripts/region_profile.json

@@ -8,6 +8,7 @@ import requests
 import html
 import time
 import logging
+import datetime
 
 from .db import get_todays_count_for, get_this_weeks_count_for
 from .helpers import get_settings
@@ -15,6 +16,7 @@ from .helpers import get_settings
 userDir = os.path.expanduser('~')
 APPRISE_CONFIG = userDir + '/BirdNET-Pi/apprise.txt'
 APPRISE_BODY = userDir + '/BirdNET-Pi/body.txt'
+from .rarity import region_rare_reason
 log = logging.getLogger(__name__)
 NOTIFICATION_TIERS = userDir + '/BirdNET-Pi/notification_tiers.txt'
 APPRISE_CONFIG_RARE = userDir + '/BirdNET-Pi/apprise-rare.txt'
@@ -174,6 +176,18 @@ def sendAppriseNotifications(sci_name, com_name, confidence, confidencepct, path
     tier = get_notification_tier(sci_name)
     if tier == 'muted':
         return
+    # region-rare (APPRISE_NOTIFY_REGION_RARE): a species the location model does not expect here — in no week
+    # (vagrant) or not now (out of season) — goes to the Rare channel with that reason, once per Repetition limit
+    region_reason = None
+    if tier != 'rare' and get_settings().get('APPRISE_NOTIFY_REGION_RARE') == '1':
+        try:
+            region_reason = region_rare_reason(sci_name, datetime.date.fromisoformat(str(date)))
+        except Exception as e:
+            log.warning('region rarity not available: %s', e)
+        if region_reason:
+            if too_soon(com_name):
+                return
+            tier = 'rare'
     if in_quiet_hours(tier):
         log.info('quiet hours (%s): no notification for %s', tier, com_name)
         return
@@ -251,7 +265,7 @@ def sendAppriseNotifications(sci_name, com_name, confidence, confidencepct, path
 
     try:
         if tier == 'rare':
-            reason = "rare species"
+            reason = region_reason or "rare species"
             notify_body = render_template(body, reason)
             notify_title = render_template(title, reason)
             notify(notify_body, notify_title, build_attachments(), tier='rare')
@@ -290,6 +304,15 @@ def sendAppriseNotifications(sci_name, com_name, confidence, confidencepct, path
                 os.remove(t)
             except OSError:
                 pass
+
+def too_soon(com_name):
+    # the Repetition limit (APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES) on its own
+    limit = get_settings().get('APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES') or "0"
+    try:
+        return limit != "0" and com_name in species_last_notified and int(time.time()) - species_last_notified[com_name] < int(limit)
+    except ValueError:
+        return False
+
 
 def should_notify(com_name):
     settings_dict = get_settings()

@@ -45,6 +45,8 @@ LONGITUDE=${FR_LONGITUDE:-$LONGITUDE}
 
 MODEL=${FR_MODEL:-BirdNET-Plus_V3.0-preview3.1_Global_10K}
 SF_THRESH=${FR_SF_THRESH:-0.5}
+## APPRISE_NOTIFY_REGION_RARE: 1 = species the location model does not expect here go to the Rare notification channel
+APPRISE_NOTIFY_REGION_RARE=1
 ## AVOID_DUPLICITY: 1 = keep only the highest-confidence species of each recording (fewer species), 0 = every species above its minimum (default)
 AVOID_DUPLICITY=0
 DATA_MODEL_VERSION=1
