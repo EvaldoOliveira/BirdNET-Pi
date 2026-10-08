@@ -536,11 +536,12 @@ function species_links($sciname, $style = '', $width = 20) {
 function get_info_url($sciname){
   $engname = get_com_en_name($sciname);
   $config = get_config();
-  // names per CBRO (Portuguese Brazil): Brazilian birds link to their WikiAves page
-  if (($config['DATABASE_LANG'] ?? '') === 'pt_BR' && ($wikiaves = get_wikiaves_url($sciname)) !== '') {
+  // WikiAves is offered only with CBRO names (Portuguese Brazil); other species fall back to eBird
+  if ($config['INFO_SITE'] === 'WIKIAVES' && ($config['DATABASE_LANG'] ?? '') === 'pt_BR'
+      && ($wikiaves = get_wikiaves_url($sciname)) !== '') {
     return array('URL' => $wikiaves, 'TITLE' => 'WikiAves');
   }
-  if ($config['INFO_SITE'] === 'EBIRD'){
+  if ($config['INFO_SITE'] === 'EBIRD' || $config['INFO_SITE'] === 'WIKIAVES'){
     require 'scripts/ebird.php';
     $ebird = $ebirds[$sciname] ?? '';
     $language = $config['DATABASE_LANG'];

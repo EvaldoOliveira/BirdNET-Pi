@@ -82,7 +82,7 @@ if(isset($_GET["latitude"])){
   if($language === 'pt') {
     $language = 'pt_BR';
   }
-  $info_site = $_GET["info_site"];
+  $info_site = in_array($_GET["info_site"] ?? '', array('ALLABOUTBIRDS', 'EBIRD', 'WIKIAVES'), true) ? $_GET["info_site"] : 'ALLABOUTBIRDS';
   $color_scheme = $_GET["color_scheme"];
   // US-41 follow-up (owner 2026-09-17): spectrogram height + palette live here, under "Spectrogram and colours"
   $spectrogram_height = isset($_GET['spectrogram_height']) && is_numeric($_GET['spectrogram_height']) ? max(20, min(100, intval($_GET['spectrogram_height']))) : null;
@@ -922,6 +922,10 @@ mailto://{user}:{password}@gmail.com
           'ALLABOUTBIRDS' => 'allaboutbirds.org',
           "EBIRD" => "ebird.org"
         );
+        // WikiAves only with CBRO names (Portuguese Brazil)
+        if (($config['DATABASE_LANG'] ?? '') === 'pt_BR' || ($config['INFO_SITE'] ?? '') === 'WIKIAVES') {
+          $info_site['WIKIAVES'] = 'wikiaves.com.br (Brazilian birds, CBRO names)';
+        }
 
         // Create options for each site
         foreach($info_site as $infoTag => $infoName){
@@ -935,8 +939,9 @@ mailto://{user}:{password}@gmail.com
       ?>
 
       </select>
-      <p>allaboutbirds.org default
-      <br>ebirds.org has more European species</p>
+      <p>Where a click on a species name goes. allaboutbirds.org default; ebird.org has more European species;
+      wikiaves.com.br is offered with Portuguese Brazil (CBRO) names (non-Brazilian species open eBird).
+      <br>The icons next to each species always link to WikiAves (CBRO names only), eBird, Birds of the World and Wikipedia.</p>
       </td></tr></table><br>
 
 
