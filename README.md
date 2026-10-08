@@ -210,11 +210,15 @@ Pilot station, São Paulo (BirdNET+ V3, Portuguese Brazil (CBRO) names).
 <table>
 <tr>
 <td width="50%" align="center"><b>Today's Detections</b><br><img src="docs/screenshots/todays-detections.png" alt="Today's Detections"></td>
-<td width="50%" align="center"><b>All Detections — today's totals and chart</b><br><img src="docs/screenshots/all-detections.png" alt="All Detections"></td>
+<td width="50%" align="center"><b>Now — the start page</b><br><img src="docs/screenshots/now.png" alt="Now"></td>
 </tr>
 <tr>
 <td align="center"><b>A page for every species</b><br><img src="docs/screenshots/species-page.png" alt="Species page"></td>
+<td align="center"><b>Detections › Species Pages — filter, sort, A–Z</b><br><img src="docs/screenshots/species-pages.png" alt="Species Pages"></td>
+</tr>
+<tr>
 <td align="center"><b>Station Doctor</b><br><img src="docs/screenshots/station-doctor.png" alt="Station Doctor"></td>
+<td align="center"><b>Review — Is this the bird?</b><br><img src="docs/screenshots/review.png" alt="Review dialog" width="320"></td>
 </tr>
 <tr>
 <td align="center"><b>Species Management — threshold, tier and lists per species</b><br><img src="docs/screenshots/species-management.png" alt="Species Management"></td>
@@ -222,7 +226,7 @@ Pilot station, São Paulo (BirdNET+ V3, Portuguese Brazil (CBRO) names).
 </tr>
 <tr>
 <td align="center"><b>Live spectrogram — palettes and detection labels</b><br><img src="docs/screenshots/live-spectrogram.png" alt="Live spectrogram"></td>
-<td align="center"><b>Review — Is this the bird?</b><br><img src="docs/screenshots/review.png" alt="Review dialog" width="320"></td>
+<td align="center"><b>All Detections — click a species row to open its page</b><br><img src="docs/screenshots/all-detections.png" alt="All Detections chart"></td>
 </tr>
 <tr>
 <td align="center"><b>Settings — models, shadow model and species filter</b><br><img src="docs/screenshots/settings-models.png" alt="Settings models"></td>
