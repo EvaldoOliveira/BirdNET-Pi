@@ -74,6 +74,14 @@ def sensitivity_sox_opts(conf):
 
 
 def spectrogram(in_file, title, comment, raw=0, palette='birdnet', sens_opts=None):
+    # Same picture as the Overview's "Currently Analyzing": scripts/spectrogram_png.py draws the live
+    # Spectrogram page's palette, floor, range and contrast (read from birdnet.conf). sox is the fallback.
+    try:
+        import spectrogram_png
+        spectrogram_png.render(in_file, f'{in_file}.png', title, bool(int(raw)), comment)
+        return
+    except Exception as e:
+        log.warning('spectrogram_png failed, using sox: %s', e)
     fd, tmp_file = tempfile.mkstemp(suffix='.png')
     os.close(fd)
     args = ['sox', '-V1', f'{in_file}', '-n', 'remix', '1', 'rate', '24k', 'spectrogram',

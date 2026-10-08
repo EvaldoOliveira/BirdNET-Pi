@@ -29,7 +29,7 @@ PALETTE_STOPS = {
 }
 MAX_HZ = 12000
 WIDTH, HEIGHT = 800, 513          # spectrogram area, as sox draws it
-LEFT, RIGHT, TOP, BOTTOM = 58, 110, 34, 40
+LEFT, RIGHT, TOP, BOTTOM = 58, 110, 34, 56
 
 
 def _float(conf, key, default, lo, hi):
@@ -74,7 +74,7 @@ def magnitudes_db(path):
     return db[idx][::-1], len(data) / sr
 
 
-def render(path, out, title='', raw=False):
+def render(path, out, title='', raw=False, comment=''):
     conf = get_settings()
     floor = _float(conf, 'SPECTROGRAM_FLOOR_DB', -100, -120, -40)
     rng = _float(conf, 'SPECTROGRAM_RANGE_DB', 70, 30, 120)
@@ -121,6 +121,8 @@ def render(path, out, title='', raw=False):
         y = TOP + i * (HEIGHT - 1) / 5
         draw.text((bx + bw + 6, y), f'{value:.0f}', fill=grey, font=font, anchor='lm')
     draw.text((bx + bw / 2, TOP + HEIGHT + 7), 'dBFS', fill=grey, font=font, anchor='mt')
+    if comment:
+        draw.text((2, img.size[1] - 2), comment, fill=grey, font=font, anchor='lb')
     out = os.path.realpath(out)  # Extracted/spectrogram.png is a link into StreamData: keep the link
     tmp = out + '.tmp.png'
     img.save(tmp)
