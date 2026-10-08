@@ -58,6 +58,8 @@ INCLUDE_REGION=${FR_REGION}
 #__________________also act as a BirdWeather listening station_________________#
 
 BIRDWEATHER_ID=${FR_BIRDWEATHER_ID}
+## BIRDWEATHER_ENABLED: 1 = upload to BirdWeather (needs BIRDWEATHER_ID), 0 = paused (the token is kept)
+BIRDWEATHER_ENABLED=1
 
 #-----------------------  Web Interface User Password  ------------------------#
 #____________________The variable below sets the 'birdnet'_____________________#

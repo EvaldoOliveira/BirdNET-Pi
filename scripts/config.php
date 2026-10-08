@@ -63,6 +63,8 @@ if(isset($_GET["latitude"])){
   $site_name = str_replace('"', "", $site_name);
   $site_name = str_replace('\'', "", $site_name);
   $birdweather_id = $_GET["birdweather_id"];
+  // BirdWeather upload switch (the token is kept when it is off); only the Settings form carries it
+  $birdweather_enabled = isset($_GET['birdweather_enabled']) ? 1 : 0;
   $apprise_input = $_GET['apprise_input'];
   if(isset($_GET['apprise_input_rare'])) { $apprise_input_rare = $_GET['apprise_input_rare']; }
   $apprise_notification_title = $_GET['apprise_notification_title'];
@@ -200,6 +202,11 @@ if(isset($_GET["latitude"])){
   $contents = preg_replace("/LATITUDE=.*/", "LATITUDE=$latitude", $contents);
   $contents = preg_replace("/LONGITUDE=.*/", "LONGITUDE=$longitude", $contents);
   $contents = preg_replace("/BIRDWEATHER_ID=.*/", "BIRDWEATHER_ID=$birdweather_id", $contents);
+  if(preg_match("/^BIRDWEATHER_ENABLED=/m", $contents)) {
+    $contents = preg_replace("/^BIRDWEATHER_ENABLED=.*/m", "BIRDWEATHER_ENABLED=$birdweather_enabled", $contents);
+  } else {
+    $contents .= "\n## BIRDWEATHER_ENABLED: 1 = upload soundscapes and detections to BirdWeather (needs BIRDWEATHER_ID), 0 = paused\nBIRDWEATHER_ENABLED=$birdweather_enabled\n";
+  }
   $contents = preg_replace("/APPRISE_NOTIFICATION_TITLE=.*/", "APPRISE_NOTIFICATION_TITLE=\"$apprise_notification_title\"", $contents);
   if(isset($apprise_notification_title_rare)) {
     if(preg_match("/^APPRISE_NOTIFICATION_TITLE_RARE=/m", $contents)) {
@@ -633,6 +640,9 @@ function runProcess() {
       </td></tr></table><br>
       <table class="settingstable"><tr><td>
       <h2>BirdWeather</h2>
+      <label for="birdweather_enabled">Upload to BirdWeather: </label>
+      <input type="checkbox" name="birdweather_enabled" id="birdweather_enabled" <?php echo (($config['BIRDWEATHER_ENABLED'] ?? '1') != '0') ? 'checked' : ''; ?>>
+      (off = nothing is sent, the token is kept)<br>
       <label for="birdweather_id">BirdWeather Token: </label>
       <input name="birdweather_id" type="text" value="<?php print($config['BIRDWEATHER_ID']);?>" /><br>
            <p><a href="https://app.birdweather.com" target="_blank">BirdWeather.com</a> is a weather map for bird sounds. 

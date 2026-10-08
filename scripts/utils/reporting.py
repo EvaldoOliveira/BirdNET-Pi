@@ -301,8 +301,10 @@ def _sound_repo_write(conf, repo, detection):
 
 
 def bird_weather(file: ParseFileName, detections: [Detection]):
-    conf = get_settings()
-    if conf['BIRDWEATHER_ID'] == "":
+    # BIRDWEATHER_ENABLED=0 pauses the uploads and keeps the token (absent = on); re-read when the
+    # settings page changed the file, so the switch applies without restarting the analysis
+    conf = _settings_if_changed()
+    if conf['BIRDWEATHER_ID'] == "" or (conf.get('BIRDWEATHER_ENABLED') or '1').strip() == '0':
         return
     if detections:
         try:

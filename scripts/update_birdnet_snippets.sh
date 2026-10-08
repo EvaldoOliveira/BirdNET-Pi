@@ -162,6 +162,11 @@ if grep -qE '^INCLUDE_REGION=BR-[A-Z]{2}' /etc/birdnet/birdnet.conf && ! [ -f $H
   sudo -u $USER python3 $HOME/BirdNET-Pi/scripts/state_include_list.py --merge || true
 fi
 
+if ! grep -E '^BIRDWEATHER_ENABLED=' /etc/birdnet/birdnet.conf &>/dev/null;then
+  echo "## BIRDWEATHER_ENABLED: 1 = upload to BirdWeather (needs BIRDWEATHER_ID), 0 = paused (the token is kept)" >> /etc/birdnet/birdnet.conf
+  echo "BIRDWEATHER_ENABLED=1" >> /etc/birdnet/birdnet.conf
+fi
+
 if ! grep -E '^BIRDNET_USER=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "## BIRDNET_USER is for scripts to easily find where BirdNET-Pi is installed" >> /etc/birdnet/birdnet.conf
   echo "## DO NOT EDIT!" >> /etc/birdnet/birdnet.conf
