@@ -7,6 +7,7 @@ import socket
 import requests
 import html
 import time
+import logging
 
 from .db import get_todays_count_for, get_this_weeks_count_for
 from .helpers import get_settings
@@ -14,6 +15,7 @@ from .helpers import get_settings
 userDir = os.path.expanduser('~')
 APPRISE_CONFIG = userDir + '/BirdNET-Pi/apprise.txt'
 APPRISE_BODY = userDir + '/BirdNET-Pi/body.txt'
+log = logging.getLogger(__name__)
 NOTIFICATION_TIERS = userDir + '/BirdNET-Pi/notification_tiers.txt'
 APPRISE_CONFIG_RARE = userDir + '/BirdNET-Pi/apprise-rare.txt'
 APPRISE_BODY_RARE = userDir + '/BirdNET-Pi/body-rare.txt'
@@ -111,6 +113,26 @@ def notify(body, title, attached="", tier='normal'):
         telegram.notify(body=body, title=title)
 
 
+def in_quiet_hours(tier, now=None):
+    # APPRISE_QUIET_START_<TIER> / _END_<TIER> (HH:MM, Settings > Notifications): no notification of that tier inside
+    # the window, which may cross midnight (22:00 - 06:00); empty or equal times = no quiet hours
+    conf = get_settings()
+    suffix = 'RARE' if tier == 'rare' else 'NORMAL'
+    start = (conf.get(f'APPRISE_QUIET_START_{suffix}') or '').strip('" ')
+    end = (conf.get(f'APPRISE_QUIET_END_{suffix}') or '').strip('" ')
+    try:
+        s_h, s_m = (int(x) for x in start.split(':'))
+        e_h, e_m = (int(x) for x in end.split(':'))
+    except ValueError:
+        return False
+    s_min, e_min = s_h * 60 + s_m, e_h * 60 + e_m
+    if s_min == e_min:
+        return False
+    t = now or time.localtime()
+    cur = t.tm_hour * 60 + t.tm_min
+    return s_min <= cur < e_min if s_min < e_min else (cur >= s_min or cur < e_min)
+
+
 def get_notification_tier(sci_name):
     # Species tiers set on the Species Management page: one 'Sci_Name=tier' line
     # per non-normal species (muted/rare); a species not listed gets the
@@ -151,6 +173,9 @@ def sendAppriseNotifications(sci_name, com_name, confidence, confidencepct, path
 
     tier = get_notification_tier(sci_name)
     if tier == 'muted':
+        return
+    if in_quiet_hours(tier):
+        log.info('quiet hours (%s): no notification for %s', tier, com_name)
         return
 
     if tier == 'rare':

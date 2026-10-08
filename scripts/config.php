@@ -70,6 +70,14 @@ if(isset($_GET["latitude"])){
   $apprise_notification_title = $_GET['apprise_notification_title'];
   $apprise_notification_body = htmlspecialchars_decode($_GET['apprise_notification_body'], ENT_QUOTES);
   // written quoted into birdnet.conf (sourced by shell scripts): no quotes, backticks, backslashes, $( or control characters
+  // quiet hours per tier (owner 2026-10-08): HH:MM to HH:MM, empty = always notify
+  $quiet = array();
+  foreach (array('quiet_start_normal' => 'APPRISE_QUIET_START_NORMAL', 'quiet_end_normal' => 'APPRISE_QUIET_END_NORMAL',
+                 'quiet_start_rare' => 'APPRISE_QUIET_START_RARE', 'quiet_end_rare' => 'APPRISE_QUIET_END_RARE') as $param => $key) {
+    if (isset($_GET[$param])) {
+      $quiet[$key] = preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $_GET[$param]) ? $_GET[$param] : '';
+    }
+  }
   if(isset($_GET['apprise_notification_title_rare'])) { $apprise_notification_title_rare = str_replace('$(', '', preg_replace('/["`\\\\\x00-\x1F\x7F]/', '', $_GET['apprise_notification_title_rare'])); }
   if(isset($_GET['apprise_notification_body_rare'])) { $apprise_notification_body_rare = htmlspecialchars_decode($_GET['apprise_notification_body_rare'], ENT_QUOTES); }
   $minimum_time_limit = $_GET['minimum_time_limit'];
@@ -210,6 +218,13 @@ if(isset($_GET["latitude"])){
     $contents .= "\n## BIRDWEATHER_ENABLED: 1 = upload soundscapes and detections to BirdWeather (needs BIRDWEATHER_ID), 0 = paused\nBIRDWEATHER_ENABLED=$birdweather_enabled\n";
   }
   $contents = preg_replace("/APPRISE_NOTIFICATION_TITLE=.*/", "APPRISE_NOTIFICATION_TITLE=\"$apprise_notification_title\"", $contents);
+  foreach ($quiet ?? array() as $key => $val) {
+    if (preg_match("/^$key=/m", $contents)) {
+      $contents = preg_replace("/^$key=.*/m", "$key=\"$val\"", $contents);
+    } else {
+      $contents .= "\n## $key: quiet hours of the notification tier (HH:MM, empty = always notify)\n$key=\"$val\"\n";
+    }
+  }
   if(isset($apprise_notification_title_rare)) {
     if(preg_match("/^APPRISE_NOTIFICATION_TITLE_RARE=/m", $contents)) {
       $contents = preg_replace("/APPRISE_NOTIFICATION_TITLE_RARE=.*/", "APPRISE_NOTIFICATION_TITLE_RARE=\"$apprise_notification_title_rare\"", $contents);
@@ -755,7 +770,7 @@ function runProcess() {
       <label for="apprise_weekly_report">Send <a href="views.php?view=Weekly%20Report"> weekly report</a></label><br>
 
       <hr>
-      <label for="minimum_time_limit">Minimum time between notifications of the same species (sec):</label>
+      <label for="minimum_time_limit">Repetition limit — seconds before the same species notifies again:</label>
       <input type="number" id="minimum_time_limit" name="minimum_time_limit" value="<?php echo $config['APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES'];?>" style="width:6em;" min="0"><br>
       <label for="notification_email">Notification e-mail address (used as $email in the Apprise boxes):</label>
       <input type="text" id="notification_email" name="notification_email" placeholder="you@example.com (empty = keep current)" value="<?php echo htmlspecialchars($config['NOTIFICATION_EMAIL'] ?? '');?>" size=40><br>
@@ -790,6 +805,9 @@ https://discordapp.com/api/webhooks/{WebhookID}/{WebhookToken}
 
       <br>
 
+      <label>Quiet hours (Normal): from <input type="time" name="quiet_start_normal" value="<?php echo htmlspecialchars(trim($config['APPRISE_QUIET_START_NORMAL'] ?? '', '"')); ?>">
+      to <input type="time" name="quiet_end_normal" value="<?php echo htmlspecialchars(trim($config['APPRISE_QUIET_END_NORMAL'] ?? '', '"')); ?>"></label>
+      <small>— no Normal notifications in this window (it may cross midnight, e.g. 22:00 to 06:00); empty = always notify</small><br><br>
       <button type="button" class="testbtn" onclick="sendTestNotification(this)">Send Test Notification</button><br>
       <span id="testsuccessmsg"></span>
       </td></tr></table><br>
@@ -804,6 +822,9 @@ https://discordapp.com/api/webhooks/{WebhookID}/{WebhookToken}
 mailto://{user}:{password}@gmail.com
 ..." style="vertical-align: top; width:100%; margin-top:0" class="testbtn" name="apprise_input_rare" rows="3" type="text" ><?php print($apprise_config_rare);?></textarea><br>
       &nbsp;&nbsp;Empty Rare Apprise/title/body fall back to the Normal ones.<br><br>
+      <label>Quiet hours (Rare): from <input type="time" name="quiet_start_rare" value="<?php echo htmlspecialchars(trim($config['APPRISE_QUIET_START_RARE'] ?? '', '"')); ?>">
+      to <input type="time" name="quiet_end_rare" value="<?php echo htmlspecialchars(trim($config['APPRISE_QUIET_END_RARE'] ?? '', '"')); ?>"></label>
+      <small>— no Rare notifications in this window (it may cross midnight, e.g. 22:00 to 06:00); empty = always notify</small><br><br>
       <button type="button" class="testbtn" onclick="sendTestNotification(this, 'apprise_input_rare', 'testsuccessmsgrare', 'apprise_notification_title_rare', 'apprise_notification_body_rare')">Send Test Notification (Rare)</button><br>
       <span id="testsuccessmsgrare"></span>
       </td></tr></table><br>
