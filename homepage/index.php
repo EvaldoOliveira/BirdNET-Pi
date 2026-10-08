@@ -22,7 +22,7 @@ set_timezone();
 <title><?php echo $site_name; ?></title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link id="iconLink" rel="icon" type="image/x-icon" href="images/BirdNetBr_full.ico" />
-<link rel="stylesheet" href="<?php echo $color_scheme . '?v=' . date('n.d.y', filemtime($color_scheme)); ?>">
+<link rel="stylesheet" href="<?php echo $color_scheme . '?v=' . filemtime($color_scheme); ?>">
 <link rel="stylesheet" type="text/css" href="static/dialog-polyfill.css" />
 <body>
 <div class="banner">

@@ -55,7 +55,7 @@ elseif ($config["LONGITUDE"] == "0.000") {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BirdNET-Pi DB</title>
-  <link rel="stylesheet" href="<?php echo $color_scheme . '?v=' . date('n.d.y', filemtime($color_scheme)); ?>">
+  <link rel="stylesheet" href="<?php echo $color_scheme . '?v=' . filemtime($color_scheme); ?>">
 </head>
 <body>
 <?php
