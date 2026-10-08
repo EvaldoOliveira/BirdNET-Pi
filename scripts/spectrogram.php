@@ -454,7 +454,8 @@ function drawFrequencyAxis() {
     const y = (CVS.height - (f / nyquist) * LEN * h) * scaleY;
     if (y < 10 || y > rect.height - 6) continue;
     const tick = document.createElement('span');
-    tick.style.cssText = 'position:absolute;left:2px;top:' + (y - 6) + 'px;'
+    // own size: the page-wide 14px (applied to every element) made the labels large
+    tick.style.cssText = 'position:absolute;left:2px;top:' + (y - 6) + 'px;font-size:9px;white-space:nowrap;'
       + 'text-shadow:0 0 3px #000,0 0 3px #000,0 0 3px #000;';
     tick.textContent = '\u2014 ' + (f / 1000) + ' kHz';
     axis.appendChild(tick);
