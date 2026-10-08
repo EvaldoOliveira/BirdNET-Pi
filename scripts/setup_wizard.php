@@ -189,7 +189,7 @@ foreach ($langs as $l) {
     </select></label>
   </td></tr></table><br>
   <table class="settingstable"><tr><td>
-    <h2>Access</h2>
+    <h2>Web Access</h2>
     <label>Web password (letters and digits; empty = keep <?php echo empty($config['CADDY_PWD']) ? 'no password' : 'the current one'; ?>):
       <input name="password" type="password" autocomplete="new-password" pattern="[A-Za-z0-9]*"></label><br>
     <label>Repeat the password: <input name="password2" type="password" autocomplete="new-password" pattern="[A-Za-z0-9]*"></label><br>
