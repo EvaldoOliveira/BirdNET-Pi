@@ -789,7 +789,7 @@ dialog::backdrop {
 }
 
 .centered_image_container {
-  font-size:19px !important;
+  font-size:15px !important;  /* detection cards, was 19px (owner 2026-10-08) */
   display:inline-block;
   position:relative;
   margin-bottom:3px;
@@ -825,7 +825,7 @@ dialog::backdrop {
 }
 
 .centered_image_container * {
-  font-size:19px !important;
+  font-size:15px !important;  /* detection cards, was 19px (owner 2026-10-08) */
 }
 
 .centered_image_container form {
