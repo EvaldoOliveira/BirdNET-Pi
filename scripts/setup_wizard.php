@@ -158,6 +158,7 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
 <?php foreach ($timezones as $tz) { echo '<option' . ($tz === $current_tz ? ' selected' : '') . '>' . $h($tz) . '</option>'; } ?>
     </select></label>
     <p><small>Detections are stamped with this timezone. Get coordinates on <a href="https://latlong.net" target="_blank">latlong.net</a>.</small></p>
+    <label>BirdWeather ID (optional): <input name="birdweather_id" type="text" value="<?php echo $h($config['BIRDWEATHER_ID'] ?? ''); ?>"></label><br>
   </td></tr></table><br>
   <table class="settingstable"><tr><td>
     <h2>Detection</h2>
@@ -188,11 +189,10 @@ foreach ($langs as $l) {
     </select></label>
   </td></tr></table><br>
   <table class="settingstable"><tr><td>
-    <h2>Access and notifications</h2>
+    <h2>Access</h2>
     <label>Web password (letters and digits; empty = keep <?php echo empty($config['CADDY_PWD']) ? 'no password' : 'the current one'; ?>):
       <input name="password" type="password" autocomplete="new-password" pattern="[A-Za-z0-9]*"></label><br>
     <label>Repeat the password: <input name="password2" type="password" autocomplete="new-password" pattern="[A-Za-z0-9]*"></label><br>
-    <label>BirdWeather ID (optional): <input name="birdweather_id" type="text" value="<?php echo $h($config['BIRDWEATHER_ID'] ?? ''); ?>"></label><br>
   </td></tr></table><br>
   <button type="submit" name="wizard_save" value="1">Save and start</button>
   </form>
