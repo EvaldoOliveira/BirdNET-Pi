@@ -144,6 +144,17 @@ function submitID() {
   </tr>
 </table>
 </div>
+<script>
+  // the bar ends where the chart ends
+  (function () {
+    var bar = document.querySelector('.daybar');
+    function fit() {
+      var img = document.querySelector('.history img[src*="/Charts/"]');
+      if (bar && img && img.offsetWidth) bar.style.maxWidth = img.offsetWidth + 'px';
+    }
+    window.addEventListener('load', fit); window.addEventListener('resize', fit);
+  })();
+</script>
     	<?php // <br><button type="button" onclick="showDialog()">Export as CSV for eBird</button><br><br> ?>
 <?php
 $time = time();
