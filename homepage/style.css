@@ -1028,3 +1028,16 @@ pre#timer.bash {
 .sidenav ~ .views .history.centered form,
 .sidenav ~ .views .center-column { justify-content: flex-start; }
 .sidenav ~ .views h2 { text-align: left !important; }
+
+/* Overview top (owner 2026-10-08): totals as a two-line table on the left, new / rare species today and
+   the recordings button on the right, the chart below both */
+.sidenav ~ .views .overview-stats { display: block; }
+.sidenav ~ .views .overview-stats .left-column { float: left; max-width: none; }
+.overview-stats table.totals th, .overview-stats table.totals td { text-align: center; white-space: nowrap; }
+.sidenav ~ .views .overview-stats .new_species,
+.sidenav ~ .views .overview-stats .rare_species { float: right; text-align: right; }
+.sidenav ~ .views .overview-stats .new_species h2,
+.sidenav ~ .views .overview-stats .rare_species h2 { text-align: right !important; margin: 4px 8px; }
+.sidenav ~ .views .overview-stats .new_species table,
+.sidenav ~ .views .overview-stats .rare_species table { margin-left: auto !important; margin-right: 8px !important; }
+.sidenav ~ .views .overview-stats .chart { clear: both; }
