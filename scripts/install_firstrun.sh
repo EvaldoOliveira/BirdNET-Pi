@@ -97,8 +97,8 @@ case "${fr_model,,}" in
   v2*|2*|*v2.4*)
     FR_MODEL=BirdNET_GLOBAL_6K_V2.4_Model_FP16; FR_CONFIDENCE=0.7; FR_SENSITIVITY=1.25; FR_SF_THRESH=0.03 ;;
   *)
-    # V3 defaults: minimum confidence 0.25, location filter 0.1 (owner 2026-10-07), sensitivity 1.0 (BirdNET Live)
-    FR_MODEL=BirdNET-Plus_V3.0-preview3.1_Global_10K; FR_CONFIDENCE=0.25; FR_SENSITIVITY=1.0; FR_SF_THRESH=0.1 ;;
+    # V3 defaults: minimum confidence 0.35, location filter 0.1 (owner 2026-10-07), sensitivity 1.0 (BirdNET Live)
+    FR_MODEL=BirdNET-Plus_V3.0-preview3.1_Global_10K; FR_CONFIDENCE=0.35; FR_SENSITIVITY=1.0; FR_SF_THRESH=0.1 ;;
 esac
 
 case "$fr_country" in

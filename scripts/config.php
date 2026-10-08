@@ -93,7 +93,7 @@ if(isset($_GET["latitude"])){
   $model = $_GET["model"];
   $known_models = array("BirdNET_GLOBAL_6K_V2.4_Model_FP16", "BirdNET_6K_GLOBAL_MODEL", "BirdNET-Plus_V3.0-preview3.1_Global_10K");
   $shadow_model = isset($_GET['shadow_model']) && in_array($_GET['shadow_model'], $known_models) && $_GET['shadow_model'] != $model ? $_GET['shadow_model'] : '';
-  $shadow_min_conf = isset($_GET['shadow_min_conf']) && is_numeric($_GET['shadow_min_conf']) ? max(0.01, min(0.99, round(floatval($_GET['shadow_min_conf']), 2))) : 0.25;
+  $shadow_min_conf = isset($_GET['shadow_min_conf']) && is_numeric($_GET['shadow_min_conf']) ? max(0.01, min(0.99, round(floatval($_GET['shadow_min_conf']), 2))) : 0.35;
   $sf_thresh = $_GET["sf_thresh"];
   // US-47 (owner 2026-09-22): both models and their parameters live in one "Models" block.
   // Official: CONFIDENCE / SENSITIVITY / SF_THRESH; shadow: SHADOW_MIN_CONF / SHADOW_SENS /
@@ -424,7 +424,7 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
       $model_defaults = array(
         "BirdNET_GLOBAL_6K_V2.4_Model_FP16" => "upstream defaults: confidence 0.7, sensitivity 1.25, location 0.03",
         "BirdNET_6K_GLOBAL_MODEL" => "legacy 6K model: confidence 0.7, sensitivity 1.25",
-        "BirdNET-Plus_V3.0-preview3.1_Global_10K" => "defaults: confidence 0.25, sensitivity 1.0, location 0.1");
+        "BirdNET-Plus_V3.0-preview3.1_Global_10K" => "defaults: confidence 0.35, sensitivity 1.0, location 0.1");
       ?>
       <table class="modelstable">
         <tr><th></th><th>Model</th><th>Min. confidence<br><small>[0.01–0.99]</small></th><th>Sensitivity<br><small>[0.5–1.5]</small></th><th>Location threshold<br><small>[0.0005–0.99]</small></th></tr>
@@ -457,7 +457,7 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
         }
       ?>
           </select></td>
-          <td><input name="shadow_min_conf" type="number" style="width:5em;" max="0.99" min="0.01" step="0.01" value="<?php print($config['SHADOW_MIN_CONF'] ?? '0.25');?>"/></td>
+          <td><input name="shadow_min_conf" type="number" style="width:5em;" max="0.99" min="0.01" step="0.01" value="<?php print($config['SHADOW_MIN_CONF'] ?? '0.35');?>"/></td>
           <td><input name="shadow_sens" type="number" style="width:5em;" min="0.5" max="1.5" step="0.01" value="<?php print($config['SHADOW_SENS'] ?? '1.0');?>"/></td>
           <td><input name="shadow_geo_thresh" type="number" style="width:5em;" max="0.99" min="0.0005" step="any" value="<?php print($config['SHADOW_GEO_THRESH'] ?? $config['SF_THRESH']);?>"/></td>
         </tr>

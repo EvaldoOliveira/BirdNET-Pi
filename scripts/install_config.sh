@@ -215,7 +215,7 @@ OVERLAP=0.0
 ## should reach before creating an entry in the BirdNET.selection.txt file.
 ## Don't set this to 1.0 or you won't have any results.
 
-CONFIDENCE=${FR_CONFIDENCE:-0.25}
+CONFIDENCE=${FR_CONFIDENCE:-0.35}
 
 ## SENSITIVITY is the detection sensitivity from 0.5-1.5.
 
