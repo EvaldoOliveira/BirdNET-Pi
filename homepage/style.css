@@ -1055,9 +1055,9 @@ pre#timer.bash {
 
 /* The page frame reaches the bottom of the screen (owner 2026-10-08): on phones "100%" is measured without
    the browser's toolbars, which left a green band below the content */
-iframe { top: 54px; left: 0; height: calc(100vh - 54px) !important; height: calc(100dvh - 54px) !important; }
+body > iframe { top: 54px; left: 0; height: calc(100vh - 54px) !important; height: calc(100dvh - 54px) !important; }
 @media screen and (max-width: 800px) {
-  iframe { top: 48px; height: calc(100vh - 48px) !important; height: calc(100dvh - 48px) !important; }
+  body > iframe { top: 48px; height: calc(100vh - 48px) !important; height: calc(100dvh - 48px) !important; }
 }
 
 /* Recordings / Best Recordings: smaller species buttons and sort buttons (owner 2026-10-08) */
@@ -1071,3 +1071,9 @@ iframe { top: 54px; left: 0; height: calc(100vh - 54px) !important; height: calc
 .sortbutton.active { color: black !important; font-weight: bold; }
 .sortbutton:hover { color: black !important; }
 .sortbutton.modebutton.inactive { opacity: 0.55; font-weight: normal; }
+
+/* pages that are themselves a frame (Species Stats, View Log): beside the side menu, from its top edge */
+.sidenav ~ .views iframe { position: fixed; top: 0; left: 188px; width: calc(100% - 188px); height: 100%; }
+@media screen and (max-width: 800px) {
+  .sidenav ~ .views iframe { left: 0; width: 100%; top: 40px; height: calc(100% - 40px); }
+}
