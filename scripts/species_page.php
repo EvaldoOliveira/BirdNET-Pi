@@ -367,9 +367,9 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
     <label title="Accepted even when the location filter does not expect it here and now"><input type="checkbox" <?php echo $in_whitelist ? 'checked' : ''; ?> onchange="spList(this, 'whitelist', <?php echo $h(json_encode($identifier)); ?>)"> Whitelist</label>
     <label title="Never detected again"><input type="checkbox" <?php echo $in_exclude ? 'checked' : ''; ?> onchange="spList(this, 'exclude', <?php echo $h(json_encode($identifier)); ?>)"> Exclude</label>
     <?php $ndel = deleted_count($sci); if ($ndel) { ?>
-      <span style="margin-left:auto">Excluded detections: <b><?php echo $ndel; ?></b>
-        <button type="button" class="restorebtn" onclick="restoreExcluded(<?php echo $h(json_encode($sci)); ?>, this)">Restore</button>
-        <button type="button" class="wipebtn" onclick="wipeDeleted(<?php echo $h(json_encode($sci)); ?>, this)">Delete excluded</button></span>
+      <span style="margin-left:auto">Removed detections: <b><?php echo $ndel; ?></b>
+        <button type="button" class="restorebtn" onclick="restoreRemoved(<?php echo $h(json_encode($sci)); ?>, this)">Restore</button>
+        <button type="button" class="wipebtn" onclick="wipeDeleted(<?php echo $h(json_encode($sci)); ?>, this)">Delete removed</button></span>
     <?php } ?>
   </div>
   <h3 class="section">Best detections</h3>

@@ -113,7 +113,7 @@ function openReviewPlayer(el) {
     + REVIEW_CAUSES.map(function (c) { return '<button type="button" class="rp-cause" data-r="' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</div>'
     + '<label class="rp-batch"><input type="checkbox" class="rp-batchbox"> <span class="rp-batchtxt"></span></label>'
     + '<button type="button" class="rp-back">&#9664; Back</button></div>'
-    + '<button type="button" class="rp-delete" title="Moves it to the Excluded folder; deleted for good only in Species \u203a Delete Excluded">&#128683; Exclude this detection</button>'
+    + '<button type="button" class="rp-delete" title="Leaves the BirdNET folders and statistics and moves to the Removed folder; deleted for good only by hand, in Species \u203a Delete Removed">&#128683; Remove detection</button>'
     + '</div></div>';
   document.body.appendChild(d);
 
@@ -419,8 +419,8 @@ function openReviewPlayer(el) {
         items.splice(idx, 1);
         item.remove();
         if (!items.length) { close(); return; }
-        show(Math.min(idx, items.length - 1), 'Excluded — next detection');
-      } else d.querySelector('.rp-msg').textContent = 'Not excluded: ' + this.responseText;
+        show(Math.min(idx, items.length - 1), 'Removed — next detection');
+      } else d.querySelector('.rp-msg').textContent = 'Not removed: ' + this.responseText;
     };
     x.open('GET', 'play.php?deletefile=' + encodeURIComponent(item.dataset.file), true);
     x.send();

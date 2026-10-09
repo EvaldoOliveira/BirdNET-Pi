@@ -531,10 +531,10 @@ function validate_button($file, $verdict = null, $positioned = false, $onclick =
   return '<button type="button" class="validatebtn v-' . ($verdict ?: 'none') . ($positioned ? ' positioned' : '') . '" title="' . $titles[$verdict]
     . '" onclick="' . ($onclick !== null ? htmlspecialchars($onclick, ENT_QUOTES) : 'reviewDetection(' . htmlspecialchars(json_encode($file), ENT_QUOTES) . ', this)') . '">' . $labels[$verdict] . '</button>';
 }
-// Excluded detections ("Exclude this detection", owner 2026-10-09): files in ~/BirdSongs/Extracted/Excluded/<date>/<species>/,
-// lines in deleted_detections, until Species › Delete Excluded removes them for good
+// Removed detections ("Remove detection", owner 2026-10-09): files in ~/BirdSongs/Extracted/Removed/<date>/<species>/,
+// lines in deleted_detections, until they are deleted by hand in Species › Delete Removed
 function deleted_dir() {
-  return get_home() . '/BirdSongs/Extracted/Excluded';
+  return get_home() . '/BirdSongs/Extracted/Removed';
 }
 function deleted_table($rw) {
   $rw->exec("CREATE TABLE IF NOT EXISTS deleted_detections (Date DATE, Time TIME, Sci_Name VARCHAR(100) NOT NULL, Com_Name VARCHAR(100) NOT NULL,

@@ -1,7 +1,7 @@
 // Detection actions shared by the Recordings, Today's Detections and Overview pages: delete, change the
 // species, protect from purge (lock) and frequency shift — all through play.php (owner 2026-10-08).
 function deleteDetection(filename,copylink=false) {
-  if (confirm("Exclude this detection? It moves to the Excluded folder (deleted for good only in Species > Delete Excluded).") == true) {
+  if (confirm("Remove this detection? It leaves the BirdNET folders and statistics and moves to the Removed folder (deleted for good only by hand, in Species > Delete Removed).") == true) {
     const xhttp = new XMLHttpRequest();
     xhttp.onload = function() {
       if(this.responseText == "OK"){

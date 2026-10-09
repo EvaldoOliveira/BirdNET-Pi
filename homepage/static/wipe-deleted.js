@@ -1,4 +1,4 @@
-// Delete the excluded detections for good (Species › Delete Excluded and the species page, owner 2026-10-09): asks first, showing how
+// Delete the removed detections for good (Species › Delete Removed and the species page, owner 2026-10-09): asks first, showing how
 // many files of each species will be removed for good, with No as the default. Needs static/species-modal.js.
 // sci = a scientific name, or '' for every species.
 function wipeDeleted(sci, btn) {
@@ -11,7 +11,7 @@ function wipeDeleted(sci, btn) {
     var total = rows.reduce(function (s, r) { return s + r.n; }, 0);
     var lines = rows.slice(0, 25).map(function (r) { return '• ' + r.Com_Name + ' (' + r.Sci_Name + '): ' + r.n; });
     if (rows.length > 25) lines.push('… and ' + (rows.length - 25) + ' more species');
-    askModal('Delete ' + total + ' excluded detection' + (total === 1 ? '' : 's') + ' for good?',
+    askModal('Delete ' + total + ' removed detection' + (total === 1 ? '' : 's') + ' for good?',
       'Their audio, spectrogram and database line are removed for good (' + (total * 2) + ' files):\n\n' + lines.join('\n') + '\n\nThis cannot be undone.',
       'Delete', true).then(function (ok) {
         if (!ok) return;
@@ -30,8 +30,8 @@ function wipeDeleted(sci, btn) {
   x.send();
 }
 
-// Restore excluded detections (one species, or '' for all): files back to By_Date, lines back to the detections
-function restoreExcluded(sci, btn) {
+// Restore removed detections (one species, or '' for all): files back to By_Date, lines back to the detections
+function restoreRemoved(sci, btn) {
   var x = new XMLHttpRequest();
   x.onload = function () {
     var m = this.responseText.match(/^OK (\d+)/);

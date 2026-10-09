@@ -82,7 +82,7 @@ $menu = array(
   array('Spectrogram', 'Spectrogram'),
   array('Detections', array('Todays Detections' => "Today's Detections", 'Bird' => 'Species Pages', 'All Detections' => 'All Detections', 'Recordings' => 'Detections by...', 'Species Stats' => 'Best Detections')),
   array('Statistics', array('Daily Charts' => 'Daily Charts', 'Streamlit' => 'Species Stats', 'Weekly Report' => 'Weekly Report')),
-  array('Species', array('Species Management' => 'Species Management', 'Curation' => 'Curation', 'Wipe' => 'Delete Excluded', 'Included' => 'Custom Species List', 'Excluded' => 'Excluded Species', 'Whitelisted' => 'Whitelist')),
+  array('Species', array('Species Management' => 'Species Management', 'Curation' => 'Curation', 'Wipe' => 'Delete Removed', 'Included' => 'Custom Species List', 'Excluded' => 'Excluded Species', 'Whitelisted' => 'Whitelist')),
   array('Scheduling', array('Raw Recording' => 'Raw Recording')),
   // Station Setup only while the first-run questions are unanswered; afterwards everything is in Settings
   array('Settings', array('Settings' => 'Basic Settings', 'Advanced' => 'Advanced Settings')

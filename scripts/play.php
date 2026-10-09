@@ -14,8 +14,9 @@ $user = get_user();
 $db = new SQLite3('./scripts/birds.db', SQLITE3_OPEN_READONLY);
 $db->busyTimeout(1000);
 
-// Delete = exclude (owner 2026-10-09): the clip and its spectrogram move to ~/BirdSongs/Extracted/Excluded/<date>/<species>/,
-// the database line to deleted_detections; nothing is lost until Species › Delete Excluded (or the species page) deletes it
+// Delete = remove detection (owner 2026-10-09): the clip and its spectrogram leave the BirdNET folders for
+// ~/BirdSongs/Extracted/Removed/<date>/<species>/, the database line goes to deleted_detections (out of every statistic);
+// nothing is lost until it is deleted by hand (Species › Delete Removed, or the species page)
 if(isset($_GET['deletefile'])) {
   ensure_authenticated('You must be authenticated to delete files.');
   $file = $_GET['deletefile'];
@@ -46,7 +47,7 @@ if(isset($_GET['deletefile'])) {
   die();
 }
 
-// Restore excluded detections (owner 2026-10-09): ?restore=1 [&sci=<scientific name>] moves the files back to By_Date
+// Restore removed detections (owner 2026-10-09): ?restore=1 [&sci=<scientific name>] moves the files back to By_Date
 // and the database lines back to detections; every species when sci is empty. Answers OK <count>.
 if (isset($_GET['restore'])) {
   ensure_authenticated('You must be authenticated to restore detections.');
@@ -81,7 +82,7 @@ if (isset($_GET['restore'])) {
   die();
 }
 
-// Delete the excluded detections for good (owner 2026-10-09): ?wipe=1 [&sci=<scientific name>] answers the files per species (JSON);
+// Delete the removed detections for good (owner 2026-10-09): ?wipe=1 [&sci=<scientific name>] answers the files per species (JSON);
 // with &confirm=1 the files and their database lines are removed for good. Every species when sci is empty.
 if (isset($_GET['wipe'])) {
   ensure_authenticated('You must be authenticated to wipe deleted detections.');
