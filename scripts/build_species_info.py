@@ -154,7 +154,7 @@ def main():
     def save():
         tmp = a.out + '.tmp'
         with open(tmp, 'w', encoding='utf-8', newline='') as h:
-            w = csv.DictWriter(h, fieldnames=fields, delimiter=';')
+            w = csv.DictWriter(h, fieldnames=fields, delimiter=';', lineterminator='\n')
             w.writeheader()
             for k in sorted(done):
                 w.writerow(done[k])
