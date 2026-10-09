@@ -501,10 +501,10 @@ foreach($formats as $format){
                           }
                       }
       </script>
-      <p>If you place an RTSP stream URL here, BirdNET-Pi will use that as its audio source.<br>Multiple streams are allowed but may have a impact on rPi performance.<br>Analyze ffmpeg CPU/Memory usage with <b>top</b> or <b>htop</b> if necessary.<br>To remove all and use the soundcard again, just delete the RTSP entries and click Save at the bottom.</p>
+      <p>If you place an RTSP stream URL here, BirdnetPi++ will use that as its audio source.<br>Multiple streams are allowed but may have a impact on rPi performance.<br>Analyze ffmpeg CPU/Memory usage with <b>top</b> or <b>htop</b> if necessary.<br>To remove all and use the soundcard again, just delete the RTSP entries and click Save at the bottom.</p>
       </td></tr></table><br>
       <table class="settingstable"><tr><td>
-      <h2>BirdNET-Pi Password</h2>
+      <h2>BirdnetPi++ Password</h2>
       <p>This password will protect your "Tools" page and "Live Audio" stream.</p>
       <p>Do NOT use special characters. Accepted characters: [A-Z0-9a-z]</p>
       <label for="caddy_pwd">Password: </label>
@@ -513,9 +513,9 @@ foreach($formats as $format){
       <table class="settingstable"><tr><td>
       <h2>Custom URL</h2>
       <p>When you update the URL below, the web server will reload, so be sure to wait at least 30 seconds and then go to your new URL.</p>
-      <label for="birdnetpi_url">BirdNET-Pi URL: </label>
+      <label for="birdnetpi_url">BirdnetPi++ URL: </label>
       <input style="width:40ch;" name="birdnetpi_url" type="url" value="<?php print($newconfig['BIRDNETPI_URL']);?>" /><br>
-      <p>The BirdNET-Pi URL is how the main page will be reached. If you want your installation to respond to an IP address, place that here, but be sure to indicate "<i>http://</i>".<br>Example for IP: <i>http://192.168.0.109</i><br>Example if you own your own domain: <i>https://virginia.birdnetpi.com</i></p>
+      <p>The BirdnetPi++ URL is how the main page will be reached. If you want your installation to respond to an IP address, place that here, but be sure to indicate "<i>http://</i>".<br>Example for IP: <i>http://192.168.0.109</i><br>Example if you own your own domain: <i>https://virginia.birdnetpi.com</i></p>
       </td></tr></table><br>
 		
       <table class="settingstable"><tr><td>
@@ -547,7 +547,7 @@ foreach($formats as $format){
       <label for="custom_image_label">Custom Image Label: </label>
       <input name="custom_image_label" type="text" value="<?php print($newconfig['CUSTOM_IMAGE_TITLE']);?>"/><br>
 
-      <p>These allow you to show a custom image on the Overview page of your BirdNET-Pi. This can be used to show a dynamically updating picture of your garden, for example.</p>
+      <p>These allow you to show a custom image on the Overview page of your BirdnetPi++. This can be used to show a dynamically updating picture of your garden, for example.</p>
 	  </td></tr></table><br>
 
       <table class="settingstable"><tr><td>
@@ -574,7 +574,7 @@ foreach($formats as $format){
       <h2>Accessibility Settings</h2>
 
       <p>Birdsongs Frequency shifting configuration:<br>
-        This can be useful for hearing impaired people. <br>Note: audio files will only be pitch shifted when the "FREQ SHIFT" button is manually clicked for a detection on the "Detections by..." page. <br>The frequency shifting can also be activated for the realtime audio livestream, accessible in the SPECTROGRAM tab of BirdNET-Pi. Once it has been activated, it will be made available for the Live Audio feature as well.<br>Livestream is using ffmpeg for streaming its audio data, so the pitch shifter in that case will use this tool too. If you choose sox as the tool for freq shifting recorded audio files, then you must configure both sox and ffmpeg parameters: sox for recordings, and ffmpeg for livestream.<br>
+        This can be useful for hearing impaired people. <br>Note: audio files will only be pitch shifted when the "FREQ SHIFT" button is manually clicked for a detection on the "Detections by..." page. <br>The frequency shifting can also be activated for the realtime audio livestream, accessible in the SPECTROGRAM tab of BirdnetPi++. Once it has been activated, it will be made available for the Live Audio feature as well.<br>Livestream is using ffmpeg for streaming its audio data, so the pitch shifter in that case will use this tool too. If you choose sox as the tool for freq shifting recorded audio files, then you must configure both sox and ffmpeg parameters: sox for recordings, and ffmpeg for livestream.<br>
 
         <p style="margin-left: 40px">
 

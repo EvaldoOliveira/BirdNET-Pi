@@ -171,11 +171,6 @@ if(isset($_GET["latitude"])){
   } else {
     $apprise_notify_new_species_each_day = 0;
   }
-  if(isset($_GET['apprise_weekly_report'])) {
-    $apprise_weekly_report = 1;
-  } else {
-    $apprise_weekly_report = 0;
-  }
 
   if(isset($timezone) && in_array($timezone, DateTimeZone::listIdentifiers())) {
     # dpkg-reconfigure tzdata is a pain to run non-interactively, so we do it in two steps instead
@@ -248,7 +243,6 @@ if(isset($_GET["latitude"])){
   $contents = preg_replace("/APPRISE_NOTIFY_EACH_DETECTION=.*/", "APPRISE_NOTIFY_EACH_DETECTION=$apprise_notify_each_detection", $contents);
   $contents = preg_replace("/APPRISE_NOTIFY_NEW_SPECIES=.*/", "APPRISE_NOTIFY_NEW_SPECIES=$apprise_notify_new_species", $contents);
   $contents = preg_replace("/APPRISE_NOTIFY_NEW_SPECIES_EACH_DAY=.*/", "APPRISE_NOTIFY_NEW_SPECIES_EACH_DAY=$apprise_notify_new_species_each_day", $contents);
-  $contents = preg_replace("/APPRISE_WEEKLY_REPORT=.*/", "APPRISE_WEEKLY_REPORT=$apprise_weekly_report", $contents);
   if(strlen($language) == 2 || strlen($language) == 5){
     $contents = preg_replace("/DATABASE_LANG=.*/", "DATABASE_LANG=$language", $contents);
   }
@@ -557,7 +551,7 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
       <input type="checkbox" name="data_model_version" <?php if($config['DATA_MODEL_VERSION'] == 2) { echo "checked"; };?> >
       <label for="data_model_version">Species range model V2.4 - V2</label>  [ <a target="_blank" href="https://github.com/kahst/BirdNET-Analyzer/discussions/234">Info here</a> ]<br>
       <label>Species Occurrence Frequency Threshold = the "Location threshold" column of the Models table above.</label> <span onclick="document.getElementById('sfhelp').style.display='unset'" style="text-decoration:underline;cursor:pointer">[more info]</span><br>
-      <p id="sfhelp" style='display:none'>This value is used by the model to constrain the list of possible species that it will try to detect, given the minimum occurrence frequency. A 0.03 threshold means that for a species to be included in this list, it needs to, on average, be seen on at least 3% of historically submitted eBird checklists for your given lat/lon/current week of year. So, the lower the threshold, the rarer the species it will include.<br><img style='max-width:100%;padding-top:5px;padding-bottom:5px' alt="BirdNET-Pi new model detection flowchart" title="BirdNET-Pi new model detection flowchart" src="images/BirdNET-Pi_nm_flowchart.alpha.png">
+      <p id="sfhelp" style='display:none'>This value is used by the model to constrain the list of possible species that it will try to detect, given the minimum occurrence frequency. A 0.03 threshold means that for a species to be included in this list, it needs to, on average, be seen on at least 3% of historically submitted eBird checklists for your given lat/lon/current week of year. So, the lower the threshold, the rarer the species it will include.<br><img style='max-width:100%;padding-top:5px;padding-bottom:5px' alt="BirdnetPi++ new model detection flowchart" title="BirdnetPi++ new model detection flowchart" src="images/BirdNET-Pi_nm_flowchart.alpha.png">
         <br>If you'd like to tinker with this threshold value and see which species make it onto the list, <?php if($config['MODEL'] == "BirdNET_6K_GLOBAL_MODEL"){ ?>please click "Update Settings" at the very bottom of this page to install the appropriate label file, then come back here and you'll be able to use the Species List Tester.<?php } else { ?>you can use this tool: <button type="button" class="testbtn" id="openModal">Species List Tester</button><?php } ?></p>
       </span>
 
@@ -791,16 +785,14 @@ function runProcess() {
       <input type="checkbox" name="apprise_notify_new_species_each_day" <?php if($config['APPRISE_NOTIFY_NEW_SPECIES_EACH_DAY'] == 1 && filesize($home."/BirdNET-Pi/apprise.txt") != 0) { echo "checked"; };?> >
       <label for="apprise_notify_new_species_each_day">Notify each species first detection of the day</label><br>
       <input type="checkbox" name="apprise_notify_each_detection" <?php if($config['APPRISE_NOTIFY_EACH_DETECTION'] == 1 && filesize($home."/BirdNET-Pi/apprise.txt") != 0) { echo "checked"; };?> >
-      <label for="apprise_weekly_report">Notify each new detection</label><br>
-      <input type="checkbox" name="apprise_weekly_report" <?php if($config['APPRISE_WEEKLY_REPORT'] == 1 && filesize($home."/BirdNET-Pi/apprise.txt") != 0) { echo "checked"; };?> >
-      <label for="apprise_weekly_report">Send <a href="views.php?view=Weekly%20Report"> weekly report</a></label><br>
+      <label for="apprise_notify_each_detection">Notify each new detection</label><br>
 
       <hr>
       <label for="minimum_time_limit">Repetition limit — seconds before the same species notifies again:</label>
       <input type="number" id="minimum_time_limit" name="minimum_time_limit" value="<?php echo $config['APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES'];?>" style="width:6em;" min="0"><br>
       <label for="notification_email">Notification e-mail address (used as $email in the Apprise boxes):</label>
       <input type="text" id="notification_email" name="notification_email" placeholder="you@example.com (empty = keep current)" value="<?php echo htmlspecialchars($config['NOTIFICATION_EMAIL'] ?? '');?>" size=40><br>
-      <label for="notification_default_tier">Default notification tier for species not listed in Species Management:</label>
+      <label for="notification_default_tier">Default notification tier for species not listed in Species Pages:</label>
       <select name="notification_default_tier" id="notification_default_tier" style="width:12em;">
         <?php $ndt = strtolower($config['NOTIFICATION_DEFAULT_TIER'] ?? 'normal');
         foreach (['muted' => 'None (muted)', 'normal' => 'Normal', 'rare' => 'Rare'] as $t_val => $t_label) {
@@ -809,7 +801,7 @@ function runProcess() {
         } ?>
       </select><br>
       <label>Per-species notification policy: </label>
-      <a href="views.php?view=Species%20Management"><b>edit the species list in Species Management</b></a>:<br>
+      <a href="views.php?view=Bird"><b>edit the species list in Species Pages</b></a>:<br>
       &nbsp;&nbsp;Set a species to <b>Muted</b> to silence it;<br>
       &nbsp;&nbsp;To notify ONLY selected species, set the default tier above to <b>None (muted)</b> and mark the wanted species Normal or Rare.
       <?php if(($config['APPRISE_ONLY_NOTIFY_SPECIES_NAMES'] ?? '') != '' || ($config['APPRISE_ONLY_NOTIFY_SPECIES_NAMES_2'] ?? '') != '') {
@@ -869,7 +861,7 @@ mailto://{user}:{password}@gmail.com
         can listen to, view, and read about birds throughout the world. <br><br> 
         To request a BirdWeather Token, You'll first need to create an account - <a href="https://app.birdweather.com/login" target="_blank">https://app.birdweather.com/</a><br>
         Once that's done - you can go to - <a href="https://app.birdweather.com/account/stations" target="_blank">https://app.birdweather.com/account/stations</a><br>
-        Make sure that the Latitude and Longitude match what is in your BirdNET-Pi configuration.
+        Make sure that the Latitude and Longitude match what is in your BirdnetPi++ configuration.
         <br><br>
         <dt>NOTE - by using your BirdWeather Token - you are consenting to sharing your soundscapes and detections with BirdWeather</dt></p>
       </td></tr></table><br>

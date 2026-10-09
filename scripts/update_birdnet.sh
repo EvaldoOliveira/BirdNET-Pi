@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Update BirdNET-Pi's Git Repo
+# Update BirdnetPi++'s Git Repo
 source /etc/birdnet/birdnet.conf
 trap 'exit 1' SIGINT SIGHUP
 

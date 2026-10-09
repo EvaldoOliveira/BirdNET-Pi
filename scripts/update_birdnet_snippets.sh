@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -x
-# Update BirdNET-Pi
+# Update BirdnetPi++
 trap 'exit 1' SIGINT SIGHUP
 source /etc/birdnet/birdnet.conf
 if [ -n "${BIRDNET_USER}" ]; then
@@ -83,7 +83,7 @@ if ! grep -E '^SPECTROGRAM_HEIGHT=' /etc/birdnet/birdnet.conf &>/dev/null;then
 fi
 
 if ! grep -E '^APPRISE_NOTIFICATION_TITLE_RARE=' /etc/birdnet/birdnet.conf &>/dev/null;then
-  echo 'APPRISE_NOTIFICATION_TITLE_RARE="RARE BirdNET-Pi $comname ($sciname) $confidencepct% confidence"' >> /etc/birdnet/birdnet.conf
+  echo 'APPRISE_NOTIFICATION_TITLE_RARE="RARE BirdnetPi++ $comname ($sciname) $confidencepct% confidence"' >> /etc/birdnet/birdnet.conf
 fi
 
 # standard notification bodies (created only when missing — user bodies kept)
@@ -183,6 +183,13 @@ if [ -f $HOME/BirdNET-Pi/templates/livestream.service ] && ! grep -q '^StartLimi
   systemctl daemon-reload
 fi
 
+# PHP workers: 5 queued the pages that load several parts at once (owner 2026-10-09)
+for pool in /etc/php/*/fpm/pool.d/www.conf; do
+  if [ -f "$pool" ] && grep -q '^pm.max_children = 5$' "$pool"; then
+    sudo sed -i 's/^pm.max_children = .*/pm.max_children = 12/; s/^pm.start_servers = .*/pm.start_servers = 3/; s/^pm.max_spare_servers = .*/pm.max_spare_servers = 6/' "$pool"
+    sudo systemctl restart php\*-fpm.service
+  fi
+done
 if ! grep -E '^PURGE_PROTECT_TOP_N=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "## PURGE_PROTECT_TOP_N: the best N detections of every species are never purged (plus confirmed reviews)" >> /etc/birdnet/birdnet.conf
   echo "PURGE_PROTECT_TOP_N=3" >> /etc/birdnet/birdnet.conf
@@ -190,6 +197,14 @@ fi
 # Review loop: one verdict per detection (yes / no / unsure), additive table
 sqlite3 $HOME/BirdNET-Pi/scripts/birds.db "CREATE TABLE IF NOT EXISTS detection_reviews (File_Name VARCHAR(100) PRIMARY KEY, Sci_Name VARCHAR(100), Com_Name VARCHAR(100), Date DATE, Confidence FLOAT, Verdict TEXT NOT NULL CHECK (Verdict IN ('yes','no','unsure')), Reviewed_At TEXT, Reason TEXT);" 2>/dev/null || true
 sqlite3 $HOME/BirdNET-Pi/scripts/birds.db "PRAGMA table_info(detection_reviews)" 2>/dev/null | grep -q '|Reason|' || sqlite3 $HOME/BirdNET-Pi/scripts/birds.db "ALTER TABLE detection_reviews ADD COLUMN Reason TEXT;" 2>/dev/null || true
+# settings in force when each detection was made (owner 2026-10-09): location threshold, recording length and the species
+# threshold; older rows keep them empty (shown as —)
+for table in detections deleted_detections; do
+  for column in "Loc_Thresh FLOAT" "Rec_Length INT" "Sp_Override FLOAT"; do
+    sqlite3 $HOME/BirdNET-Pi/scripts/birds.db "PRAGMA table_info($table)" 2>/dev/null | grep -q "|${column%% *}|" \
+      || sqlite3 $HOME/BirdNET-Pi/scripts/birds.db "ALTER TABLE $table ADD COLUMN $column;" 2>/dev/null || true
+  done
+done
 
 if ! grep -E '^APPRISE_NOTIFY_REGION_RARE=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "## APPRISE_NOTIFY_REGION_RARE: 1 = species the location model does not expect here go to the Rare notification channel" >> /etc/birdnet/birdnet.conf
@@ -197,7 +212,7 @@ if ! grep -E '^APPRISE_NOTIFY_REGION_RARE=' /etc/birdnet/birdnet.conf &>/dev/nul
 fi
 
 if ! grep -E '^BIRDNET_USER=' /etc/birdnet/birdnet.conf &>/dev/null;then
-  echo "## BIRDNET_USER is for scripts to easily find where BirdNET-Pi is installed" >> /etc/birdnet/birdnet.conf
+  echo "## BIRDNET_USER is for scripts to easily find where BirdnetPi++ is installed" >> /etc/birdnet/birdnet.conf
   echo "## DO NOT EDIT!" >> /etc/birdnet/birdnet.conf
   echo "BIRDNET_USER=$(awk -F: '/1000/ {print $1}' /etc/passwd)" >> /etc/birdnet/birdnet.conf
 fi
@@ -376,8 +391,14 @@ if [ -L /usr/local/bin/birdnet_analysis.sh ];then
   rm -f /usr/local/bin/birdnet_analysis.sh
 fi
 
+# the weekly report was retired (owner 2026-10-09): its cron line goes
+if grep -q '/usr/local/bin/weekly_report.sh' /etc/crontab; then
+  # the #birdnet marker line before it goes too
+  sudo sed -i -e '/^#birdnet$/{N;/weekly_report\.sh/d}' -e '\|/usr/local/bin/weekly_report.sh|d' /etc/crontab
+fi
+sudo rm -f /usr/local/bin/weekly_report.sh "$HOME"/BirdSongs/Extracted/weekly_report.php "$HOME"/BirdSongs/Extracted/history.php
 # Clean state and update cron if all scripts are not installed
-if [ "$(grep -o "#birdnet" /etc/crontab | wc -l)" -lt 6 ]; then
+if [ "$(grep -o "#birdnet" /etc/crontab | wc -l)" -lt 5 ]; then
   sudo sed -i -e '/^#birdnet$/d' \
     -e '\|/usr/local/bin/disk_check.sh|d' \
     -e '\|/usr/local/bin/disk_species_clean.sh|d' \
@@ -385,7 +406,6 @@ if [ "$(grep -o "#birdnet" /etc/crontab | wc -l)" -lt 6 ]; then
     -e '\|/usr/local/bin/weekly_report.sh|d' \
     -e '\|/usr/local/bin/update_birdnet.sh|d' /etc/crontab
   sed "s/\$USER/$USER/g" "$HOME"/BirdNET-Pi/templates/cleanup.cron >> /etc/crontab
-  sed "s/\$USER/$USER/g" "$HOME"/BirdNET-Pi/templates/weekly_report.cron >> /etc/crontab
   sed "s/\$USER/$USER/g" "$HOME"/BirdNET-Pi/templates/automatic_update.cron >> /etc/crontab
 fi
 
@@ -424,6 +444,9 @@ if [ -n "${STATION_LAYER}" ] && [ -d "$HOME/BirdNET-Pi/custom/${STATION_LAYER}/m
     fi
   done
 fi
+
+# species table: look up, in the background, the labels missing from model/species_info.csv (a new model)
+sudo -u "$USER" -H "$HOME/BirdNET-Pi/scripts/update_species_info.sh" || true
 
 # update snippets above
 

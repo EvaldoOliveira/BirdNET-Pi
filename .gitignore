@@ -58,3 +58,7 @@ species_lists/
 # raw recordings (Raw Recording page)
 raw-recording/
 scripts/region_profile.json
+# species table additions looked up on the station (scripts/update_species_info.sh)
+model/species_info_local.csv
+model/species_info_local.csv.tmp
+species_info_build.log

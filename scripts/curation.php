@@ -46,10 +46,7 @@ uasort($rows, function ($a, $b) { return $a['n'] - $b['n']; });
 .cur .kpis { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0 14px; }
 .cur .kpi { background: rgba(255,255,255,.55); border-radius: 8px; padding: 8px 14px; }
 .cur .kpi b { display: block; font-size: 1.4em; }
-.cur table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,.55); border-radius: 8px; }
-.cur th { text-align: left !important; padding: 5px 6px; border-bottom: 2px solid rgba(128,128,128,.4); font-size: .9em; white-space: nowrap; cursor: pointer; }
-.cur td { text-align: left !important; padding: 4px 6px; border-top: 1px solid rgba(128,128,128,.2); }
-.cur td.num, .cur th.num { text-align: right !important; white-space: nowrap; }
+.cur #curtable th { cursor: pointer; }
 .cur .bar { display: inline-block; width: 60px; height: 8px; background: rgba(128,128,128,.25); border-radius: 4px; vertical-align: middle; margin-right: 6px; }
 .cur .bar span { display: block; height: 100%; background: #2e7d32; border-radius: 4px; }
 .cur h3 { margin: 18px 0 8px; }
@@ -68,13 +65,13 @@ uasort($rows, function ($a, $b) { return $a['n'] - $b['n']; });
     <div><b>Causes of "not this bird":</b> <?php echo $h(implode(' · ', array_map(function ($r) { return $r['r'] . ' ' . $r['c']; }, $reasons))); ?></div>
   <?php } ?>
   <h3>By species</h3>
-  <table id="curtable">
-    <tr><th>Species</th><th>Scientific name</th><th class="num">Detections</th><th class="num">Reviewed</th><th class="num">Yes</th><th class="num">Not</th>
+  <table id="curtable" class="stdtable" data-nosort>
+    <tr><th><select class="namemode" title="Names shown"><option value="com">Common name</option><option value="sci">Scientific name</option><option value="en">English name</option></select></th><th class="num">Detections</th><th class="num">Reviewed</th><th class="num">Yes</th><th class="num">Not</th>
       <th class="num">Can't tell</th><th class="num">Right</th><th class="num">Threshold</th><th>Last review</th></tr>
     <?php foreach ($rows as $sci => $r) {
       $rv = $r['yes'] + $r['no'] + $r['unsure'];
       $pct = $r['n'] ? 100 * $rv / $r['n'] : 0;
-      echo '<tr><td><a href="views.php?view=Bird&amp;sci=' . rawurlencode($sci) . '">' . $h($r['com']) . '</a></td><td><i>' . $h($sci) . '</i></td>'
+      echo '<tr><td>' . '<a href="views.php?view=Bird&amp;sci=' . rawurlencode($sci) . '" data-com="' . $h($r['com']) . '" data-sci="' . $h($sci) . '" data-en="' . $h(get_english_name($sci)) . '">' . $h($r['com']) . '</a>' . '</td>'
         . '<td class="num">' . number_format($r['n']) . '</td>'
         . '<td class="num" data-v="' . $pct . '"><span class="bar"><span style="width:' . min(100, max($rv ? 3 : 0, $pct)) . '%"></span></span>' . $rv . ' (' . ($pct >= 10 ? round($pct) : number_format($pct, 1)) . '%)</td>'
         . '<td class="num">' . $r['yes'] . '</td><td class="num">' . $r['no'] . '</td><td class="num">' . $r['unsure'] . '</td>'
@@ -85,11 +82,11 @@ uasort($rows, function ($a, $b) { return $a['n'] - $b['n']; });
   </table>
   <h3>Latest reviews</h3>
   <?php if (!$recent) { echo '<p>No reviews yet. Use the Review button on any detection.</p>'; } else { ?>
-  <table>
-    <tr><th>Reviewed</th><th>Species</th><th>Detection</th><th class="num">Confidence</th><th>Answer</th><th>Cause</th><th></th></tr>
+  <table class="stdtable">
+    <tr><th>Reviewed</th><th><select class="namemode" title="Names shown"><option value="com">Common name</option><option value="sci">Scientific name</option><option value="en">English name</option></select></th><th>Detection</th><th class="num">Confidence</th><th>Answer</th><th>Cause</th><th></th></tr>
     <?php foreach ($recent as $r) {
       $ans = array('yes' => '✓ Yes', 'no' => '✗ Not this bird', 'unsure' => "? Can't tell")[$r['Verdict']] ?? $r['Verdict'];
-      echo '<tr><td>' . $h($r['Reviewed_At']) . '</td><td><a href="views.php?view=Bird&amp;sci=' . rawurlencode($r['Sci_Name']) . '">' . $h($r['Com_Name']) . '</a></td>'
+      echo '<tr><td>' . $h($r['Reviewed_At']) . '</td><td>' . '<a href="views.php?view=Bird&amp;sci=' . rawurlencode($r['Sci_Name']) . '" data-com="' . $h($r['Com_Name']) . '" data-sci="' . $h($r['Sci_Name']) . '" data-en="' . $h(get_english_name($r['Sci_Name'])) . '">' . $h($r['Com_Name']) . '</a>' . '</td>'
         . '<td>' . $h($r['Date'] . ' ' . ($r['Time'] ?? '')) . '</td><td class="num">' . round($r['Confidence'] * 100) . '%</td>'
         . '<td>' . $h($ans) . '</td><td>' . $h($r['Reason'] ?? '') . '</td>'
         . '<td><button type="button" class="openbtn" onclick="undoReview(' . $h(json_encode($r['File_Name'])) . ', this)" title="Remove this answer">Undo</button></td></tr>';
@@ -97,6 +94,8 @@ uasort($rows, function ($a, $b) { return $a['n'] - $b['n']; });
   </table>
   <?php } ?>
 </div>
+<script src="static/std-table.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/std-table.js"); ?>"></script>
+<script src="static/name-mode.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/name-mode.js"); ?>"></script>
 <script>
 function undoReview(file, btn) {
   var x = new XMLHttpRequest();
@@ -110,7 +109,8 @@ function undoReview(file, btn) {
 // sort the species table by a column (click the header)
 document.querySelectorAll('#curtable th').forEach(function (th, i) {
   var asc = false;
-  th.onclick = function () {
+  th.onclick = function (e) {
+    if (e && e.target.closest('select')) return;
     var t = document.getElementById('curtable'), rows = Array.prototype.slice.call(t.rows, 1);
     asc = !asc;
     rows.sort(function (a, b) {

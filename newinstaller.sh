@@ -6,7 +6,7 @@ if [ "$EUID" == 0 ]
 fi
 
 if [ "$(uname -m)" != "aarch64" ] && [ "$(uname -m)" != "x86_64" ];then
-  echo "BirdNET-Pi requires a 64-bit OS.
+  echo "BirdnetPi++ requires a 64-bit OS.
 It looks like your operating system is using $(uname -m),
 but would need to be aarch64."
   exit 1
@@ -14,7 +14,7 @@ fi
 
 PY_VERSION=$(python3 -c "import sys; print(f'{sys.version_info[0]}{sys.version_info[1]}')")
 if [ "${PY_VERSION}" == "39" ] ;then
-  echo "### BirdNET-Pi requires a newer OS. Bullseye is deprecated, please use Bookworm. ###"
+  echo "### BirdnetPi++ requires a newer OS. Bullseye is deprecated, please use Bookworm. ###"
   [ -z "${FORCE_BULLSEYE}" ] && exit
 fi
 
@@ -25,7 +25,7 @@ sudo -K
 if ! sudo -n true 2>/dev/null; then
   rule_file=/etc/sudoers.d/zz-birdnet-${USER}-nopasswd
   if (: < /dev/tty) 2>/dev/null; then
-    echo "BirdNET-Pi needs passwordless sudo for '${USER}' (the station runs system commands unattended)."
+    echo "BirdnetPi++ needs passwordless sudo for '${USER}' (the station runs system commands unattended)."
     echo "Enter the password of '${USER}' once to set it up (${rule_file}):"
     if sudo -v < /dev/tty; then
       echo "${USER} ALL=(ALL) NOPASSWD: ALL" | sudo tee "${rule_file}.new" > /dev/null

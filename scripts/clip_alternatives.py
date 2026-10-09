@@ -1,15 +1,19 @@
 """Which bird was it? Re-analyses one extracted detection clip with the station's model and prints, as JSON, the
 species the model scored highest in it (the review player offers them when a detection is "Not this bird").
 
-The clip is split like the live analysis (model chunk length, no overlap); for every species the best chunk score is
-kept. Each alternative also carries the location model's probability for the clip's week, so an unlikely species is
+Only the detected window is scored: the model's chunk in the middle of the clip, where the extraction puts the
+detection (one prediction instead of one per chunk, owner 2026-10-09: the answer must come at once). Each alternative also carries the location model's probability for the clip's week, so an unlikely species is
 easy to spot. The detected species itself is left out.
 Usage: clip_alternatives.py <clip path> <detected scientific name> [count]
+The review player normally asks scripts/review_worker.py, which keeps the model loaded and calls alternatives().
 """
 import datetime
 import json
 import os
 import sys
+
+import numpy as np
+import soundfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -19,17 +23,16 @@ from utils.helpers import get_settings, get_language  # noqa: E402
 from utils.models import get_model  # noqa: E402
 
 
-def main():
-    clip, detected = sys.argv[1], sys.argv[2]
-    count = int(sys.argv[3]) if len(sys.argv) > 3 else 5
+def alternatives(clip, detected, count=5, model=None):
     conf = get_settings()
-    model = get_model()
+    model = model or get_model()
     chunks = readAudioData(clip, 0.0, model.sample_rate, model.chunk_duration)
-    best = {}
-    for chunk in chunks:
-        for label, score in model.predict(chunk)[:20]:
-            if score > best.get(label, 0.0):
-                best[label] = float(score)
+    audio = np.concatenate(chunks)[:int(soundfile.info(clip).duration * model.sample_rate)]
+    size = int(model.chunk_duration * model.sample_rate)
+    start = max(0, (len(audio) - size) // 2)
+    window = audio[start:start + size]
+    window = np.pad(window, (0, size - len(window)))
+    best = {label: float(score) for label, score in model.predict(window)[:20]}
     names = get_language(conf['DATABASE_LANG'])
     # location model probability in the clip's week (rarity.py profile: every species, every week); the date is in
     # the folder name: .../<date>/<species>/<file>
@@ -57,7 +60,12 @@ def main():
             break
     for o in out:
         o['expected'] = (o['prob'] or 0) >= 0.05
-    print(json.dumps(out, ensure_ascii=False))
+    return out
+
+
+def main():
+    count = int(sys.argv[3]) if len(sys.argv) > 3 else 5
+    print(json.dumps(alternatives(sys.argv[1], sys.argv[2], count), ensure_ascii=False))
 
 
 if __name__ == '__main__':

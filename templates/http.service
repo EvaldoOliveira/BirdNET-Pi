@@ -1,7 +1,7 @@
 <?xml version="1.0" standalone='no'?><!--*-nxml-*-->
 <!DOCTYPE service-group SYSTEM "avahi-service.dtd">
 <service-group>
-<name replace-wildcards="yes">BirdNET-Pi %h</name>
+<name replace-wildcards="yes">BirdnetPi++ %h</name>
 <service>
 <type>_http._tcp</type>
 <port>80</port>

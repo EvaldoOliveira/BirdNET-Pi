@@ -6,6 +6,10 @@
 // "Not this bird" asks which bird it was (the station's model re-analyses the clip: scripts/clip_alternatives.py) or
 // the cause (insect, frog, rain...), optionally for every unreviewed detection of that species in the same hour.
 // Speed: loop of the detected 3 s, 1.5x playback, the next clip preloaded, swipe right = Yes / left = Not this bird.
+// Refined 2026-10-09: reviewed detections skipped when advancing, progress bar with one mark per detection, Undo of the
+// last answer or removal for 5 s, the detected 3 s highlighted on the spectrogram, a shortcuts line, the answers as a
+// bottom bar on a phone, and the spectrogram without its title in the palette / floor / range / contrast chosen here
+// (redrawn by scripts/review_worker.py, which also keeps the model loaded for "Which bird was it?").
 var REVIEW_OPTS = [
   ['yes', '✓', '#2e7d32', 'Yes, this bird', 'Confirms the species (Confirmed list);<br>protects this clip from the disk purge.', 'Y'],
   ['no', '✗', '#c62828', 'Not this bird', 'Then: which bird was it, or the cause;<br>left out of totals, charts and best detections.', 'N'],
@@ -21,11 +25,11 @@ function reviewPlayerStyle() {
   var st = document.createElement('style');
   st.id = 'rpStyle';
   st.textContent = '#rpDialog{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000}'
-    + '#rpDialog .rp-box{background:#1b1b1b;border-radius:10px;padding:10px;width:min(1180px,calc(100% - 20px));max-height:calc(100% - 20px);overflow:auto;display:flex;gap:12px;position:relative}'
-    + '#rpDialog .rp-left{flex:1 1 auto;min-width:0}#rpDialog .rp-title{display:flex;justify-content:space-between;gap:12px;margin:0 30px 6px 4px;color:#fff}'
-    + '#rpDialog .rp-when{font-size:12px;color:#bbb}#rpDialog .rp-com{font-size:17px;font-weight:600}'
+    + '#rpDialog .rp-box{background:#1b1b1b;border-radius:10px;padding:10px;width:min(calc(100% - 20px),calc((100vh - 190px) * 1.672 + 302px));max-height:calc(100% - 20px);overflow:auto;display:flex;gap:12px;position:relative}'
+    + '#rpDialog .rp-left{flex:1 1 auto;min-width:0}#rpDialog .rp-title{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:12px;margin:0 30px 6px 4px;color:#fff}'
+    + '#rpDialog .rp-when{font-size:16px;color:#ddd}#rpDialog .rp-tc{text-align:center}#rpDialog .rp-com{font-size:19px;font-weight:600}'
     + '#rpDialog .rp-tr{text-align:right}#rpDialog .rp-sci{font-style:italic;font-size:14px}#rpDialog .rp-en{font-size:13px;color:#ddd}'
-    + '#rpDialog .rp-bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:nowrap}'
+    + '#rpDialog .rp-bottom{display:flex;justify-content:flex-end;align-items:flex-end;gap:10px;flex-wrap:nowrap}'
     + '#rpDialog .rp-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:0 0 auto}'
     + '#rpDialog .rp-folder{color:#fff;background:#2a2a2a;border:1px solid #555;border-radius:6px;padding:4px 9px;font-size:12px;text-decoration:none;white-space:nowrap}'
     + '#rpDialog .rp-folder:hover{border-color:#d97a00}'
@@ -33,7 +37,7 @@ function reviewPlayerStyle() {
     + '#rpDialog .rp-vol button{width:auto;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:6px;padding:6px 9px;cursor:pointer;font-size:14px}'
     + '#rpDialog .rp-vol button:hover{border-color:#d97a00}#rpDialog .rp-vol button.on{background:#c62828;border-color:#c62828}'
     + '#rpDialog .rp-vollevel{color:#bbb;font-size:12px;min-width:3em}'
-    + '#rpDialog .rp-params{display:flex;flex-wrap:nowrap;gap:5px;margin:8px 4px 2px;color:#fff;flex:1 1 auto;min-width:0}'
+    + '#rpDialog .rp-params{display:flex;flex-wrap:nowrap;gap:5px;margin:0 4px 6px;color:#fff;min-width:0}'
     + '#rpDialog .rp-params span{display:flex;flex-direction:column;background:#2a2a2a;border-radius:6px;padding:4px 7px;flex:1 1 auto;min-width:0}'
     + '#rpDialog .rp-params small{color:#aaa;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#rpDialog .rp-params b{font-size:14px;white-space:nowrap}'
     + '#rpDialog .rp-close{position:absolute;top:6px;right:8px;width:auto;background:none;border:none;color:#fff;font-size:22px;cursor:pointer}'
@@ -42,13 +46,13 @@ function reviewPlayerStyle() {
     + '#rpDialog .rp-now{font-size:12px;color:#444}'
     + '#rpDialog .rp-opt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:6px 8px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#000;cursor:pointer;font-size:13px;line-height:1.3}'
     + '#rpDialog .rp-opt:hover,#rpDialog .rp-opt:focus{border-color:#d97a00;background:#fff7ec;outline:none}'
-    + '#rpDialog .rp-opt.current{border:2px solid #2b5e22}'
+    + '#rpDialog .rp-opt.current{border:2px solid var(--accent,#2b5e22)}'
     + '#rpDialog .rp-ico{flex:0 0 30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;font-weight:bold}'
     + '#rpDialog .rp-opt b{display:block}#rpDialog .rp-opt .rp-txt{font-size:11.5px;color:#444}#rpDialog .rp-key{margin-left:auto;font-size:11px;color:#888;border:1px solid #ccc;border-radius:4px;padding:0 5px}'
     + '#rpDialog .rp-nav{display:flex;justify-content:space-between;gap:6px;margin-top:4px}'
-    + '#rpDialog .rp-nav button{flex:1;width:auto;padding:5px 8px;border-radius:14px;border:1px solid #2b5e22;background:#fff;color:#2b5e22;font-weight:600;cursor:pointer}'
+    + '#rpDialog .rp-nav button{flex:1;width:auto;padding:5px 8px;border-radius:14px;border:1px solid var(--accent,#2b5e22);background:#fff;color:var(--accent,#2b5e22);font-weight:600;cursor:pointer}'
     + '#rpDialog .rp-nav button:disabled{opacity:.35;cursor:default}'
-    + '#rpDialog .rp-msg{font-size:12px;color:#2b5e22;min-height:1.2em}'
+    + '#rpDialog .rp-msg{font-size:12px;color:var(--accent,#2b5e22);min-height:1.2em}'
     + '#rpDialog .rp-tools{display:flex;justify-content:flex-end;gap:12px;margin:-2px 0 2px}#rpDialog .rp-tools img{width:24px;height:24px;cursor:pointer}'
     + '#rpDialog .rp-tools img:hover{transform:scale(1.15)}'
     + '#rpDialog .rp-delete{margin-top:8px;width:100%;padding:7px;border-radius:8px;border:1px solid #c62828;background:#fff;color:#c62828;font-weight:600;cursor:pointer}'
@@ -61,14 +65,50 @@ function reviewPlayerStyle() {
     + '#rpDialog .rp-search{width:100%;padding:5px 7px;font-size:12.5px;border:1px solid #bbb;border-radius:6px;box-sizing:border-box}'
     + '#rpDialog .rp-causes{display:flex;flex-wrap:wrap;gap:5px}#rpDialog .rp-cause{width:auto;padding:4px 8px;border-radius:12px;border:1px solid #c62828;background:#fff;color:#c62828;font-size:12px;cursor:pointer}'
     + '#rpDialog .rp-cause:hover{background:#c62828;color:#fff}#rpDialog .rp-batch{font-size:12px;display:flex;gap:6px;align-items:flex-start}'
-    + '#rpDialog .rp-back{width:auto;align-self:flex-start;padding:4px 12px;border-radius:12px;border:1px solid #2b5e22;background:#fff;color:#2b5e22;cursor:pointer;font-weight:600}'
+    + '#rpDialog .rp-back{width:auto;align-self:flex-start;padding:4px 12px;border-radius:12px;border:1px solid var(--accent,#2b5e22);background:#fff;color:var(--accent,#2b5e22);cursor:pointer;font-weight:600}'
     + '#rpDialog .rp-toolsrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 4px 0}'
-    + '#rpDialog .rp-speed{display:flex;gap:6px}#rpDialog .rp-speed button{width:auto;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:6px;padding:4px 9px;cursor:pointer;font-size:12px}'
-    + '#rpDialog .rp-speed button.on{background:#2b5e22;border-color:#2b5e22}'
+    + '#rpDialog .rp-speed{display:flex;gap:6px}#rpDialog .rp-speed button{width:auto;white-space:nowrap;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:6px;padding:4px 9px;cursor:pointer;font-size:12px}'
+    + '#rpDialog .rp-speed button.on{background:var(--accent,#2b5e22);border-color:var(--accent,#2b5e22)}'
     + '#rpDialog .rp-rates{display:inline-flex;margin-left:4px}#rpDialog .rp-rates button{border-radius:0;margin-left:-1px}'
     + '#rpDialog .rp-rates button:first-child{border-radius:6px 0 0 6px}#rpDialog .rp-rates button:last-child{border-radius:0 6px 6px 0}'
-    + '@media (max-width:800px){#rpDialog .rp-params,#rpDialog .rp-bottom{flex-wrap:wrap}#rpDialog .rp-box{flex-direction:column}#rpDialog .rp-side{flex:0 0 auto;margin-top:0}}';
+    + '#rpDialog .rp-player img.rp-crop{margin-top:-2.48%}'
+    + '#rpDialog .rp-spec{display:flex;align-items:center;gap:6px;color:#bbb;font-size:12px;flex-wrap:wrap}'
+    + '#rpDialog .rp-spec select,#rpDialog .rp-spec input{background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:6px;padding:3px 5px;font-size:12px}'
+    + '#rpDialog .rp-spec label{font-weight:normal;font-size:12px;color:#bbb;display:flex;align-items:center;gap:4px;margin:0}#rpDialog .rp-spec input{width:4.4em}#rpDialog .rp-spec button{width:auto;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px}'
+    + '#rpDialog .rp-tl2{display:flex;align-items:center;gap:10px;flex-wrap:wrap}'
+    + '#rpDialog .rp-keys{color:#999;font-size:11.5px;margin:6px 4px 0}#rpDialog .rp-keys kbd{background:#2a2a2a;border:1px solid #555;border-radius:4px;padding:0 4px;color:#ddd;font-family:inherit}'
+    + '#rpDialog .rp-prog small{color:#444;font-size:12px}#rpDialog .rp-bar{display:flex;gap:1px;height:9px;margin-top:3px}'
+    + '#rpDialog .rp-bar i{flex:1 1 0;min-width:0;background:#dfe3e0;border-radius:1px;cursor:pointer}'
+    + '#rpDialog .rp-bar i.yes{background:#2e7d32}#rpDialog .rp-bar i.no{background:#c62828}#rpDialog .rp-bar i.unsure{background:#9e9e9e}'
+    + '#rpDialog .rp-bar i.cur{box-shadow:0 0 0 2px #d97a00;position:relative;z-index:1}'
+    + '#rpDialog .rp-skip{font-size:12px;display:flex;gap:6px;align-items:center;color:#333}'
+    + '#rpDialog .rp-undo{width:auto;margin-left:6px;padding:1px 9px;border-radius:10px;border:1px solid var(--accent,#2b5e22);background:var(--accent,#2b5e22);color:#fff;cursor:pointer;font-size:12px}'
+    + '@media (max-width:800px){#rpDialog .rp-params,#rpDialog .rp-bottom{flex-wrap:wrap}#rpDialog .rp-box{flex-direction:column;width:100%;max-height:100%;border-radius:0;padding:8px 8px 96px}'
+    + '#rpDialog .rp-side{flex:0 0 auto;margin-top:0}#rpDialog .rp-keys{display:none}#rpDialog .rp-toolsrow{flex-wrap:wrap}'
+    // phone: the answers become a bar of big buttons fixed at the bottom of the screen
+    + '#rpDialog .rp-opts{position:fixed;left:0;right:0;bottom:0;display:flex;gap:6px;padding:8px;background:#1b1b1b;z-index:1001}'
+    + '#rpDialog .rp-opts .rp-opt{flex:1 1 0;flex-direction:column;justify-content:center;gap:4px;padding:8px 2px;text-align:center;font-size:12px}'
+    + '#rpDialog .rp-opts .rp-txt,#rpDialog .rp-opts .rp-key{display:none}#rpDialog .rp-opts .rp-ico{flex:0 0 38px;width:38px;height:38px;font-size:21px}'
+    + '#rpDialog.notmode .rp-opts{display:none}}';
   document.head.appendChild(st);
+}
+
+// THE entry point of every Review link or button in the interface (owner 2026-10-09: one code, no local variants):
+// reviewDetection(this) from any element. Inside a review item ([data-ri]) it reviews that item's list; elsewhere the
+// element's data-file (or the older call reviewDetection(file, this)) makes a one-detection item on the spot.
+function reviewDetection(a, b) {
+  var elem = (a && a.nodeType) ? a : b;
+  var file = (a && a.nodeType) ? (elem.dataset.file || '') : a;
+  if (!elem.closest('[data-ri]')) {
+    if (!file) return;
+    var box = elem.closest('td, .gcard, .clip, tr') || elem.parentNode;
+    var parts = file.split('/');
+    box.dataset.ri = '1';
+    box.dataset.file = file;
+    box.dataset.clip = '/By_Date/' + file;
+    box.dataset.label = (parts[1] ? parts[1].replace(/_/g, ' ') + ' \u00b7 ' : '') + (parts[0] || '');
+  }
+  openReviewPlayer(elem);
 }
 
 function openReviewPlayer(el) {
@@ -84,28 +124,39 @@ function openReviewPlayer(el) {
   var d = document.createElement('div');
   d.id = 'rpDialog';
   d.innerHTML = '<div class="rp-box"><button type="button" class="rp-close" title="Close (Esc)">&times;</button>'
-    + '<div class="rp-left"><div class="rp-title"><div class="rp-tl"><div class="rp-when"></div><div class="rp-com"></div></div>'
-    + '<div class="rp-tr"><div class="rp-sci"></div><div class="rp-en"></div></div></div>'
+    + '<div class="rp-left"><div class="rp-title"><div class="rp-when"></div>'
+    + '<div class="rp-tc"><div class="rp-com"></div><div class="rp-sci"></div></div>'
+    + '<div class="rp-tr"><div class="rp-en"></div></div></div>'
+    + '<div class="rp-params"></div>'
     + '<div class="rp-player"></div>'
-    + '<div class="rp-toolsrow"><a class="rp-folder" target="_blank" title="">&#128194; Open file location</a>'
+    + '<div class="rp-toolsrow"><div class="rp-tl2"><a class="rp-folder" target="_blank" title="">&#128194; Open file location</a>'
+    + '<span class="rp-spec" title="Spectrogram picture (remembered in this browser)"><select data-k="palette">'
+    + ['birdnet', 'viridis', 'inferno', 'ocean', 'grayscale', 'soxheat'].map(function (p) { return '<option value="' + p + '">' + p.charAt(0).toUpperCase() + p.slice(1) + '</option>'; }).join('')
+    + '</select><label>Floor <input type="number" data-k="floor" min="-120" max="-40" step="5"></label>'
+    + '<label>Range <input type="number" data-k="range" min="30" max="120" step="5"></label>'
+    + '<label>Contrast <input type="number" data-k="contrast" min="0.2" max="3" step="0.1"></label>'
+    + '<button type="button" class="rp-specreset" title="Back to the station\'s spectrogram settings">&#8634;</button></span></div>'
     + '<div class="rp-speed"><button type="button" data-sp="loop" title="Repeat only the detected 3 seconds">&#10227; Loop 3 s</button>'
     + '<span class="rp-rates" title="Playback speed">' + [0.5, 0.8, 1, 1.5, 2].map(function (r) { return '<button type="button" data-rate="' + r + '">' + String(r).replace('.', ',') + '&times;</button>'; }).join('') + '</span></div></div>'
-    + '<div class="rp-bottom"><div class="rp-params"></div>'
+    + '<div class="rp-bottom">'
     + '<div class="rp-right">'
     + '<div class="rp-vol"><button type="button" data-vol="down" title="Volume down">&#128265;&minus;</button><button type="button" data-vol="up" title="Volume up">&#128266;+</button>'
-    + '<button type="button" data-vol="mute" title="Mute">&#128263;</button><span class="rp-vollevel"></span></div></div></div></div>'
+    + '<button type="button" data-vol="mute" title="Mute">&#128263;</button><span class="rp-vollevel"></span></div></div></div>'
+    + '<div class="rp-keys">Keys: <kbd>Y</kbd> yes \u00b7 <kbd>N</kbd> not this bird \u00b7 <kbd>U</kbd> can\'t tell \u00b7 <kbd>C</kbd> clear \u00b7 '
+    + '<kbd>Z</kbd> undo \u00b7 <kbd>\u2190</kbd> <kbd>\u2192</kbd> previous / next \u00b7 <kbd>Space</kbd> play / pause \u00b7 <kbd>L</kbd> loop \u00b7 <kbd>Esc</kbd> close</div></div>'
     + '<div class="rp-side"><div class="rp-tools">'
     + '<img data-t="change" src="images/bird.svg" title="Change the species of this detection">'
     + '<img data-t="lock" src="images/unlock.svg" title="">'
     + '<img data-t="shift" src="images/shift.svg" title="">'
     + '</div><div class="rp-head"><img src="images/species-page.svg" alt=""><span>Is this the bird?</span></div>'
-    + '<div class="rp-now"></div><div class="rp-main">'
+    + '<div class="rp-prog"><small class="rp-now"></small><div class="rp-bar"></div></div><div class="rp-main"><div class="rp-opts">'
     + REVIEW_OPTS.map(function (o) {
         return '<button type="button" class="rp-opt" data-v="' + o[0] + '"><span class="rp-ico" style="background:' + o[2] + '">' + o[1] + '</span>'
           + '<span><b>' + o[3] + '</b><span class="rp-txt">' + o[4] + '</span></span><span class="rp-key">' + o[5] + '</span></button>';
-      }).join('')
+      }).join('') + '</div>'
     + '<div class="rp-msg"></div>'
-    + '<div class="rp-nav"><button type="button" data-nav="-1">&#9664; Previous</button><button type="button" data-nav="1">Next &#9654;</button></div></div>'
+    + '<div class="rp-nav"><button type="button" data-nav="-1">&#9664; Previous</button><button type="button" data-nav="1">Next &#9654;</button></div>'
+    + '<label class="rp-skip" title="Next, Previous and the answers jump over detections already reviewed"><input type="checkbox" class="rp-skipbox"> Skip reviewed detections</label></div>'
     + '<div class="rp-not"><h4>Not this bird \u2014 which was it?</h4>'
     + '<div class="rp-sub">Species the station\'s model hears in this clip (expected here first):</div><div class="rp-alts"></div>'
     + '<input type="search" class="rp-search" placeholder="Or search any species..."><div class="rp-found"></div>'
@@ -113,7 +164,7 @@ function openReviewPlayer(el) {
     + REVIEW_CAUSES.map(function (c) { return '<button type="button" class="rp-cause" data-r="' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</div>'
     + '<label class="rp-batch"><input type="checkbox" class="rp-batchbox"> <span class="rp-batchtxt"></span></label>'
     + '<button type="button" class="rp-back">&#9664; Back</button></div>'
-    + '<button type="button" class="rp-delete" title="Leaves the BirdNET folders and statistics and moves to the Removed folder; deleted for good only by hand, in Species \u203a Delete Removed">&#128683; Remove detection</button>'
+    + '<button type="button" class="rp-delete" title="Leaves the BirdNET folders and statistics and moves to the Removed folder; deleted for good only by hand, in Species \u203a Purge Removed">&#128683; Remove detection</button>'
     + '</div></div>';
   document.body.appendChild(d);
 
@@ -133,7 +184,7 @@ function openReviewPlayer(el) {
   function show(i, msg) {
     idx = i;
     var item = items[i];
-    // title: date and common name on the left, scientific and US (eBird / Clements) name on the right
+    // title: date and time on the left, common and scientific name centred, US (eBird / Clements) name on the right
     var lab = (item.dataset.label || '').split(' \u00b7 ');
     d.querySelector('.rp-when').textContent = item.dataset.when || lab[1] || '';
     d.querySelector('.rp-com').textContent = item.dataset.com || lab[0] || '';
@@ -150,20 +201,22 @@ function openReviewPlayer(el) {
     d.querySelector('.rp-params').innerHTML = Object.keys(params).map(function (k) {
       return '<span><small>' + k + '</small><b>' + String(params[k]).replace(/</g, '&lt;') + '</b></span>';
     }).join('');
-    d.querySelector('.rp-now').textContent = 'Detection ' + (i + 1) + ' of ' + items.length;
+    progress();
     d.querySelector('.rp-msg').textContent = msg || '';
     var v = verdictOf(item);
     toolIcons(item);
     d.querySelectorAll('.rp-opt').forEach(function (b) { b.classList.toggle('current', b.dataset.v === v); });
-    d.querySelector('[data-nav="-1"]').disabled = (i === 0);
-    d.querySelector('[data-nav="1"]').disabled = (i === items.length - 1);
+    d.querySelector('[data-nav="-1"]').disabled = (step(i, -1) < 0);
+    d.querySelector('[data-nav="1"]').disabled = (step(i, 1) < 0);
     d.querySelectorAll('.rp-player audio').forEach(function (a) { a.pause(); });
     var holder = d.querySelector('.rp-player');
     holder.innerHTML = '<div class="custom-audio-player"></div>';
     var p = holder.firstChild;
     p.dataset.audioSrc = item.dataset.clip;
-    p.dataset.imageSrc = item.dataset.clip + '.png';
+    p.dataset.imageSrc = specSrc(item);
     initCustomAudioPlayers(holder);
+    var img = p.querySelector('img');
+    if (img) img.classList.toggle('rp-crop', !specOverride());
     // started inside the click that led here (browsers only allow sound from the user's own gesture)
     var a = p.querySelector('audio');
     if (a) { applyVolume(a); applySpeed(a); a.src = item.dataset.clip; a.play().catch(function () {}); }
@@ -175,23 +228,66 @@ function openReviewPlayer(el) {
     if (v === 'no' && reason === undefined) { openNot(); return; }
     d.classList.remove('notmode');
     var item = items[idx];
-    var file = item.dataset.file;
+    var before = verdictOf(item);
+    send(item, v, reason);
+    setVerdict(item, v);
+    progress();
+    // the next detection starts right away (inside this click)
+    var said = 'Saved: ' + REVIEW_LABELS[v].replace(/^\W+ /, '');
+    var nx = step(idx, 1);
+    if (nx >= 0) show(nx, said + ' \u2014 next detection');
+    else d.querySelector('.rp-msg').textContent = said + '. That was the last detection to review in this list.';
+    offerUndo(function () {
+      send(item, before || 'clear');
+      setVerdict(item, before || 'clear');
+      show(items.indexOf(item), 'Answer undone');
+    });
+  }
+  function send(item, v, reason) {
     var x = new XMLHttpRequest();
     x.onload = function () {
-      if (this.responseText == 'OK') {
-        item.querySelectorAll('button.validatebtn').forEach(function (b) {
-          b.textContent = REVIEW_LABELS[v];
-          b.className = b.className.replace(/\bv-\w+/, 'v-' + (v === 'clear' ? 'none' : v));
-        });
-      } else {
+      if (this.responseText != 'OK') {
         d.querySelector('.rp-msg').textContent = (this.status === 401 ? 'Log in first to review detections.' : 'Not saved: ' + this.responseText);
+        setVerdict(item, 'clear');
+        progress();
       }
     };
-    x.open('GET', 'play.php?review=' + encodeURIComponent(file) + '&verdict=' + v + (reason ? '&reason=' + encodeURIComponent(reason) : ''), true);
+    x.open('GET', 'play.php?review=' + encodeURIComponent(item.dataset.file) + '&verdict=' + v + (reason ? '&reason=' + encodeURIComponent(reason) : ''), true);
     x.send();
-    // the next detection starts right away (inside this click)
-    if (idx < items.length - 1) show(idx + 1, 'Saved: ' + REVIEW_LABELS[v].replace(/^\W+ /, '') + ' — next detection');
-    else d.querySelector('.rp-msg').textContent = 'Saved. That was the last detection of this list.';
+  }
+  // the next (dir 1) or previous (-1) detection; with "Skip reviewed" on, the next one without an answer (-1: none)
+  function step(from, dir) {
+    var skip = d.querySelector('.rp-skipbox').checked;
+    for (var j = from + dir; j >= 0 && j < items.length; j += dir) if (!skip || !verdictOf(items[j])) return j;
+    return -1;
+  }
+  // "Detection 5 of 30 · 12 reviewed" and one mark per detection (green yes, red no, grey can't tell); a click jumps there
+  function progress() {
+    var done = items.filter(function (it) { return verdictOf(it); }).length;
+    d.querySelector('.rp-now').textContent = 'Detection ' + (idx + 1) + ' of ' + items.length + ' \u00b7 ' + done + ' reviewed';
+    var bar = d.querySelector('.rp-bar');
+    bar.innerHTML = items.map(function (it, j) { return '<i class="' + verdictOf(it) + (j === idx ? ' cur' : '') + '" data-j="' + j + '"></i>'; }).join('');
+  }
+  // Undo of the last answer or removal, offered for 5 s (button or Z)
+  var undoFn = null, undoTimer = null;
+  function offerUndo(fn) {
+    var msg = d.querySelector('.rp-msg');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'rp-undo';
+    b.textContent = 'Undo';
+    b.onclick = function () { doUndo(); };
+    msg.appendChild(b);
+    undoFn = fn;
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(function () { undoFn = null; if (b.parentNode) b.remove(); }, 5000);
+  }
+  function doUndo() {
+    var fn = undoFn;
+    undoFn = null;
+    clearTimeout(undoTimer);
+    d.querySelectorAll('.rp-undo').forEach(function (b) { b.remove(); });
+    if (fn) fn();
   }
   // ---- "Not this bird": which bird was it, or the cause ----
   var labels = null;
@@ -202,7 +298,8 @@ function openReviewPlayer(el) {
     });
   }
   function nextAfter(msg) {
-    if (idx < items.length - 1) show(idx + 1, msg + ' \u2014 next detection');
+    var nx = step(idx, 1);
+    if (nx >= 0) show(nx, msg + ' \u2014 next detection');
     else { d.classList.remove('notmode'); d.querySelector('.rp-msg').textContent = msg + '. That was the last detection of this list.'; }
   }
   function altButton(a, i) {
@@ -222,7 +319,7 @@ function openReviewPlayer(el) {
     d.querySelector('.rp-search').value = '';
     d.querySelector('.rp-found').innerHTML = '';
     var box = d.querySelector('.rp-alts');
-    box.innerHTML = '<div class="rp-wait">Asking the station\'s model about this clip (a few seconds)\u2026</div>';
+    box.innerHTML = '<div class="rp-wait">Asking the station\'s model about this clip\u2026</div>';
     var asked = item;
     var x = new XMLHttpRequest();
     x.onload = function () {
@@ -336,7 +433,7 @@ function openReviewPlayer(el) {
     preloaded = new Audio();
     preloaded.preload = 'auto';
     preloaded.src = nx.dataset.clip;
-    (new Image()).src = nx.dataset.clip + '.png';
+    (new Image()).src = specSrc(nx);
   }
   var touch = null;
   d.querySelector('.rp-left').addEventListener('touchstart', function (e) { var t = e.changedTouches[0]; touch = {x: t.clientX, y: t.clientY}; }, {passive: true});
@@ -366,6 +463,57 @@ function openReviewPlayer(el) {
     try { localStorage.setItem('rp_volume', String(s.v)); localStorage.setItem('rp_muted', s.m ? '1' : '0'); } catch (e) {}
     applyVolume(null);
   }
+  // ---- spectrogram picture: palette / floor / range / contrast (remembered in this browser) ----
+  // The station's settings show the stored picture with its title band cropped off; other values are drawn on demand
+  // (play.php?spectro=, scripts/review_worker.py) without a title.
+  var specDefaults = null, specTimer = null;
+  function specOverride() {
+    try { return JSON.parse(localStorage.getItem('rp_spec') || 'null'); } catch (e) { return null; }
+  }
+  function specSrc(item) {
+    var o = specOverride();
+    if (!o) return item.dataset.clip + '.png';
+    return 'play.php?spectro=' + encodeURIComponent(item.dataset.clip.replace(/^\/By_Date\//, '')) + '&palette=' + encodeURIComponent(o.palette)
+      + '&floor=' + encodeURIComponent(o.floor) + '&range=' + encodeURIComponent(o.range) + '&contrast=' + encodeURIComponent(o.contrast);
+  }
+  function specFill() {
+    var o = specOverride() || specDefaults;
+    if (!o) return;
+    d.querySelectorAll('.rp-spec [data-k]').forEach(function (f) { f.value = o[f.dataset.k]; });
+  }
+  function specInit() {
+    var x = new XMLHttpRequest();
+    x.onload = function () { try { specDefaults = JSON.parse(this.responseText); } catch (e) {} specFill(); };
+    x.open('GET', 'play.php?review_worker=1', true);
+    x.send();
+    specFill();
+    d.querySelectorAll('.rp-spec [data-k]').forEach(function (f) {
+      f.addEventListener(f.tagName === 'SELECT' ? 'change' : 'input', function () {
+        clearTimeout(specTimer);
+        specTimer = setTimeout(specApply, 500);
+      });
+    });
+    d.querySelector('.rp-specreset').onclick = function () {
+      try { localStorage.removeItem('rp_spec'); } catch (e) {}
+      specFill();
+      specRedraw();
+    };
+  }
+  function specApply() {
+    var o = {};
+    d.querySelectorAll('.rp-spec [data-k]').forEach(function (f) { o[f.dataset.k] = f.value; });
+    var same = specDefaults && Object.keys(o).every(function (k) { return String(o[k]) === String(specDefaults[k]); });
+    try { if (same) localStorage.removeItem('rp_spec'); else localStorage.setItem('rp_spec', JSON.stringify(o)); } catch (e) {}
+    specRedraw();
+  }
+  // only the picture changes: the sound keeps playing
+  function specRedraw() {
+    var img = d.querySelector('.rp-player img');
+    if (!img) return;
+    img.classList.toggle('rp-crop', !specOverride());
+    img.src = specSrc(items[idx]);
+    if (items[idx + 1]) (new Image()).src = specSrc(items[idx + 1]);
+  }
   function close() { d.querySelectorAll('audio').forEach(function (a) { a.pause(); }); d.remove(); document.removeEventListener('keydown', key); }
   function key(e) {
     if (e.target && e.target.classList && e.target.classList.contains('rp-search')) { if (e.key === 'Escape') d.classList.remove('notmode'); return; }
@@ -375,9 +523,19 @@ function openReviewPlayer(el) {
       if (n >= 1 && n <= alts.length) { e.preventDefault(); alts[n - 1].click(); }
       return;
     }
+    if (e.target && e.target.closest && e.target.closest('.rp-spec')) return;
     if (e.key === 'Escape') { close(); return; }
-    if (e.key === 'ArrowRight' && idx < items.length - 1) { e.preventDefault(); show(idx + 1); return; }
-    if (e.key === 'ArrowLeft' && idx > 0) { e.preventDefault(); show(idx - 1); return; }
+    var j = e.key === 'ArrowRight' ? step(idx, 1) : (e.key === 'ArrowLeft' ? step(idx, -1) : -2);
+    if (j >= 0) { e.preventDefault(); show(j); return; }
+    if (j === -1) return;
+    if (e.key === ' ') {
+      e.preventDefault();
+      var a = d.querySelector('.rp-player audio');
+      if (a) { if (a.paused) a.play().catch(function () {}); else a.pause(); }
+      return;
+    }
+    if (e.key === 'l' || e.key === 'L') { e.preventDefault(); d.querySelector('[data-sp=loop]').click(); return; }
+    if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); doUndo(); return; }
     var k = {y: 'yes', n: 'no', u: 'unsure', c: 'clear'}[e.key.toLowerCase()];
     if (k) { e.preventDefault(); answer(k); }
   }
@@ -416,10 +574,22 @@ function openReviewPlayer(el) {
     var x = new XMLHttpRequest();
     x.onload = function () {
       if (this.responseText == 'OK') {
+        var at = idx, parent = item.parentNode, after = item.nextSibling;
         items.splice(idx, 1);
         item.remove();
         if (!items.length) { close(); return; }
-        show(Math.min(idx, items.length - 1), 'Removed — next detection');
+        show(Math.min(idx, items.length - 1), 'Removed \u2014 next detection');
+        offerUndo(function () {
+          var y = new XMLHttpRequest();
+          y.onload = function () {
+            if (!/^OK [1-9]/.test(this.responseText)) { d.querySelector('.rp-msg').textContent = 'Not restored: ' + this.responseText; return; }
+            parent.insertBefore(item, after && after.parentNode === parent ? after : null);
+            items.splice(at, 0, item);
+            show(at, 'Removal undone');
+          };
+          y.open('GET', 'play.php?restore=1&file=' + encodeURIComponent(item.dataset.file.split('/').pop()), true);
+          y.send();
+        });
       } else d.querySelector('.rp-msg').textContent = 'Not removed: ' + this.responseText;
     };
     x.open('GET', 'play.php?deletefile=' + encodeURIComponent(item.dataset.file), true);
@@ -433,7 +603,16 @@ function openReviewPlayer(el) {
   d.querySelector('.rp-close').onclick = close;
   d.onclick = function (e) { if (e.target === d) close(); };
   d.querySelectorAll('.rp-opt').forEach(function (b) { b.onclick = function () { answer(b.dataset.v); }; });
-  d.querySelectorAll('[data-nav]').forEach(function (b) { b.onclick = function () { show(idx + parseInt(b.dataset.nav, 10)); }; });
+  d.querySelectorAll('[data-nav]').forEach(function (b) { b.onclick = function () { var j = step(idx, parseInt(b.dataset.nav, 10)); if (j >= 0) show(j); }; });
+  d.querySelector('.rp-bar').onclick = function (e) { if (e.target.dataset.j) show(parseInt(e.target.dataset.j, 10)); };
+  // Skip reviewed: on unless switched off in this browser
+  var skipBox = d.querySelector('.rp-skipbox');
+  try { skipBox.checked = localStorage.getItem('rp_skip') !== '0'; } catch (e) { skipBox.checked = true; }
+  skipBox.onchange = function () {
+    try { localStorage.setItem('rp_skip', skipBox.checked ? '1' : '0'); } catch (e) {}
+    show(idx, d.querySelector('.rp-msg').textContent);
+  };
+  specInit();
   document.addEventListener('keydown', key);
   show(idx);
 }

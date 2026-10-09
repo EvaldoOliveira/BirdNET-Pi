@@ -1,7 +1,7 @@
 <?php
 ?>
 <?php
-// Totals of Today's Detections, the same compact table as the Overview (owner 2026-10-08)
+// Today's totals (Now page, kiosk): indicator cards like By Hour (owner 2026-10-09)
 function render_today_stats($totalcount, $todaycount, $totalspeciestally, $todayspeciestally, $kiosk) {
   $new_today = 0;
   $stmt_new = get_db()->prepare("SELECT COUNT(DISTINCT Sci_Name) AS n FROM detections WHERE Date = DATE('now', 'localtime')
@@ -9,18 +9,21 @@ function render_today_stats($totalcount, $todaycount, $totalspeciestally, $today
   if ($stmt_new !== false && ($res_new = $stmt_new->execute()) !== false) {
     $new_today = (int)($res_new->fetchArray(SQLITE3_ASSOC)['n'] ?? 0);
   }
-  $today = date('Y-m-d');
-  $btn = function ($name, $value, $label) use ($kiosk) {
-    if ($kiosk) return $label;
-    $hidden = $name === 'date' ? '<input type="hidden" name="view" value="Recordings">' : '';
-    return '<form action="" method="GET">' . $hidden . '<button type="submit" name="' . $name . '" value="' . $value . '">' . $label . '</button></form>';
+  // indicator cards (owner 2026-10-09); a click opens By Hour / Species Pages
+  $best = get_db()->querySingle("SELECT MAX(Confidence) FROM detections WHERE Date = DATE('now', 'localtime')" . not_rejected_sql());
+  $card = function ($label, $value, $href, $cls = 'kpi') use ($kiosk) {
+    $inner = '<small>' . $label . '</small><b>' . $value . '</b>';
+    return $kiosk ? '<div class="' . $cls . '">' . $inner . '</div>' : '<a class="' . $cls . '" href="' . $href . '">' . $inner . '</a>';
   };
-  echo '<table class="totals"><tr><th>#Total</th><th>#Today</th><th>Sp. Total</th><th>Sp. Today</th><th>New Today</th></tr><tr>'
-    . '<td>' . $totalcount . '</td>'
-    . '<td>' . $btn('date', $today, $todaycount) . '</td>'
-    . '<td>' . $btn('view', 'Species Stats', $totalspeciestally) . '</td>'
-    . '<td>' . $btn('date', $today, $todayspeciestally) . '</td>'
-    . '<td>' . $new_today . '</td></tr></table>';
+  // today's cards first (best confidence is today's too), then a wider gap and the all-days cards
+  echo '<div class="kpis">'
+    . $card('Detections today', number_format((int)$todaycount), 'views.php?view=Dashboard')
+    . $card('Species today', (int)$todayspeciestally, 'views.php?view=Dashboard')
+    . $card('New today', $new_today, 'views.php?view=Dashboard')
+    . $card('Best confidence', round(floatval($best) * 100) . '%', 'views.php?view=Dashboard')
+    . $card('Total (all days)', number_format((int)$totalcount), 'views.php?view=Dashboard&amp;from=' . (string)get_db()->querySingle('SELECT MIN(Date) FROM detections') . '&amp;to=' . date('Y-m-d'), 'kpi kpi2')
+    . $card('Species (all days)', (int)$totalspeciestally, 'views.php?view=Bird')
+    . '</div>';
 }
 ?>
 <?php
@@ -41,7 +44,7 @@ $site_name = get_sitename();
 set_timezone();
 
 if(isset($kiosk) && $kiosk == true) {
-    echo "<div style='margin-top:20px' class=\"centered\"><h1><a><img class=\"topimage\" src=\"images/bnp.png\"></a></h1></div>
+    echo "<div style='margin-top:20px' class=\"centered\"><h1><a><img class=\"topimage\" src=\"images/birdnetpi-plus.png\" alt=\"BirdnetPi++\"></a></h1></div>
 </div><div class=\"centered\"><h3>$site_name</h3></div><hr>";
 } else {
   $kiosk = false;
@@ -167,7 +170,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
     $searchquery = "";
   }
   if(isset($_GET['display_limit']) && is_numeric($_GET['display_limit'])){
-    $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, File_Name FROM detections WHERE Date == Date(\'now\', \'localtime\') '.$searchquery.' ORDER BY Time DESC LIMIT '.(intval($_GET['display_limit'])-40).',40');
+    $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, Loc_Thresh, Rec_Length, Sp_Override, File_Name FROM detections WHERE Date == Date(\'now\', \'localtime\') '.$searchquery.' ORDER BY Time DESC LIMIT '.(intval($_GET['display_limit'])-40).',40');
   } else {
     // legacy mode
     if(isset($_GET['hard_limit']) && is_numeric($_GET['hard_limit'])) {
@@ -175,7 +178,13 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
       // gallery pages: offset = how many newer detections are skipped; one extra row tells whether older ones exist
       $g_offset = max(0, intval($_GET['offset'] ?? 0));
       $g_limit = intval($_GET['hard_limit']) + (isset($_GET['gallery']) ? 1 : 0);
-      $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, File_Name FROM detections WHERE 1 '.$searchquery.' ORDER BY Date DESC, Time DESC LIMIT '.$g_limit.' OFFSET '.$g_offset);
+      // Now filters (owner 2026-10-09): lowconf = confidence below N %, lowprob = location model probability below N %
+      // (or not in the location profile); the probability is not in the database, so lowprob filters while reading
+      $g_filter = in_array($_GET['filter'] ?? '', array('lowconf', 'lowprob'), true) ? $_GET['filter'] : '';
+      $g_below = max(5, min(95, intval($_GET['below'] ?? 50))) / 100;
+      if ($g_filter === 'lowconf') $searchquery .= ' AND Confidence < ' . $g_below;
+      $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, Loc_Thresh, Rec_Length, Sp_Override, File_Name FROM detections WHERE 1 '.$searchquery.' ORDER BY Date DESC, Time DESC'
+        . ($g_filter === 'lowprob' ? '' : ' LIMIT '.$g_limit.' OFFSET '.$g_offset));
     } else {
       $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, File_Name FROM detections WHERE Date == Date(\'now\', \'localtime\') '.$searchquery.' ORDER BY Time DESC');
     }
@@ -195,7 +204,13 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
     $n = 0;
     $page = intval($_GET['hard_limit']);
     $more = false;
+    $skip = 0;
     while ($g = $result0->fetchArray(SQLITE3_ASSOC)) {
+      if (($g_filter ?? '') === 'lowprob') {
+        $pr = location_probability($g['Sci_Name'], $g['Date']);
+        if ($pr !== null && $pr >= $g_below) continue;
+        if ($skip++ < $g_offset) continue;
+      }
       if ($n >= $page) { $more = true; break; }
       $n++;
       if ($as_list) { $list_rows[] = $g; continue; }
@@ -206,13 +221,13 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
       $fj = htmlspecialchars(json_encode($file), ENT_QUOTES);
       echo '<div class="gcard"' . review_item_attrs($file, $g['Com_Name'] . ' · ' . $when . ' · ' . round($g['Confidence'] * 100) . '%', $g['Sci_Name'], $g) . '><div class="gbody"><div class="gtop">'
         . '<div class="gnames"><a href="views.php?view=Bird&amp;sci=' . rawurlencode($g['Sci_Name']) . '" title="Open the species page"><b>' . htmlspecialchars($g['Com_Name']) . '</b></a><br><i>' . htmlspecialchars($g['Sci_Name']) . '</i></div>'
-        . '<div class="gacts"><img src="images/delete.svg" title="Delete Detection" onclick="deleteDetection(' . $fj . ')">' . validate_button($file, null, false, 'openReviewPlayer(this)') . '</div></div>'
+        . '<div class="gacts"><img src="images/delete.svg" title="Delete Detection" onclick="deleteDetection(' . $fj . ')">' . validate_button($file) . '</div></div>'
         . '<div class="gmeta">' . htmlspecialchars($when) . ' · ' . round($g['Confidence'] * 100) . '%</div>'
-        . '<img class="gspec" loading="lazy" src="' . htmlspecialchars($clip) . '.png" alt="spectrogram" title="Listen and review" onclick="openReviewPlayer(this)"></div></div>';
+        . '<img class="gspec" loading="lazy" src="' . htmlspecialchars($clip) . '.png" alt="spectrogram" title="Listen and review" onclick="reviewDetection(this)"></div></div>';
     }
     echo $as_list ? detection_review_table($list_rows) : '</div>';
-    if ($n == 0) echo '<h3>No detections yet.</h3>';
-    // newer / older pages of 30
+    if ($n == 0) echo '<h3>' . (($g_filter ?? '') !== '' ? 'No detections below ' . round($g_below * 100) . '%.' : 'No detections yet.') . '</h3>';
+    // newer / older pages of 50
     if ($g_offset > 0 || $more) {
       echo '<div class="nowpager">'
         . ($g_offset > 0 ? '<button type="button" class="openbtn" onclick="nowPage(' . max(0, $g_offset - $page) . ')">&#9664; Newer ' . $page . '</button>' : '<span></span>')
@@ -353,7 +368,7 @@ if (get_included_files()[0] === __FILE__) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BirdNET-Pi DB</title>
+  <title>BirdnetPi++</title>
 </head>';
 }
 ?>
@@ -367,7 +382,7 @@ if (get_included_files()[0] === __FILE__) {
   </dialog>
   <script src="static/dialog-polyfill.js"></script>
   <script src="static/detection-actions.js"></script>
-  <script src="static/review-player.js"></script>
+  <script src="static/review-player.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/review-player.js"); ?>"></script>
   <script src="static/Chart.bundle.js"></script>
   <script src="static/chartjs-plugin-trendline.min.js"></script>
   
@@ -453,7 +468,7 @@ if (get_included_files()[0] === __FILE__) {
   }
 };
 </script>
-<button onclick="scrollToTop();" style="background-color: #dbffeb;padding: 20px;position: fixed;bottom: 5%;right: 5%;transition:box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0px 3px 1px -2px rgb(0 0 0 / 20%), 0px 2px 2px 0px rgb(0 0 0 / 14%), 0px 1px 5px 0px rgb(0 0 0 / 12%);">Scroll To Top</button>
+<button onclick="scrollToTop();" style="background-color: var(--panel,#dbffeb);padding: 20px;position: fixed;bottom: 5%;right: 5%;transition:box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0px 3px 1px -2px rgb(0 0 0 / 20%), 0px 2px 2px 0px rgb(0 0 0 / 14%), 0px 1px 5px 0px rgb(0 0 0 / 12%);">Scroll To Top</button>
 <?php } ?>
 
 <script>
@@ -569,7 +584,7 @@ window.addEventListener("load", function(){
 }
 </style>
 
-<script src="static/custom-audio-player.js"></script>
+<script src="static/custom-audio-player.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/custom-audio-player.js"); ?>"></script>
 <script src="static/generateMiniGraph.js"></script>
 <script>
 // Listen for the scroll event on the window object

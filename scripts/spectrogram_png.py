@@ -74,12 +74,18 @@ def magnitudes_db(path):
     return db[idx][::-1], len(data) / sr
 
 
-def render(path, out, title='', raw=False, comment=''):
-    conf = get_settings()
+def render(path, out, title='', raw=False, comment='', opts=None):
+    # opts (review player, owner 2026-10-09): palette / floor / range / contrast instead of the station settings
+    conf = dict(get_settings())
+    for key, name in (('SPECTROGRAM_PALETTE', 'palette'), ('SPECTROGRAM_FLOOR_DB', 'floor'),
+                      ('SPECTROGRAM_RANGE_DB', 'range'), ('SPECTROGRAM_CONTRAST', 'contrast')):
+        if opts and opts.get(name) not in (None, ''):
+            conf[key] = str(opts[name])
     floor = _float(conf, 'SPECTROGRAM_FLOOR_DB', -100, -120, -40)
     rng = _float(conf, 'SPECTROGRAM_RANGE_DB', 70, 30, 120)
     gamma = _float(conf, 'SPECTROGRAM_CONTRAST', 1, 0.2, 3)
     lut = palette_lut((conf.get('SPECTROGRAM_PALETTE') or 'birdnet').strip(), gamma)
+    top_margin = TOP if title else 10   # no title: no empty band above the picture
 
     db, seconds = magnitudes_db(path)
     top = min(0, floor + rng)
@@ -89,8 +95,9 @@ def render(path, out, title='', raw=False, comment=''):
         picture.save(out)
         return
 
-    img = Image.new('RGB', (LEFT + WIDTH + RIGHT, TOP + HEIGHT + BOTTOM), (0, 0, 0))
-    img.paste(picture, (LEFT, TOP))
+    TOP_ = top_margin
+    img = Image.new('RGB', (LEFT + WIDTH + RIGHT, TOP_ + HEIGHT + BOTTOM), (0, 0, 0))
+    img.paste(picture, (LEFT, TOP_))
     draw = ImageDraw.Draw(img)
     try:
         font = ImageFont.truetype('DejaVuSans.ttf', 11)
@@ -98,29 +105,29 @@ def render(path, out, title='', raw=False, comment=''):
     except OSError:
         font = title_font = ImageFont.load_default()
     grey = (200, 200, 200)
-    draw.rectangle([LEFT - 1, TOP - 1, LEFT + WIDTH, TOP + HEIGHT], outline=grey)
+    draw.rectangle([LEFT - 1, TOP_ - 1, LEFT + WIDTH, TOP_ + HEIGHT], outline=grey)
     if title:
         draw.text((LEFT + WIDTH / 2, 8), title, fill=(255, 255, 255), font=title_font, anchor='mt')
     for khz in range(0, MAX_HZ // 1000 + 1):
-        y = TOP + HEIGHT - 1 - khz * 1000 * (HEIGHT - 1) / MAX_HZ
+        y = TOP_ + HEIGHT - 1 - khz * 1000 * (HEIGHT - 1) / MAX_HZ
         draw.line([LEFT - 5, y, LEFT - 1, y], fill=grey)
         draw.text((LEFT - 8, y), 'DC' if khz == 0 else str(khz), fill=grey, font=font, anchor='rm')
-    draw.text((14, TOP + HEIGHT / 2), 'kHz', fill=grey, font=font, anchor='mm')
+    draw.text((14, TOP_ + HEIGHT / 2), 'kHz', fill=grey, font=font, anchor='mm')
     for s in range(0, int(seconds) + 1):
         x = LEFT + s * (WIDTH - 1) / max(seconds, 1e-6)
-        draw.line([x, TOP + HEIGHT, x, TOP + HEIGHT + 4], fill=grey)
-        draw.text((x, TOP + HEIGHT + 7), str(s), fill=grey, font=font, anchor='mt')
-    draw.text((LEFT + WIDTH / 2, TOP + HEIGHT + 24), 'Time (s)', fill=grey, font=font, anchor='mt')
+        draw.line([x, TOP_ + HEIGHT, x, TOP_ + HEIGHT + 4], fill=grey)
+        draw.text((x, TOP_ + HEIGHT + 7), str(s), fill=grey, font=font, anchor='mt')
+    draw.text((LEFT + WIDTH / 2, TOP_ + HEIGHT + 24), 'Time (s)', fill=grey, font=font, anchor='mt')
     # dBFS colour bar
     bx, bw = LEFT + WIDTH + 28, 14
     bar = Image.fromarray(np.repeat(lut[::-1][:, None, :], bw, axis=1)).resize((bw, HEIGHT))
-    img.paste(bar, (bx, TOP))
-    draw.rectangle([bx - 1, TOP - 1, bx + bw, TOP + HEIGHT], outline=grey)
+    img.paste(bar, (bx, TOP_))
+    draw.rectangle([bx - 1, TOP_ - 1, bx + bw, TOP_ + HEIGHT], outline=grey)
     for i in range(6):
         value = top - i * (top - floor) / 5
-        y = TOP + i * (HEIGHT - 1) / 5
+        y = TOP_ + i * (HEIGHT - 1) / 5
         draw.text((bx + bw + 6, y), f'{value:.0f}', fill=grey, font=font, anchor='lm')
-    draw.text((bx + bw / 2, TOP + HEIGHT + 7), 'dBFS', fill=grey, font=font, anchor='mt')
+    draw.text((bx + bw / 2, TOP_ + HEIGHT + 7), 'dBFS', fill=grey, font=font, anchor='mt')
     if comment:
         draw.text((2, img.size[1] - 2), comment, fill=grey, font=font, anchor='lb')
     out = os.path.realpath(out)  # Extracted/spectrogram.png is a link into StreamData: keep the link

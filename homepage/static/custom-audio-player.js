@@ -2,7 +2,7 @@ function initCustomAudioPlayers(root) {
   // =================== Config & Helpers ===================
   const CONFIG = {
     LEFT_MARGIN_PERCENT: 6,
-    RIGHT_MARGIN_PERCENT: 9,
+    RIGHT_MARGIN_PERCENT: 11.4,
     PROGRESS_BAR_UPDATE_INTERVAL: 20,
     BUFFER_TIME: 0.1,
   };
@@ -230,6 +230,8 @@ function initCustomAudioPlayers(root) {
 
       // Dark vertical progression bar
       img.addEventListener("load", () => {
+        // the picture can be reloaded (review player palette): one bar only
+        if (indicator) return;
         indicator = document.createElement("div");
         applyStyles(indicator, {
           position: "absolute",

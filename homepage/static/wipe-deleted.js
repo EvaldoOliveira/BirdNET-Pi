@@ -1,4 +1,4 @@
-// Delete the removed detections for good (Species › Delete Removed and the species page, owner 2026-10-09): asks first, showing how
+// Delete the removed detections for good (Species › Purge Removed and the species page, owner 2026-10-09): asks first, showing how
 // many files of each species will be removed for good, with No as the default. Needs static/species-modal.js.
 // sci = a scientific name, or '' for every species.
 function wipeDeleted(sci, btn) {

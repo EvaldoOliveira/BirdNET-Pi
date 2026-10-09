@@ -1,7 +1,7 @@
 // Detection actions shared by the Recordings, Today's Detections and Overview pages: delete, change the
 // species, protect from purge (lock) and frequency shift — all through play.php (owner 2026-10-08).
 function deleteDetection(filename,copylink=false) {
-  if (confirm("Remove this detection? It leaves the BirdNET folders and statistics and moves to the Removed folder (deleted for good only by hand, in Species > Delete Removed).") == true) {
+  if (confirm("Remove this detection? It leaves the BirdNET folders and statistics and moves to the Removed folder (deleted for good only by hand, in Species > Purge Removed).") == true) {
     const xhttp = new XMLHttpRequest();
     xhttp.onload = function() {
       if(this.responseText == "OK"){
@@ -202,17 +202,4 @@ function changeDetection(filename,copylink=false) {
   xhttp.send();
 }
 
-// Review (owner 2026-10-09): every Review button opens the standard review player (static/review-player.js). A
-// button inside a review item ([data-ri]) reviews its list; elsewhere a one-detection item is made on the spot.
-function reviewDetection(filename, elem) {
-  if (typeof openReviewPlayer !== 'function') { alert('The review player is not loaded on this page.'); return; }
-  if (!elem.closest('[data-ri]')) {
-    var box = elem.closest('td, .gcard, .clip, tr') || elem.parentNode;
-    var parts = filename.split('/');
-    box.dataset.ri = '1';
-    box.dataset.file = filename;
-    box.dataset.clip = '/By_Date/' + filename;
-    box.dataset.label = (parts[1] ? parts[1].replace(/_/g, ' ') + ' · ' : '') + (parts[0] || '');
-  }
-  openReviewPlayer(elem);
-}
+// Review: reviewDetection() lives in static/review-player.js (the one review widget of the interface)

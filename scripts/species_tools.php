@@ -4,7 +4,11 @@ $_GET  = filter_input_array(INPUT_GET, FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?: []
 $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?: [];
 
 require_once __DIR__ . '/common.php';
-ensure_authenticated();
+/* Species Pages (owner 2026-10-09: the species list and Species Management are one page, view=Bird): anyone sees the
+ * list; every change (tier, threshold, lists, delete) needs the login */
+foreach (['settier', 'setconf', 'toggle', 'getcounts', 'delete'] as $action) {
+  if (isset($_GET[$action])) ensure_authenticated();
+}
 
 $home = get_home();
 
@@ -212,75 +216,96 @@ if (isset($_GET['delete'])) {
 
 /* ---------- query species aggregates ---------- */
 $sql = <<<SQL
-SELECT Com_Name, Sci_Name, COUNT(*) AS Count, MAX(Confidence) AS MaxConfidence, MAX(Date) AS LastSeen
+SELECT Com_Name, Sci_Name, COUNT(*) AS Count, MAX(Confidence) AS MaxConfidence, MAX(Date) AS LastSeen, MIN(Date) AS FirstSeen, COUNT(DISTINCT Date) AS Days
 FROM detections
 GROUP BY Sci_Name;
 SQL;
 $result = $db->query($sql);
+// Detected (default) = the species with detections; All (owner 2026-10-09) = also every species the station can detect:
+// the active model's labels, limited to the include list (Custom Species List) when it has species, minus the exclude
+// list — the location threshold is ignored. Both are sorted from the most to the least recorded.
+$scope = ($_GET['scope'] ?? '') === 'all' ? 'all' : 'detected';
+$rows = [];
+while ($r = $result->fetchArray(SQLITE3_ASSOC)) $rows[$r['Sci_Name']] = $r;
+$confirmed_set = array_flip($confirmed_species);
+$excluded_set = array_flip($excluded_species);
+$whitelisted_set = array_flip($whitelisted_species);
+if ($scope === 'all') {
+  $label_name = active_model_labels();
+  $include = [];
+  foreach (@file($home . '/BirdNET-Pi/include_species_list.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $l) {
+    $include[explode('_', trim($l), 2)[0]] = true;
+  }
+  foreach ($label_name as $sci => $name) {
+    if (isset($rows[$sci]) || isset($excluded_set[$sci]) || ($include && !isset($include[$sci]))) continue;
+    $rows[$sci] = ['Com_Name' => $name, 'Sci_Name' => $sci, 'Count' => 0, 'MaxConfidence' => null, 'LastSeen' => '', 'FirstSeen' => '', 'Days' => 0];
+  }
+}
+uasort($rows, fn($a, $b) => ($b['Count'] <=> $a['Count']) ?: strcmp($a['Com_Name'], $b['Com_Name']));
 ?>
 <style>
   .circle-icon{display:inline-block;width:12px;height:12px;border:1px solid #777;border-radius:50%;cursor:pointer;}
   /* left-aligned beside the side menu, smaller type (owner 2026-10-08) */
   .centered{max-width:none;margin:0 4px}
-  #speciesTable{font-size:12px;margin-left:0;margin-right:auto;width:auto}
+  /* the table standard (stdtable + std-table.js + species name picklist), compact type (owner 2026-10-09) */
+  #speciesTable{font-size:12px;width:auto}
   #speciesTable th,#speciesTable td{padding:3px 6px}
   #speciesTable select,#speciesTable input{font-size:12px}
-  #speciesTable th{cursor:pointer}
-  .toolbar{display:flex;gap:8px;align-items:center;margin:8px 0}
-  .toolbar input[type="text"]{padding:6px 8px;min-width:260px}
-  #speciesTable a,
-  #speciesTable a:visited,
-  #speciesTable a:active {
-    color: black;
-    text-decoration: none;
-  }
+  /* table standard: list buttons on the left, the filter on the right, both on the table's width */
+  .spm{display:inline-block;max-width:100%}
+  .toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:8px 0;flex-wrap:wrap}
+  .toolbar .right{display:flex;gap:8px;align-items:center}
+  .toolbar input[type="text"]{padding:5px 8px;width:260px;max-width:100%;font-size:14px}
+  .toolbar .nowmodes button{padding:4px 12px;font-size:12px;border-radius:12px;height:auto;line-height:normal;margin:0}
+  #speciesTable td{white-space:nowrap}
+  .spnew{font-size:11px;background:#d97a00;color:#fff;border-radius:8px;padding:0 6px;margin-left:4px}
 </style>
 
-<div class="centered">
-  <!-- Search with persistence -->
+<div class="centered"><div class="spm">
   <div class="toolbar">
-    <input id="q" type="text" placeholder="Filter species… (name, scientific)" title="Type to filter; persists across reloads">
-    <small id="matchCount"></small>
+    <span class="nowmodes"><button type="button" class="<?php echo $scope === 'detected' ? 'active' : ''; ?>" onclick="location.href='views.php?view=Bird'" title="Species with detections">Detected</button><button type="button" class="<?php echo $scope === 'all' ? 'active' : ''; ?>" onclick="location.href='views.php?view=Bird&amp;scope=all'" title="Every species the station can detect: the model's species, limited to the Custom Species List when it has species, without the Excluded Species; the location threshold is ignored">All</button></span>
+    <span class="right"><small id="matchCount"></small><input id="q" type="text" placeholder="Filter species… (common, scientific or English name)" title="Type to filter; persists across reloads"></span>
   </div>
 
-  <table id="speciesTable">
+  <table id="speciesTable" class="stdtable">
     <thead>
       <tr>
-        <th onclick="sortTable(0)" style="text-align:left !important">Common Name</th>
-        <th onclick="sortTable(1)">Scientific Name</th>
-        <th onclick="sortTable(2)">Max. Detected Confidence</th>
-        <th onclick="sortTable(3)" title="Minimum confidence for this species; empty = the global Minimum Confidence (<?php echo htmlspecialchars(sprintf('%.2f', $global_conf)); ?>)">Species Threshold</th>
-        <th onclick="sortTable(4)">Last Seen</th>
-        <th onclick="sortTable(5)">Probability</th>
-        <th onclick="sortTable(6)">Notification</th>
-        <th onclick="sortTable(7)">Confirmed</th>
-        <th onclick="sortTable(8)">Whitelist</th>
-        <th onclick="sortTable(9)" title="Ticked = in the exclude list: no longer detected (its past detections stay listed here)">Exclude</th>
-        <th>Stats</th>
-        <th onclick="sortTable(11)">Count</th>
-        <th>Delete</th>
+        <th><select class="namemode" title="Names shown"><option value="com">Common name</option><option value="sci">Scientific name</option><option value="en">English name</option></select></th>
+        <th class="r">Count</th>
+        <th class="r" title="Days with detections">Days</th>
+        <th class="r" title="Highest confidence of its detections">Max. Conf.</th>
+        <th>First Seen</th>
+        <th>Last Seen</th>
+        <th class="r" title="Minimum confidence for this species (species override); empty = the global Minimum Confidence (<?php echo htmlspecialchars(sprintf('%.2f', $global_conf)); ?>)">Sp. Override</th>
+        <th class="r">Probability</th>
+        <th>Notification</th>
+        <th>Confirmed</th>
+        <th>Whitelist</th>
+        <th title="Ticked = in the exclude list: no longer detected (its past detections stay listed here)">Exclude</th>
+        <th class="r" title="Clip files on disk">Files</th>
+        <th data-nosort>Delete</th>
       </tr>
     </thead>
     <tbody>
-<?php while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+<?php foreach ($rows as $row) {
   $common = $row['Com_Name'];
   $scient = $row['Sci_Name'];
   $count  = (int)$row['Count'];
-  $max_confidence = round((float)$row['MaxConfidence'] * 100, 1);
+  $max_confidence = $row['MaxConfidence'] === null ? '' : round((float)$row['MaxConfidence'] * 100, 1);
   $identifier = $row['Sci_Name'].'_'.$row['Com_Name'];
   $identifier_sci = $row['Sci_Name'];
 
   $lastSeen = $row['LastSeen'] ?? '';
   $lastSeenSort = $lastSeen ? (strtotime($lastSeen) ?: 0) : 0;
 
-  $common_link = "<a href='views.php?view=Bird&sci=" . rawurlencode($row['Sci_Name']) . "' title='Open the species page'>{$common}</a>";
+  $english = get_english_name($row['Sci_Name']);
+  $common_link = "<a href='views.php?view=Bird&amp;sci=" . rawurlencode($row['Sci_Name']) . "' title='Open the species page' data-com=\"" . htmlspecialchars($common, ENT_QUOTES)
+    . "\" data-sci=\"" . htmlspecialchars($scient, ENT_QUOTES) . "\" data-en=\"" . htmlspecialchars($english, ENT_QUOTES) . "\">{$common}</a>";
 
-  $is_confirmed   = in_array($identifier_sci, $confirmed_species, true);
-  $is_excluded    = in_array($identifier_sci, $excluded_species, true);
-  $is_whitelisted = in_array($identifier_sci, $whitelisted_species, true);
+  $is_confirmed   = isset($confirmed_set[$identifier_sci]);
+  $is_excluded    = isset($excluded_set[$identifier_sci]);
+  $is_whitelisted = isset($whitelisted_set[$identifier_sci]);
 
-  $comnamegraph = str_replace("'", "\'", $row['Com_Name']);
-  $chart_cell = sprintf("<img style='height: 1em;cursor:pointer;float:unset;display:inline' title='View species stats' onclick=\"generateMiniGraph(this, '%s', 180)\" width=25 src='images/chart.svg'>", $comnamegraph);
 
   $identifier_js = addslashes($identifier);
   $identifier_sci_js = addslashes($identifier_sci);
@@ -313,114 +338,54 @@ $result = $db->query($sql);
              . " title='Empty = global " . sprintf('%.2f', $global_conf) . "'"
              . " onchange=\"setConf('{$identifier_sci_js}', this)\">";
 
-  $sciname_raw = $row['Sci_Name'];
-    $info_url = get_info_url($sciname_raw);
-    if (!empty($info_url)) {
-        $url = $info_url['URL'] ?? $info_url;
-        $scient_link = "<a href=\"{$url}\" target=\"_blank\"><i>{$scient}</i></a>";
-    } else {
-        $scient_link = "<i>{$scient}</i>";
-    }
-    
-  echo "<tr data-comname=\"{$common}\" data-sciname=\"{$scient}\">"
-     . "<td style='white-space:nowrap;text-align:left !important'>{$common_link}</td>"
-     . "<td>{$scient_link}</td>"
-     . "<td data-sort='{$max_confidence}'>{$max_confidence}%</td>"
-     . "<td data-sort='{$conf_sort}'>".$conf_cell."</td>"
-     . "<td data-sort=\"{$lastSeenSort}\">{$lastSeen}</td>"
-     . "<td class='threshold' data-sort='0'>0.0000</td>"
+  // location model probability this week (region_profile.json, as in the detection lists) — computed here, so the
+  // column needs no second request (that one needed the login and stayed 0.0000 for visitors, owner 2026-10-09)
+  $prob = location_probability($scient, date('Y-m-d'));
+  $prob_cell = $prob === null ? "<td class='r' data-sort='-1'>—</td>"
+    : "<td class='r' data-sort='" . sprintf('%.4f', $prob) . "' style='color:" . ($prob >= $sf_thresh ? 'green' : 'red') . "'>" . sprintf('%.4f', $prob) . "</td>";
+  echo "<tr data-comname=\"{$common}\" data-sciname=\"{$scient}\" data-q=\"" . htmlspecialchars(mb_strtolower($common . ' ' . $scient . ' ' . $english), ENT_QUOTES) . "\">"
+     . "<td style='white-space:nowrap'>{$common_link}" . (($row['FirstSeen'] ?? '') === date('Y-m-d') ? "<span class='spnew'>new today</span>" : '') . "</td>"
+     . "<td class='r'>{$count}</td>"
+     . "<td class='r'>" . (int)($row['Days'] ?? 0) . "</td>"
+     . "<td class='r' data-sort='" . ($max_confidence === '' ? -1 : $max_confidence) . "'>" . ($max_confidence === '' ? '—' : $max_confidence . '%') . "</td>"
+     . "<td>" . (($row['FirstSeen'] ?? '') === '' ? '—' : $row['FirstSeen']) . "</td>"
+     . "<td data-sort=\"{$lastSeenSort}\">" . ($lastSeen === '' ? '—' : $lastSeen) . "</td>"
+     . "<td class='r' data-sort='{$conf_sort}'>".$conf_cell."</td>"
+     . $prob_cell
      . "<td data-sort='{$species_tier}'>".$tier_cell."</td>"
      . "<td data-sort='".($is_confirmed?0:1)."'>".$confirm_cell."</td>"
      . "<td data-sort='".($is_whitelisted?0:1)."'>".$white_cell."</td>"
      . "<td data-sort='".($is_excluded?0:1)."'>".$excl_cell."</td>"
-     . "<td>{$chart_cell}</td>"
-     . "<td>{$count}</td>"
-     . "<td><img style='cursor:pointer;max-width:20px' src='images/delete.svg' onclick=\"deleteSpecies('".addslashes($row['Sci_Name'])." + ".addslashes($row['Com_Name'])."')\"></td>"
+     . "<td class='r diskcount' data-sort='0'>…</td>"
+     . "<td>" . ($count ? "<img style='cursor:pointer;max-width:20px' src='images/delete.svg' onclick=\"deleteSpecies('".addslashes($row['Sci_Name'])." + ".addslashes($row['Com_Name'])."')\">" : '') . "</td>"
      . "</tr>";
 } ?>
     </tbody>
   </table>
-</div>
-<script src="static/Chart.bundle.js"></script>
-<script src="static/generateMiniGraph.js"></script>
+</div></div>
+<script src="static/std-table.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/std-table.js"); ?>"></script>
+<script src="static/name-mode.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/name-mode.js"); ?>"></script>
 <script src="static/species-modal.js"></script>
 <script>
 const scriptsBase = 'scripts/';
-const sfThresh = <?php echo json_encode($sf_thresh, JSON_UNESCAPED_UNICODE); ?>;
 const get = (url) => fetch(url, {cache:'no-store'}).then(r => r.text());
 
-/* ---------- Probability (thresholds) auto-load ---------- */
-function loadThresholds() {
-  return get(scriptsBase + 'config.php?threshold=0').then(text => {
-    const lines = (text || '').split(/\r?\n/);
-    const map = Object.create(null);
-    for (const line of lines) {
-      const m = line.match(/^(.*)\s-\s([0-9.]+)\s*$/);
-      if (!m) continue;
-      const left = m[1].trim();
-      const val  = parseFloat(m[2]);
-      if (Number.isNaN(val)) continue;
-      const u = left.lastIndexOf('_');
-      const sci = u >= 0 ? left.slice(0, u) : left;
-      map[sci] = val; map[left] = val;
-    }
-    const decoder = document.createElement('textarea');
-    document.querySelectorAll('#speciesTable tbody tr').forEach(row => {
-      decoder.innerHTML = row.getAttribute('data-sciname') || '';
-      const sciName = decoder.value;
-      if (Object.prototype.hasOwnProperty.call(map, sciName)) {
-        const v = map[sciName];
-        const cell = row.querySelector('td.threshold');
-        cell.textContent = v.toFixed(4);
-        cell.style.color = v >= sfThresh ? 'green' : 'red';
-        cell.dataset.sort = v.toFixed(4);
-      }
-    });
-  }).catch(() => {
-    console.warn('Probability load failed.');
-  });
-}
-
-/* ---------- Files on Disk column auto-load ---------- */
+/* ---------- Files on Disk column, filled after the page shows ---------- */
 function addDiskCounts() {
   return get(scriptsBase + 'species_tools.php?diskcounts=1').then(t => {
     let counts; try { counts = JSON.parse(t); } catch { console.warn('Could not parse disk counts'); return; }
-
-    const table = document.getElementById('speciesTable');
-    const headerRow = table.tHead.rows[0];
-
-    // Insert header before last column (Delete)
-    const deleteHeader = headerRow.lastElementChild;
-    const th = document.createElement('th');
-    th.textContent = 'Files on Disk';
-    headerRow.insertBefore(th, deleteHeader);
-
-    const colIndex = headerRow.cells.length - 2;
-    th.addEventListener('click', () => sortTable(colIndex));
-
     const decoder = document.createElement('textarea');
     document.querySelectorAll('#speciesTable tbody tr').forEach(tr => {
       decoder.innerHTML = tr.getAttribute('data-comname') || '';
-      const name = decoder.value;
-      const lookup = name.replace(/'/g, '');
-      const count = counts[lookup] || 0;
-      const td = document.createElement('td');
+      const count = counts[decoder.value.replace(/'/g, '')] || 0;
+      const td = tr.querySelector('td.diskcount');
       td.textContent = count;
       td.dataset.sort = count;
-      tr.insertBefore(td, tr.lastElementChild);
     });
   }).catch(() => {
     console.warn('Disk counts load failed.');
   });
 }
-
-window.addEventListener('scroll', function() {
-  var charts = document.querySelectorAll('.chartdiv');
-  charts.forEach(function(chart) {
-    chart.parentNode.removeChild(chart);
-    window.chartWindow = undefined;
-  });
-});
 
 /* ---------- toggles / delete ---------- */
 function setTier(species, tier) {
@@ -462,33 +427,6 @@ function deleteSpecies(species) {
   });
 }
 
-/* ---------- Sorting with persistence ---------- */
-function sortTable(n) {
-  const table = document.getElementById('speciesTable');
-  const tbody = table.tBodies[0];
-  const rows = Array.from(tbody.rows);
-  const asc = table.getAttribute('data-sort-' + n) !== 'asc';
-  rows.sort((a, b) => {
-    let x = a.cells[n].dataset.sort ?? a.cells[n].innerText.toLowerCase();
-    let y = b.cells[n].dataset.sort ?? b.cells[n].innerText.toLowerCase();
-    const nx = parseFloat(x), ny = parseFloat(y);
-    if (!Number.isNaN(nx) && !Number.isNaN(ny)) { x = nx; y = ny; }
-    return (x < y ? (asc ? -1 : 1) : (x > y ? (asc ? 1 : -1) : 0));
-  });
-  rows.forEach(r => tbody.appendChild(r));
-  table.setAttribute('data-sort-' + n, asc ? 'asc' : 'desc');
-  try { localStorage.setItem('speciesSortCol', String(n)); localStorage.setItem('speciesSortAsc', asc ? '1' : '0'); } catch(e){}
-}
-function applySavedSort() {
-  const table = document.getElementById('speciesTable');
-  const col = parseInt(localStorage.getItem('speciesSortCol') || '', 10);
-  const asc = localStorage.getItem('speciesSortAsc');
-  if (!Number.isFinite(col)) return;
-  sortTable(col);
-  const isAscNow = table.getAttribute('data-sort-' + col) === 'asc';
-  if ((asc === '1') !== isAscNow) sortTable(col);
-}
-
 /* ---------- Search with persistence ---------- */
 const q = document.getElementById('q');
 const matchCount = document.getElementById('matchCount');
@@ -497,7 +435,7 @@ function applyFilter() {
   let shown = 0, total = 0;
   document.querySelectorAll('#speciesTable tbody tr').forEach(tr => {
     total++;
-    const txt = tr.innerText.toLowerCase();
+    const txt = tr.dataset.q || tr.innerText.toLowerCase();
     const vis = txt.includes(needle);
     tr.style.display = vis ? '' : 'none';
     if (vis) shown++;
@@ -511,9 +449,7 @@ q.addEventListener('input', applyFilter);
 document.addEventListener('DOMContentLoaded', () => {
   try { const saved = localStorage.getItem('speciesFilter'); if (saved !== null) q.value = saved; } catch(e){}
   applyFilter();
-  applySavedSort();
   // Auto-load both heavy enrichments
-  loadThresholds();
   addDiskCounts();
 });
 </script>

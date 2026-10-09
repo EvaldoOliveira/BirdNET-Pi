@@ -53,7 +53,7 @@ function get_sitename() {
   $config = get_config();
 
   if ($config["SITE_NAME"] == "") {
-    $site_name = "BirdNET-Pi";
+    $site_name = "BirdnetPi++";
   } else {
     $site_name = $config['SITE_NAME'];
   }
@@ -124,7 +124,7 @@ function get_db() {
   static $_db;
   if (!isset($_db)) {
     $_db = new SQLite3(__ROOT__ . '/scripts/birds.db', SQLITE3_OPEN_READONLY);
-    $_db->busyTimeout(1000);
+    $_db->busyTimeout(5000);   // the analysis writes every few seconds: wait instead of failing a read
   }
   return $_db;
 }
@@ -219,7 +219,7 @@ class ImageProvider {
 
   public function __construct() {
     $this->set_db();
-    $opts = ['http' => ['header' => "User-Agent: BirdNET-Pi"]];
+    $opts = ['http' => ['header' => "User-Agent: BirdnetPi++"]];
     $this->context = stream_context_create($opts);
   }
 
@@ -522,23 +522,31 @@ function review_verdicts() {
   }
   return $verdicts;
 }
-// $onclick: JavaScript instead of the review modal (the standard list opens the review player)
-function validate_button($file, $verdict = null, $positioned = false, $onclick = null) {
+// The one Review button of the interface: always reviewDetection(this) (static/review-player.js), no local variants
+function validate_button($file, $verdict = null, $positioned = false) {
   if ($verdict === null) $verdict = review_verdict(basename($file));
   $labels = array('' => 'Review', 'yes' => '&#10003; Valid', 'no' => '&#10007; Not this bird', 'unsure' => "? Can't tell");
   $titles = array('' => 'Is this the bird? Review this detection', 'yes' => 'Reviewed: yes, this bird (species confirmed, clip protected from purge)',
                   'no' => 'Reviewed: not this bird', 'unsure' => "Reviewed: can't tell");
   return '<button type="button" class="validatebtn v-' . ($verdict ?: 'none') . ($positioned ? ' positioned' : '') . '" title="' . $titles[$verdict]
-    . '" onclick="' . ($onclick !== null ? htmlspecialchars($onclick, ENT_QUOTES) : 'reviewDetection(' . htmlspecialchars(json_encode($file), ENT_QUOTES) . ', this)') . '">' . $labels[$verdict] . '</button>';
+    . '" data-file="' . htmlspecialchars($file, ENT_QUOTES) . '" onclick="reviewDetection(this)">' . $labels[$verdict] . '</button>';
 }
 // Removed detections ("Remove detection", owner 2026-10-09): files in ~/BirdSongs/Extracted/Removed/<date>/<species>/,
-// lines in deleted_detections, until they are deleted by hand in Species › Delete Removed
+// lines in deleted_detections, until they are deleted by hand in Species › Purge Removed
 function deleted_dir() {
   return get_home() . '/BirdSongs/Extracted/Removed';
 }
 function deleted_table($rw) {
   $rw->exec("CREATE TABLE IF NOT EXISTS deleted_detections (Date DATE, Time TIME, Sci_Name VARCHAR(100) NOT NULL, Com_Name VARCHAR(100) NOT NULL,
-    Confidence FLOAT, Lat FLOAT, Lon FLOAT, Cutoff FLOAT, Week INT, Sens FLOAT, Overlap FLOAT, File_Name VARCHAR(100) NOT NULL, Deleted_At TEXT)");
+    Confidence FLOAT, Lat FLOAT, Lon FLOAT, Cutoff FLOAT, Week INT, Sens FLOAT, Overlap FLOAT, File_Name VARCHAR(100) NOT NULL, Deleted_At TEXT,
+    Loc_Thresh FLOAT, Rec_Length INT, Sp_Override FLOAT)");
+  // settings in force at detection time (owner 2026-10-09), also on a deleted_detections table made before them
+  $have = array();
+  $res = $rw->query('PRAGMA table_info(deleted_detections)');
+  while ($res && ($c = $res->fetchArray(SQLITE3_ASSOC))) $have[$c['name']] = true;
+  foreach (array('Loc_Thresh' => 'FLOAT', 'Rec_Length' => 'INT', 'Sp_Override' => 'FLOAT') as $col => $kind) {
+    if (!isset($have[$col])) $rw->exec("ALTER TABLE deleted_detections ADD COLUMN $col $kind");
+  }
 }
 // how many deleted detections wait for a wipe: one species, or every species when $sci is null
 function deleted_count($sci = null) {
@@ -585,39 +593,51 @@ function review_item_attrs($file, $label, $sci = '', $row = null) {
 // The standard detection list (owner 2026-10-09): Now (list view) and the species page. $rows: detections with Date,
 // Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, File_Name. A click on a row (or its Review button)
 // opens the review player there; it goes on down the list. $with_species = false on a species' own page.
-function detection_review_table($rows, $with_species = true) {
+// $with_date = false when every row is of the same day (All Detections › Today)
+function detection_review_table($rows, $with_species = true, $with_date = true) {
   static $profile = null;
   if ($profile === null) {
     $pj = is_file(__DIR__ . '/region_profile.json') ? json_decode(file_get_contents(__DIR__ . '/region_profile.json'), true) : null;
     $profile = $pj['data'] ?? array();
   }
   $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
-  $lang_en = (get_config()['DATABASE_LANG'] ?? 'en') === 'en';
-  $out = '<div class="reviewlist" data-review-list="1"><table class="list"><tr><th>Date</th><th>Time</th>'
-    . ($with_species ? '<th>Species</th><th>Scientific name</th>' . ($lang_en ? '' : '<th>English name</th>') : '')
-    . '<th class="num">Confidence</th><th class="num" title="Minimum confidence in force when it was detected">Min. confidence</th>'
-    . '<th class="num" title="Location model probability of the species in that week">Model probability</th>'
-    . '<th class="num">Sens. / overlap</th><th class="rv">Review</th></tr>';
+  // Sp. Override, Loc. Thresh. and Rec. Length are the values in force when the detection was made (columns Sp_Override,
+  // Loc_Thresh, Rec_Length since 2026-10-09); older detections show — (owner: never today's setting on an old detection)
+  $sf_now = get_config()['SF_THRESH'] ?? '';
+  // columns (owner 2026-10-09, standard order): the score; the thresholds — Min. Conf. with the species override, Loc.
+  // Thresh. with the location model Probability; the analysis — Sigm. Sens., Rec. Length, Overlap; species picklist column
+  $out = '<div class="reviewlist" data-review-list="1"><table class="list stdtable"><tr>' . ($with_date ? '<th>Date</th>' : '') . '<th>Time</th>'
+    . ($with_species ? '<th><select class="namemode" title="Names shown"><option value="com">Common name</option><option value="sci">Scientific name</option><option value="en">English name</option></select></th>' : '')
+    . '<th class="num">Confidence</th>'
+    . '<th class="num" title="Minimum confidence in force when it was detected">Min. Conf.</th>'
+    . '<th class="num" title="Species threshold that replaced Min. Conf. for this species when it was detected">Sp. Override</th>'
+    . '<th class="num" title="Location threshold in force when it was detected">Loc. Thresh.</th>'
+    . '<th class="num" title="Location model probability of the species in the week of the detection (as in Species Pages); green = above Loc. Thresh.">Probability</th>'
+    . '<th class="num" title="Sigmoid sensitivity of the analysis">Sigm. Sens.</th>'
+    . '<th class="num" title="Recording length in force when it was detected">Rec. Length</th>'
+    . '<th class="num" title="Overlap of the analysis (s)">Overlap</th>'
+    . '<th class="rv" data-nosort>Review</th></tr>';
   foreach ($rows as $g) {
     $folder = str_replace("'", '', str_replace(' ', '_', $g['Com_Name']));
     $file = $g['Date'] . '/' . $folder . '/' . $g['File_Name'];
     $t = strtotime($g['Date']);
     $w = min(48, (intval(date('n', $t)) - 1) * 4 + min(4, intdiv(intval(date('j', $t)) - 1, 7) + 1));
-    $prob = isset($profile[$g['Sci_Name']]) ? number_format($profile[$g['Sci_Name']][$w - 1] * 100, 1) . '%' : '—';
+    $prob_v = isset($profile[$g['Sci_Name']]) ? floatval($profile[$g['Sci_Name']][$w - 1]) : null;
+    $prob = $prob_v !== null ? number_format($prob_v * 100, 1) . '%' : '—';
     $label = $g['Com_Name'] . ' · ' . $g['Date'] . ' ' . $g['Time'] . ' · ' . round($g['Confidence'] * 100) . '%';
-    $species = '';
-    if ($with_species) {
-      $en = $lang_en ? '' : get_english_name($g['Sci_Name']);
-      $species = '<td><a href="views.php?view=Bird&amp;sci=' . rawurlencode($g['Sci_Name']) . '" title="Open the species page">' . $h($g['Com_Name']) . '</a></td>'
-        . '<td><i>' . $h($g['Sci_Name']) . '</i></td>' . ($lang_en ? '' : '<td>' . $h($en) . '</td>');
-    }
-    $out .= '<tr class="rvrow"' . review_item_attrs($file, $label, $g['Sci_Name'], $g) . ' onclick="if (!event.target.closest(\'a,button\')) openReviewPlayer(this)" title="Listen and review">'
-      . '<td class="nw">' . $h($g['Date']) . '</td><td class="nw">' . $h($g['Time']) . '</td>' . $species
+    $species = $with_species ? '<td><a href="views.php?view=Bird&amp;sci=' . rawurlencode($g['Sci_Name']) . '" title="Open the species page" data-com="' . $h($g['Com_Name'])
+      . '" data-sci="' . $h($g['Sci_Name']) . '" data-en="' . $h(get_english_name($g['Sci_Name'])) . '">' . $h($g['Com_Name']) . '</a></td>' : '';
+    $out .= '<tr class="rvrow"' . review_item_attrs($file, $label, $g['Sci_Name'], $g) . ' onclick="if (!event.target.closest(\'a,button\')) reviewDetection(this)" title="Listen and review">'
+      . ($with_date ? '<td class="nw">' . $h($g['Date']) . '</td>' : '') . '<td class="nw">' . $h($g['Time']) . '</td>' . $species
       . '<td class="num">' . round($g['Confidence'] * 100) . '%</td>'
       . '<td class="num">' . ($g['Cutoff'] !== null ? round($g['Cutoff'] * 100) . '%' : '') . '</td>'
-      . '<td class="num">' . $prob . '</td>'
-      . '<td class="num">' . $h(($g['Sens'] ?? '') . ' / ' . ($g['Overlap'] ?? '')) . '</td>'
-      . '<td class="rv">' . validate_button($file, null, false, 'openReviewPlayer(this)') . '</td></tr>';
+      . '<td class="num">' . (($g['Sp_Override'] ?? null) !== null ? round(floatval($g['Sp_Override']) * 100) . '%' : '—') . '</td>'
+      . '<td class="num">' . (($g['Loc_Thresh'] ?? null) !== null ? round(floatval($g['Loc_Thresh']) * 100) . '%' : '—') . '</td>'
+      . '<td class="num"' . ($prob_v !== null ? ' style="color:' . ($prob_v >= floatval($g['Loc_Thresh'] ?? $sf_now) ? '#1b5e20' : '#b71c1c') . '"' : '') . '>' . $prob . '</td>'
+      . '<td class="num">' . $h($g['Sens'] ?? '') . '</td>'
+      . '<td class="num">' . (($g['Rec_Length'] ?? null) !== null ? intval($g['Rec_Length']) . ' s' : '—') . '</td>'
+      . '<td class="num">' . (($g['Overlap'] ?? '') === '' ? '' : $h($g['Overlap']) . ' s') . '</td>'
+      . '<td class="rv">' . validate_button($file) . '</td></tr>';
   }
   return $out . '</table></div>';
 }
@@ -625,30 +645,95 @@ function detection_review_table($rows, $with_species = true) {
 // Analysis settings of one detection for the review player: confidence, the minimum confidence it was detected
 // with, the species override (US-48), sigmoid sensitivity, overlap, the location threshold (station setting, current)
 // and the location model probability of the species in that week
-function review_params($sci, $row) {
-  static $over = null, $profile = null;
-  if ($over === null) {
-    $over = array();
-    foreach (@file(get_home() . '/BirdNET-Pi/species_confidence.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: array() as $l) {
-      $p = explode('=', trim($l), 2);
-      if (count($p) === 2) $over[$p[0]] = $p[1];
+// the species the active model can detect: [scientific name => common name in DATABASE_LANG] (BirdNET-Plus models:
+// <MODEL>_Labels.txt, the others model/labels.txt; names from model/l18n/labels_<lang>.json, else the label's own)
+function active_model_labels() {
+  static $out = null;
+  if ($out !== null) return $out;
+  $cfg = get_config();
+  $dir = get_home() . '/BirdNET-Pi/model/';
+  $file = (strpos($cfg['MODEL'] ?? '', 'BirdNET-Plus') === 0 && is_file($dir . $cfg['MODEL'] . '_Labels.txt'))
+    ? $dir . $cfg['MODEL'] . '_Labels.txt' : $dir . 'labels.txt';
+  $lang = json_decode((string)@file_get_contents($dir . 'l18n/labels_' . ($cfg['DATABASE_LANG'] ?? 'en') . '.json'), true) ?: array();
+  $out = array();
+  foreach (@file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: array() as $l) {
+    $p = explode('_', trim($l), 2);
+    $out[$p[0]] = $lang[$p[0]] ?? ($p[1] ?? $p[0]);
+  }
+  return $out;
+}
+
+// what a label is and where it lives (model/species_info.csv, built once from GBIF by scripts/build_species_info.py,
+// plus model/species_info_local.csv, the labels the station looked up itself):
+// array(type, region) — type bird / mammal / amphibian / reptile / insect / other_animal / domestic / noise / unknown,
+// region 'Global' or continents '+' separated (+ 'Ocean'); without the table: the class column of the BirdNET-Plus
+// labels CSV (else the genus' class) and no region
+function species_info($sci) {
+  static $info = null, $cls = null, $genus = null;
+  if ($info === null) {
+    $info = array();
+    // the shipped table, then the station's own additions (scripts/update_species_info.sh)
+    foreach (array('species_info.csv', 'species_info_local.csv') as $f) {
+      if (($h = @fopen(get_home() . '/BirdNET-Pi/model/' . $f, 'r')) === false) continue;
+      fgetcsv($h, 0, ';', '"', '');
+      while (($r = fgetcsv($h, 0, ';', '"', '')) !== false) if (isset($r[2])) $info[$r[0]] = array($r[1], $r[2]);
+      fclose($h);
     }
+  }
+  if (isset($info[$sci])) return $info[$sci];
+  if ($cls === null) {
+    $cls = array(); $genus = array();
+    foreach (glob(get_home() . '/BirdNET-Pi/model/BirdNET-Plus_*_Labels.csv') ?: array() as $f) {
+      if (($h = fopen($f, 'r')) === false) continue;
+      $head = array_map(function ($x) { return trim($x, "\xEF\xBB\xBF \t"); }, fgetcsv($h, 0, ';', '"', '') ?: array());
+      $si = array_search('sci_name', $head); $ci = array_search('class', $head);
+      while ($si !== false && $ci !== false && ($r = fgetcsv($h, 0, ';', '"', '')) !== false) {
+        if (!isset($r[$si], $r[$ci])) continue;
+        $cls[$r[$si]] = $r[$ci];
+        $genus[strtok($r[$si], ' ')] = $genus[strtok($r[$si], ' ')] ?? $r[$ci];
+      }
+      fclose($h);
+    }
+  }
+  $c = $cls[$sci] ?? ($genus[strtok($sci, ' ')] ?? '');
+  return array(array('Aves' => 'bird', 'Mammalia' => 'mammal', 'Amphibia' => 'amphibian', 'Insecta' => 'insect')[$c] ?? 'unknown', '');
+}
+
+// group of a species for the list filters (owner 2026-10-09): birds, mammals, amphibians, insects, domestic, noise or
+// others (reptiles, other animals, unknown)
+function species_group($sci) {
+  $t = species_info($sci)[0];
+  return array('bird' => 'birds', 'mammal' => 'mammals', 'amphibian' => 'amphibians', 'insect' => 'insects',
+    'domestic' => 'domestic', 'noise' => 'noise')[$t] ?? 'others';
+}
+
+// location model probability (0..1) of a species in the week of a date (region_profile.json, 48 weeks: four per month,
+// as utils/classes.py week48); null when the species is not in the profile
+function location_probability($sci, $date) {
+  static $profile = null;
+  if ($profile === null) {
     $pj = is_file(__DIR__ . '/region_profile.json') ? json_decode(file_get_contents(__DIR__ . '/region_profile.json'), true) : null;
     $profile = $pj['data'] ?? array();
   }
-  $pct = function ($v) { return ($v === null || $v === '') ? '—' : round(floatval($v) * 100) . '%'; };
-  $t = strtotime($row['Date'] ?? date('Y-m-d'));
+  if (!isset($profile[$sci])) return null;
+  $t = strtotime($date ?: date('Y-m-d'));
   $w = min(48, (intval(date('n', $t)) - 1) * 4 + min(4, intdiv(intval(date('j', $t)) - 1, 7) + 1));
-  $sf = get_config()['SF_THRESH'] ?? '';
-  // in the order the decision is made: the score and the confidence thresholds it had to pass, then the location
-  // filter (model probability vs threshold), then the analysis settings that produced the score
+  return floatval($profile[$sci][$w - 1]);
+}
+
+function review_params($sci, $row) {
+  $pct = function ($v) { return ($v === null || $v === '') ? '—' : round(floatval($v) * 100) . '%'; };
+  $prob = location_probability($sci, $row['Date'] ?? '');
+  // the same order and names as the detection lists and the Now inputs (owner 2026-10-09): the score, Min. Conf. (with
+  // the species override beside it), Sigm. Sens., Overlap, Loc. Thresh. and the location model Probability
   return array(
     'Confidence' => $pct($row['Confidence'] ?? null),
-    'Min. confidence' => $pct($row['Cutoff'] ?? null),
-    'Species override' => isset($over[$sci]) ? $pct($over[$sci]) : 'none',
-    'Model probability' => isset($profile[$sci]) ? number_format($profile[$sci][$w - 1] * 100, 1) . '%' : '—',
-    'Location threshold' => $sf === '' ? '—' : round(floatval($sf) * 100) . '%',
-    'Sigmoid sensitivity' => (string)($row['Sens'] ?? '—'),
+    'Min. Conf.' => $pct($row['Cutoff'] ?? null),
+    'Sp. Override' => $pct($row['Sp_Override'] ?? null),
+    'Loc. Thresh.' => $pct($row['Loc_Thresh'] ?? null),
+    'Probability' => $prob === null ? '—' : number_format($prob * 100, 1) . '%',
+    'Sigm. Sens.' => (string)($row['Sens'] ?? '—'),
+    'Rec. Length' => ($row['Rec_Length'] ?? null) === null ? '—' : intval($row['Rec_Length']) . ' s',
     'Overlap' => ($row['Overlap'] ?? '') === '' ? '—' : $row['Overlap'] . ' s',
   );
 }
@@ -823,4 +908,37 @@ function get_color_scheme(){
   } else {
     return 'style.css';
   }
+}
+
+// App colours (owner 2026-10-09, System › Appearance): five fixed themes and one custom. The stylesheets and pages use
+// var(--bg) page background, var(--menu) side menu and table headers, var(--panel) light panels, var(--accent) buttons,
+// links and marks (var(--accent-rgb) for shades) and var(--accent2) the bright buttons, each with the original green as
+// fallback; theme_style() sets them for the light colour scheme (the dark scheme keeps its own colours).
+// APP_THEME = forest | ocean | sand | graphite | blossom | white | custom; APP_THEME_CUSTOM = "bg,menu,panel,accent,accent2".
+function theme_presets() {
+  return array(
+    'forest' => array('Forest', '#77c487', '#9fe29b', '#dbffeb', '#2b5e22', '#04aa6d'),
+    'ocean' => array('Ocean', '#7fb3d5', '#a9cce3', '#e3f0fa', '#1f4e79', '#2e86c1'),
+    'sand' => array('Sand', '#d6c7a7', '#e8dcc2', '#faf5ea', '#6b4f2a', '#b07d3a'),
+    'graphite' => array('Graphite', '#9aa3ab', '#c3c9ce', '#eef1f3', '#2f3b45', '#4f6d7a'),
+    'blossom' => array('Blossom', '#c9a3c7', '#e0c4de', '#f8eef7', '#5e2b5c', '#9c4f96'),
+    'white' => array('White & Grey', '#ffffff', '#e3e5e8', '#f3f4f6', '#3c4043', '#6b7075'),
+  );
+}
+function theme_colors() {
+  $c = get_config();
+  $presets = theme_presets();
+  $name = strtolower(trim($c['APP_THEME'] ?? 'forest'));
+  if ($name === 'custom') {
+    $v = array_map('trim', explode(',', $c['APP_THEME_CUSTOM'] ?? ''));
+    if (count($v) === 5 && count(preg_grep('/^#[0-9a-fA-F]{6}$/', $v)) === 5) return array_merge(array('Custom'), $v);
+    $name = 'forest';
+  }
+  return $presets[$name] ?? $presets['forest'];
+}
+function theme_style() {
+  if (strtolower(get_config()['COLOR_SCHEME'] ?? '') === 'dark') return '';
+  list(, $bg, $menu, $panel, $accent, $accent2) = theme_colors();
+  $rgb = implode(',', array_map('hexdec', str_split(substr($accent, 1), 2)));
+  return "<style id=\"themeVars\">:root{--bg:$bg;--menu:$menu;--panel:$panel;--accent:$accent;--accent-rgb:$rgb;--accent2:$accent2}</style>";
 }

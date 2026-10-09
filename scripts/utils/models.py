@@ -225,7 +225,7 @@ class OnnxBasemodel(Basemodel):
 
     def __init__(self):
         if ort is None:
-            raise RuntimeError(f'{self.model_name} needs ONNX Runtime: install it into the BirdNET-Pi venv '
+            raise RuntimeError(f'{self.model_name} needs ONNX Runtime: install it into the BirdnetPi++ venv '
                                f'(~/BirdNET-Pi/birdnet/bin/pip install onnxruntime)')
         self.model_path = os.path.join(MODEL_PATH, f'{self.model_name}.onnx')
         self.ensure_model()

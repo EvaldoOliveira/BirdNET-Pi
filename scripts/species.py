@@ -64,6 +64,6 @@ if __name__ == '__main__':
 If you don't see a species you want detected on this list, decrease your threshold
 (species in the whitelist are detected whatever their place on this list).
 
-NOTE: no actual changes to your BirdNET-Pi species list were made by running this command.
-To set your desired frequency threshold, do it through the BirdNET-Pi web interface (Tools -> Settings -> Model)
+NOTE: no actual changes to your BirdnetPi++ species list were made by running this command.
+To set your desired frequency threshold, do it through the BirdnetPi++ web interface (Tools -> Settings -> Model)
 """)

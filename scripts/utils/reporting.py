@@ -25,8 +25,12 @@ log = logging.getLogger(__name__)
 _sound_repo_format_warned = False
 
 
-def extract(in_file, out_file, start, stop):
-    result = subprocess.run(['sox', '-V1', f'{in_file}', f'{out_file}', 'trim', f'={start}', f'={stop}'],
+def extract(in_file, out_file, start, stop, comments=None):
+    # comments: 'KEY=value' tags written into the clip (Vorbis comments of a FLAC/OGG file, sox --comment)
+    tags = []
+    for i, c in enumerate(comments or []):
+        tags += ['--comment' if i == 0 else '--add-comment', c]
+    result = subprocess.run(['sox', '-V1', f'{in_file}'] + tags + [f'{out_file}', 'trim', f'={start}', f'={stop}'],
                             check=True, capture_output=True)
     ret = result.stdout.decode('utf-8')
     err = result.stderr.decode('utf-8')
@@ -35,7 +39,7 @@ def extract(in_file, out_file, start, stop):
     return ret
 
 
-def extract_safe(in_file, out_file, start, stop):
+def extract_safe(in_file, out_file, start, stop, comments=None):
     conf = get_settings()
     # This section sets the SPACER that will be used to pad the audio clip with
     # context. If EXTRACTION_LENGTH is 10, for instance, 3 seconds are removed
@@ -49,7 +53,7 @@ def extract_safe(in_file, out_file, start, stop):
     safe_start = max(0, start - spacer)
     safe_stop = min(conf.getint('RECORDING_LENGTH'), stop + spacer)
 
-    extract(in_file, out_file, safe_start, safe_stop)
+    extract(in_file, out_file, safe_start, safe_stop, comments)
 
 
 # US-41: SPECTROGRAM_PALETTE -> sox options (same table as scripts/spectrogram.sh)
@@ -110,6 +114,35 @@ def spectrogram(in_file, title, comment, raw=0, palette='birdnet', sens_opts=Non
     os.remove(tmp_file)
 
 
+def clip_tags(detection, conf):
+    # what was detected and the settings in force, inside the clip itself (owner 2026-10-09): the same values the
+    # database keeps per detection, readable by any audio tool (metaflac --list, sox --i, players' tag views)
+    if conf.get('AUDIOFMT', '').lower() not in ('flac', 'ogg', 'opus'):
+        return []
+    override = species_override(detection.scientific_name)
+    tags = {
+        'TITLE': f'{detection.common_name} ({detection.scientific_name})',
+        'DATE': f'{detection.date}T{detection.time}',
+        'BIRDNET_SCI_NAME': detection.scientific_name,
+        'BIRDNET_COM_NAME': detection.common_name,
+        'BIRDNET_CONFIDENCE': f'{detection.confidence:.4f}',
+        'BIRDNET_START_S': f'{detection.start:.1f}',
+        'BIRDNET_STOP_S': f'{detection.stop:.1f}',
+        'BIRDNET_LATITUDE': conf.get('LATITUDE'),
+        'BIRDNET_LONGITUDE': conf.get('LONGITUDE'),
+        'BIRDNET_MODEL': conf.get('MODEL'),
+        'BIRDNET_MIN_CONF': conf.get('CONFIDENCE'),
+        'BIRDNET_SP_OVERRIDE': '' if override is None else override,
+        'BIRDNET_SIGM_SENS': conf.get('SENSITIVITY'),
+        'BIRDNET_OVERLAP': conf.get('OVERLAP'),
+        'BIRDNET_LOC_THRESH': conf.get('SF_THRESH'),
+        'BIRDNET_REC_LENGTH': conf.get('RECORDING_LENGTH'),
+        'BIRDNET_EXTRACTION_LENGTH': conf.get('EXTRACTION_LENGTH'),
+        'BIRDNET_STATION': conf.get('SITE_NAME'),
+    }
+    return [f'{k}={v}' for k, v in tags.items() if v not in (None, '')]
+
+
 def extract_detection(file: ParseFileName, detection: Detection):
     conf = get_settings()
     new_file_name = f'{detection.common_name_safe}-{detection.date}_{detection.time_safe}-{file.RTSP_id}birdnet-conf-{detection.confidence_pct}.{conf["AUDIOFMT"]}'
@@ -119,10 +152,42 @@ def extract_detection(file: ParseFileName, detection: Detection):
         log.warning('Extraction exists. Moving on: %s', new_file)
     else:
         os.makedirs(new_dir, exist_ok=True)
-        extract_safe(file.file_name, new_file, detection.start, detection.stop)
+        extract_safe(file.file_name, new_file, detection.start, detection.stop, clip_tags(detection, conf))
         spectrogram(new_file, detection.common_name, new_file.replace(os.path.expanduser('~/'), ''), conf['RAW_SPECTROGRAM'],
                     conf.get('SPECTROGRAM_PALETTE', 'birdnet'), sensitivity_sox_opts(conf))
     return new_file
+
+
+_DB_COLUMNS_OK = False
+
+
+def ensure_db_columns(con):
+    # settings in force when the detection was made (owner 2026-10-09); a station not updated yet gets the columns here
+    global _DB_COLUMNS_OK
+    if _DB_COLUMNS_OK:
+        return
+    for table in ('detections', 'deleted_detections'):
+        have = {r[1] for r in con.execute(f'PRAGMA table_info({table})')}
+        if not have:
+            continue
+        for column, kind in (('Loc_Thresh', 'FLOAT'), ('Rec_Length', 'INT'), ('Sp_Override', 'FLOAT')):
+            if column not in have:
+                con.execute(f'ALTER TABLE {table} ADD COLUMN {column} {kind}')
+    con.commit()
+    _DB_COLUMNS_OK = True
+
+
+def species_override(sci_name):
+    # the species threshold (species_confidence.txt, US-48) in force for this species, None when it has none
+    try:
+        with open(os.path.expanduser('~/BirdNET-Pi/species_confidence.txt'), encoding='utf-8') as f:
+            for line in f:
+                sci, _, value = line.strip().partition('=')
+                if sci == sci_name and value:
+                    return float(value)
+    except (OSError, ValueError):
+        pass
+    return None
 
 
 def write_to_db(file: ParseFileName, detection: Detection):
@@ -132,14 +197,17 @@ def write_to_db(file: ParseFileName, detection: Detection):
         con = None
         try:
             con = sqlite3.connect(DB_PATH)
+            ensure_db_columns(con)
             cur = con.cursor()
             # safe to repeat: a recording analysed again (restart after an error) does not add the same row twice
             file_name = os.path.basename(detection.file_name_extr)
-            cur.execute("INSERT INTO detections SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? "
+            cur.execute("INSERT INTO detections (Date, Time, Sci_Name, Com_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, "
+                        "File_Name, Loc_Thresh, Rec_Length, Sp_Override) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? "
                         "WHERE NOT EXISTS (SELECT 1 FROM detections WHERE Date = ? AND Time = ? AND Sci_Name = ? AND File_Name = ?)",
                         (detection.date, detection.time, detection.scientific_name, detection.common_name, detection.confidence,
                          conf['LATITUDE'], conf['LONGITUDE'], conf['CONFIDENCE'], str(detection.week), conf['SENSITIVITY'],
-                         conf['OVERLAP'], file_name,
+                         conf['OVERLAP'], file_name, conf.get('SF_THRESH'), conf.get('RECORDING_LENGTH'),
+                         species_override(detection.scientific_name),
                          detection.date, detection.time, detection.scientific_name, file_name))
             # (Date, Time, Sci_Name, Com_Name, str(score),
             # Lat, Lon, Cutoff, Week, Sens,

@@ -62,14 +62,15 @@ elseif ($config["LONGITUDE"] == "0.000") {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BirdNET-Pi DB</title>
-  <link rel="stylesheet" href="<?php echo $color_scheme . '?v=' . filemtime($color_scheme); ?>">
+  <title>BirdnetPi++</title>
+  <link rel="stylesheet" href="<?php echo $color_scheme . '?v=' . filemtime($color_scheme); ?>"><?php echo theme_style(); ?>
 </head>
 <body>
 <?php
 // Side menu (owner 2026-10-08): groups like webmin, one real link per page (/?view=...), so a page opens
 // in another tab and the address bar shows it. The page itself still loads in this frame.
 $current_view = $_GET['view'] ?? 'Now';
+if ($current_view === 'Species Management') $current_view = 'Bird';
 $update_badge = (isset($_SESSION['behind']) && intval($_SESSION['behind']) >= 50 && ($config['SILENCE_UPDATE_INDICATOR'] ?? 0) != 1)
   ? ' <span class="updatenumber">' . $_SESSION['behind'] . '</span>' : '';
 if (($_SESSION['release_new'] ?? '') !== '' && ($config['SILENCE_UPDATE_INDICATOR'] ?? 0) != 1) {
@@ -80,15 +81,16 @@ $updatediv = $update_badge;
 $menu = array(
   array('Now', 'Now'),
   array('Spectrogram', 'Spectrogram'),
-  array('Detections', array('Todays Detections' => "Today's Detections", 'Bird' => 'Species Pages', 'All Detections' => 'All Detections', 'Recordings' => 'Detections by...', 'Species Stats' => 'Best Detections')),
-  array('Statistics', array('Daily Charts' => 'Daily Charts', 'Streamlit' => 'Species Stats', 'Weekly Report' => 'Weekly Report')),
-  array('Species', array('Species Management' => 'Species Management', 'Curation' => 'Curation', 'Wipe' => 'Delete Removed', 'Included' => 'Custom Species List', 'Excluded' => 'Excluded Species', 'Whitelisted' => 'Whitelist')),
+  // order and names set by the owner (2026-10-09); Species Pages and Species Management are one page (view=Bird)
+  array('Detections', array('Dashboard' => 'By Hour', 'Seasonality' => 'By Week')),
+  array('Species', array('Bird' => 'Species Pages', 'Curation' => 'Curation', 'Wipe' => 'Purge Removed')),
   array('Scheduling', array('Raw Recording' => 'Raw Recording')),
+  array('Lists', array('Included' => 'Custom Species', 'Excluded' => 'Excluded', 'Whitelisted' => 'Whitelisted')),
   // Station Setup only while the first-run questions are unanswered; afterwards everything is in Settings
-  array('Settings', array('Settings' => 'Basic Settings', 'Advanced' => 'Advanced Settings')
+  array('Settings', array('Appearance' => 'Appearance', 'Settings' => 'Basic Settings', 'Advanced' => 'Advanced Settings')
                     + (file_exists($home . '/BirdNET-Pi/firstrun_pending') ? array('Setup' => 'Station Setup') : array())),
-  array('System', array('Doctor' => 'Station Doctor', 'System Controls' => 'System Controls', 'Services' => 'Services', 'System Info' => 'System Info',
-                        'View Log' => 'View Log', 'File' => 'File Manager', 'Webterm' => 'Web Terminal', 'Adminer' => 'Database Maintenance')),
+  array('System', array('System Controls' => 'System Controls', 'Services' => 'Services', 'System Info' => 'System Info',
+                        'Doctor' => 'Station Doctor', 'View Log' => 'View Log', 'File' => 'File Manager', 'Webterm' => 'Web Terminal', 'Adminer' => 'Database Maint')),
 );
 function nav_link($view, $label, $current, $badge = '') {
   $cls = $view === $current ? 'navitem active' : 'navitem';
@@ -163,7 +165,7 @@ window.onload = function() {
 try {
   if (window.top !== window && window.top.location.host === window.location.host) {
     window.top.history.replaceState(null, '', '/?view=' + encodeURIComponent(<?php echo json_encode($current_view); ?>)
-      + <?php echo json_encode(isset($_GET['sci']) ? '&sci=' . rawurlencode(html_entity_decode($_GET['sci'], ENT_QUOTES)) : ''); ?>);
+      + <?php echo json_encode(implode('', array_map(function ($k) { return isset($_GET[$k]) ? '&' . $k . '=' . rawurlencode(html_entity_decode($_GET[$k], ENT_QUOTES)) : ''; }, array('sci', 'from', 'to', 'year', 'scope')))); ?>);
   }
 } catch (e) {}
 function copyOutput(elem) {
@@ -181,30 +183,22 @@ function copyOutput(elem) {
 
 <div class="views">
 <?php
+// Custom Species / Excluded / Whitelisted lists (owner 2026-10-09): one line per species, 'Scientific name_Common name';
+// add / remove by scientific name (a name contained in another no longer matches), the file kept sorted
 function update_species_list($filename, $species, $add) {
-    if($add){
-        $str = file_get_contents($filename);
-        $str = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $str);
-        file_put_contents("$filename", "$str");
-        foreach ($species as $selectedOption) {
-            if (strpos($str, $selectedOption) === false) {
-                file_put_contents($filename, htmlspecialchars_decode($selectedOption, ENT_QUOTES)."\n", FILE_APPEND);
-            }
-        }
-    } else {
-        $str = file_get_contents($filename);
-        $str = preg_replace('/^\h*\v+/m', '', $str);
-        file_put_contents($filename, "$str");
-        foreach($species as $selectedOption) {
-              $content = file_get_contents($filename);
-              $newcontent = str_replace($selectedOption, "", "$content");
-              $newcontent = str_replace(htmlspecialchars_decode($selectedOption, ENT_QUOTES), "", "$newcontent");
-              file_put_contents($filename, "$newcontent");
-        }
-        $str = file_get_contents($filename);
-        $str = preg_replace('/^\h*\v+/m', '', $str);
-        file_put_contents($filename, "$str");
+    $key = function ($line) { return explode('_', trim($line), 2)[0]; };
+    $lines = array();
+    foreach (@file($filename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: array() as $l) {
+        if (trim($l) !== '') $lines[$key($l)] = trim($l);
     }
+    foreach ($species as $s) {
+        $s = trim(htmlspecialchars_decode($s, ENT_QUOTES));
+        if ($s === '') continue;
+        if ($add) { if (!isset($lines[$key($s)])) $lines[$key($s)] = $s; }
+        else unset($lines[$key($s)]);
+    }
+    ksort($lines, SORT_STRING);
+    file_put_contents($filename, $lines ? implode("\n", $lines) . "\n" : '', LOCK_EX);
 }
 
 // First-run setup wizard (US-51c): an installation nobody answered opens on the wizard
@@ -224,21 +218,40 @@ if(isset($_GET['view'])){
   }
   if($_GET['view'] == "Spectrogram"){include('spectrogram.php');}
   if($_GET['view'] == "Raw Recording"){include('scripts/raw_recording.php');}
-  if($_GET['view'] == "Bird"){include('scripts/species_page.php');}
+  // Species Pages = the species list (scripts/species_tools.php, also the old view=Species Management) or, with sci=, one species
+  if($_GET['view'] == "Species Management"){$_GET['view'] = 'Bird';}
+  if($_GET['view'] == "Bird"){include(trim($_GET['sci'] ?? '') === '' ? 'scripts/species_tools.php' : 'scripts/species_page.php');}
   if($_GET['view'] == "Curation"){include('scripts/curation.php');}
+  // By Hour (the former Dashboard trial) replaced All Detections (owner 2026-10-09); old All Detections and
+  // Detections by... links open it with their period
+  if($_GET['view'] == "All Detections" || $_GET['view'] == "Recordings" && !isset($_GET['filename'])) {
+    if (isset($_GET['date'])) { $_GET['from'] = $_GET['to'] = $_GET['date']; }
+    $_GET['view'] = 'Dashboard';
+  }
+  if($_GET['view'] == "Dashboard"){include('scripts/detections_dashboard.php');}
+  if($_GET['view'] == "Seasonality"){include('scripts/seasonality.php');}
   if($_GET['view'] == "Wipe"){ensure_authenticated(); include('scripts/wipe_deleted.php');}
   if($_GET['view'] == "Doctor"){ensure_authenticated(); include('scripts/doctor.php');}
+  if($_GET['view'] == "Appearance"){include('scripts/appearance.php');}
   if($_GET['view'] == "View Log"){echo "<body style=\"scroll:no;overflow-x:hidden;\"><iframe style=\"width:calc( 100% + 1em);\" src=\"log\"></iframe></body>";}
   // the Overview is split in two pages (owner 2026-10-08): Now (default) = most recent detection, 5 most
   // recent, currently analysing; All Detections = the totals and today's chart. "Overview" = Now.
   if($_GET['view'] == "Overview" || $_GET['view'] == "Now"){$overview_part = 'now'; include('overview.php');}
-  if($_GET['view'] == "All Detections"){$overview_part = 'records'; include('overview.php');}
-  if($_GET['view'] == "Todays Detections"){include('todays_detections.php');}
+  // Today's Detections was merged into Now (owner 2026-10-09): its totals and search sit above the most recent detections
+  if($_GET['view'] == "Todays Detections"){$overview_part = 'now'; include('overview.php');}
   if($_GET['view'] == "Kiosk"){$kiosk = true;include('todays_detections.php');}
-  if($_GET['view'] == "Species Stats"){include('stats.php');}
-  if($_GET['view'] == "Weekly Report"){include('weekly_report.php');}
-  if($_GET['view'] == "Streamlit"){echo "<iframe src=\"stats\"></iframe>";}
-  if($_GET['view'] == "Daily Charts"){include('history.php');}
+  // Best Detections and Detections by... were retired (owner 2026-10-09): Species Pages and By Hour cover them;
+  // old links land there (a shared single-detection link, ?filename=, still opens play.php)
+  if($_GET['view'] == "Species Stats"){$_GET['view'] = 'Bird'; include('scripts/species_page.php');}
+  // Weekly Report and the whole Statistics menu were retired (owner 2026-10-09)
+  if($_GET['view'] == "Weekly Report"){include('scripts/detections_dashboard.php');}
+  // Species Stats (Streamlit) was retired from the menu (owner 2026-10-09): By Hour, By Week and the species pages cover it
+  if($_GET['view'] == "Streamlit"){include('scripts/detections_dashboard.php');}
+  // Daily Charts was retired (owner 2026-10-09): By Hour shows the same day better; old links open it on their date
+  if($_GET['view'] == "Daily Charts"){
+    if (isset($_GET['date'])) { $_GET['from'] = $_GET['to'] = $_GET['date']; }
+    include('scripts/detections_dashboard.php');
+  }
   if($_GET['view'] == "Tools"){
     ensure_authenticated();
     $url = $_SERVER['SERVER_NAME']."/scripts/adminer.php";
@@ -254,41 +267,37 @@ if(isset($_GET['view'])){
       <button type=\"submit\" name=\"view\" value=\"Included\" form=\"views\">Custom Species List</button>
       <button type=\"submit\" name=\"view\" value=\"Excluded\" form=\"views\">Excluded Species List</button>
       <button type=\"submit\" name=\"view\" value=\"Whitelisted\" form=\"views\">Whitelist Species List</button>
-      <button type=\"submit\" name=\"view\" value=\"Species Management\" form=\"views\">Species Management</button>
+      <button type=\"submit\" name=\"view\" value=\"Bird\" form=\"views\">Species Pages</button>
       <button type=\"submit\" name=\"view\" value=\"Setup\" form=\"views\">Setup Wizard</button>
       </form>
       </div>";
   }
-  if($_GET['view'] == "Recordings"){include('play.php');}
+  if($_GET['view'] == "Recordings"){include('play.php');}   // only a shared single-detection link (?filename=) reaches it
   if($_GET['view'] == "Settings"){include('scripts/config.php');} 
   if($_GET['view'] == "Advanced"){include('scripts/advanced.php');}
   if($_GET['view'] == "Included"){
     ensure_authenticated();
-    if(isset($_GET['species']) && (isset($_GET['add']) or isset($_GET['del']))){
-        update_species_list("./scripts/include_species_list.txt", $_GET['species'], isset($_GET['add']));
+    if(isset($_POST['species_lines']) && (isset($_POST['add']) or isset($_POST['del']))){
+        update_species_list("./scripts/include_species_list.txt", explode("\n", $_POST['species_lines']), isset($_POST['add']));
     }
     $species_list="include";
     include('./scripts/species_list.php');
   }
   if($_GET['view'] == "Excluded"){
     ensure_authenticated();
-    if(isset($_GET['species']) && (isset($_GET['add']) or isset($_GET['del']))){
-        update_species_list("./scripts/exclude_species_list.txt", $_GET['species'], isset($_GET['add']));
+    if(isset($_POST['species_lines']) && (isset($_POST['add']) or isset($_POST['del']))){
+        update_species_list("./scripts/exclude_species_list.txt", explode("\n", $_POST['species_lines']), isset($_POST['add']));
     }
     $species_list="exclude";
     include('./scripts/species_list.php');
   }
   if($_GET['view'] == "Whitelisted"){
     ensure_authenticated();
-    if(isset($_GET['species']) && (isset($_GET['add']) or isset($_GET['del']))){
-        update_species_list("./scripts/whitelist_species_list.txt", $_GET['species'], isset($_GET['add']));
+    if(isset($_POST['species_lines']) && (isset($_POST['add']) or isset($_POST['del']))){
+        update_species_list("./scripts/whitelist_species_list.txt", explode("\n", $_POST['species_lines']), isset($_POST['add']));
     }
     $species_list="whitelist";
     include('./scripts/species_list.php');
-  }
-  if($_GET['view'] == "Species Management"){
-    ensure_authenticated();
-    include('scripts/species_tools.php');
   }
   if($_GET['view'] == "File"){
     echo "<iframe src='scripts/filemanager/filemanager.php'></iframe>";

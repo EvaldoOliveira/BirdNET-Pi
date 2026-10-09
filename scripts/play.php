@@ -16,7 +16,7 @@ $db->busyTimeout(1000);
 
 // Delete = remove detection (owner 2026-10-09): the clip and its spectrogram leave the BirdNET folders for
 // ~/BirdSongs/Extracted/Removed/<date>/<species>/, the database line goes to deleted_detections (out of every statistic);
-// nothing is lost until it is deleted by hand (Species › Delete Removed, or the species page)
+// nothing is lost until it is deleted by hand (Species › Purge Removed, or the species page)
 if(isset($_GET['deletefile'])) {
   ensure_authenticated('You must be authenticated to delete files.');
   $file = $_GET['deletefile'];
@@ -25,8 +25,8 @@ if(isset($_GET['deletefile'])) {
   $rw = new SQLite3('./scripts/birds.db', SQLITE3_OPEN_READWRITE);
   $rw->busyTimeout(5000);
   deleted_table($rw);
-  $ins = $rw->prepare("INSERT INTO deleted_detections (Date, Time, Sci_Name, Com_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name, Deleted_At)
-    SELECT Date, Time, Sci_Name, Com_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name, datetime('now', 'localtime') FROM detections WHERE File_Name = :f");
+  $ins = $rw->prepare("INSERT INTO deleted_detections (Date, Time, Sci_Name, Com_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name, Deleted_At, Loc_Thresh, Rec_Length, Sp_Override)
+    SELECT Date, Time, Sci_Name, Com_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name, datetime('now', 'localtime'), Loc_Thresh, Rec_Length, Sp_Override FROM detections WHERE File_Name = :f");
   $ins->bindValue(':f', $parts[2]);
   $del = $rw->prepare('DELETE FROM detections WHERE File_Name = :f');
   $del->bindValue(':f', $parts[2]);
@@ -47,17 +47,20 @@ if(isset($_GET['deletefile'])) {
   die();
 }
 
-// Restore removed detections (owner 2026-10-09): ?restore=1 [&sci=<scientific name>] moves the files back to By_Date
-// and the database lines back to detections; every species when sci is empty. Answers OK <count>.
+// Restore removed detections (owner 2026-10-09): ?restore=1 [&sci=<scientific name>] [&file=<file name>] moves the files
+// back to By_Date and the database lines back to detections; every species when both are empty (file = the review
+// player's Undo). Answers OK <count>.
 if (isset($_GET['restore'])) {
   ensure_authenticated('You must be authenticated to restore detections.');
   $rw = new SQLite3('./scripts/birds.db', SQLITE3_OPEN_READWRITE);
   $rw->busyTimeout(5000);
   deleted_table($rw);
   $sci = html_entity_decode($_GET['sci'] ?? '', ENT_QUOTES);
-  $where = $sci !== '' ? ' WHERE Sci_Name = :s' : '';
+  $one = basename($_GET['file'] ?? '');
+  $where = $one !== '' ? ' WHERE File_Name = :f' : ($sci !== '' ? ' WHERE Sci_Name = :s' : '');
   $st = $rw->prepare("SELECT Date, Com_Name, File_Name FROM deleted_detections$where");
-  if ($sci !== '') $st->bindValue(':s', $sci);
+  if ($one !== '') $st->bindValue(':f', $one);
+  elseif ($sci !== '') $st->bindValue(':s', $sci);
   $res = $st->execute();
   $n = 0;
   while ($res && ($r = $res->fetchArray(SQLITE3_ASSOC))) {
@@ -66,8 +69,8 @@ if (isset($_GET['restore'])) {
     $dst = $home . '/BirdSongs/Extracted/By_Date/' . $rel;
     exec('sudo -u ' . escapeshellarg($user) . ' mkdir -p ' . escapeshellarg($dst) . ' && sudo -u ' . escapeshellarg($user) . ' mv -f '
       . escapeshellarg($src) . ' ' . escapeshellarg($src . '.png') . ' ' . escapeshellarg($dst . '/') . ' 2>&1');
-    $ins = $rw->prepare("INSERT INTO detections (Date, Time, Sci_Name, Com_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name)
-      SELECT Date, Time, Sci_Name, Com_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name FROM deleted_detections WHERE File_Name = :f
+    $ins = $rw->prepare("INSERT INTO detections (Date, Time, Sci_Name, Com_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name, Loc_Thresh, Rec_Length, Sp_Override)
+      SELECT Date, Time, Sci_Name, Com_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name, Loc_Thresh, Rec_Length, Sp_Override FROM deleted_detections WHERE File_Name = :f
       AND NOT EXISTS (SELECT 1 FROM detections WHERE File_Name = :f)");
     $ins->bindValue(':f', $r['File_Name']);
     $ins->execute();
@@ -225,18 +228,62 @@ if (isset($_GET['review_batch'], $_GET['sci'], $_GET['date'], $_GET['hour'])) {
   die();
 }
 
-// Which bird was it? The station's model re-analyses the clip (scripts/clip_alternatives.py, a few seconds)
+// Review helper (scripts/review_worker.py): keeps the model loaded and redraws clip spectrograms; started on demand as
+// the station user, it stops itself when idle. review_worker_get() starts it when it is not answering.
+function review_worker_get($path, $timeout = 30, $wait = true) {
+  global $home, $user;
+  $url = 'http://127.0.0.1:8099' . $path;
+  $ctx = stream_context_create(array('http' => array('timeout' => $timeout, 'ignore_errors' => true)));
+  $out = @file_get_contents($url, false, $ctx);
+  if ($out === false) {
+    exec('sudo -u ' . escapeshellarg($user) . ' nohup ' . escapeshellarg($home . '/BirdNET-Pi/birdnet/bin/python3') . ' '
+      . escapeshellarg($home . '/BirdNET-Pi/scripts/review_worker.py') . ' > /dev/null 2>&1 &');
+    for ($i = 0; $wait && $i < 60 && $out === false; $i++) { usleep(250000); $out = @file_get_contents($url, false, $ctx); }
+  }
+  $ok = isset($http_response_header[0]) && strpos($http_response_header[0], ' 200') !== false;
+  return $ok ? $out : false;
+}
+function review_clip_path($f) {
+  global $home;
+  if (strpos($f, '..') !== false) return false;
+  $clip = $home . '/BirdSongs/Extracted/By_Date/' . $f;
+  return is_file($clip) ? $clip : false;
+}
+
+// the review player opens: warm the helper up (authenticated reviewers) and answer the station's spectrogram settings,
+// the starting values of the player's palette / floor / range / contrast fields
+if (isset($_GET['review_worker'])) {
+  $c = get_config();
+  if (is_authenticated()) review_worker_get('/ping', 1, false);
+  header('Content-Type: application/json');
+  echo json_encode(array('palette' => $c['SPECTROGRAM_PALETTE'] ?? 'birdnet', 'floor' => $c['SPECTROGRAM_FLOOR_DB'] ?? -100,
+    'range' => $c['SPECTROGRAM_RANGE_DB'] ?? 70, 'contrast' => $c['SPECTROGRAM_CONTRAST'] ?? 1));
+  die();
+}
+
+// Which bird was it? The station's model re-analyses the clip (clip_alternatives.py through the review helper)
 if (isset($_GET['alternatives'])) {
   ensure_authenticated('You must be authenticated to review detections.');
   header('Content-Type: application/json');
-  $f = $_GET['alternatives'];
-  if (strpos($f, '..') !== false) { echo '[]'; die(); }
-  $clip = $home . '/BirdSongs/Extracted/By_Date/' . $f;
-  $sci = $db->querySingle("SELECT Sci_Name FROM detections WHERE File_Name = '" . SQLite3::escapeString(basename($f)) . "' LIMIT 1");
-  if (!is_file($clip) || !$sci) { echo '[]'; die(); }
-  $out = shell_exec('sudo -u ' . escapeshellarg($user) . ' ' . escapeshellarg($home . '/BirdNET-Pi/birdnet/bin/python3') . ' '
-    . escapeshellarg($home . '/BirdNET-Pi/scripts/clip_alternatives.py') . ' ' . escapeshellarg($clip) . ' ' . escapeshellarg($sci) . ' 6 2>/dev/null');
-  echo trim((string)$out) !== '' ? trim($out) : '[]';
+  $clip = review_clip_path($_GET['alternatives']);
+  $sci = $clip ? $db->querySingle("SELECT Sci_Name FROM detections WHERE File_Name = '" . SQLite3::escapeString(basename($clip)) . "' LIMIT 1") : null;
+  if (!$clip || !$sci) { echo '[]'; die(); }
+  $out = review_worker_get('/alternatives?' . http_build_query(array('clip' => $clip, 'sci' => $sci, 'n' => 6)));
+  echo $out !== false && trim($out) !== '' ? trim($out) : '[]';
+  die();
+}
+
+// the clip's spectrogram without the title, in the palette / floor / range / contrast chosen in the review player
+if (isset($_GET['spectro'])) {
+  $clip = review_clip_path($_GET['spectro']);
+  $q = array('clip' => $clip);
+  if (isset($_GET['palette']) && preg_match('/^[a-z]+$/', $_GET['palette'])) $q['palette'] = $_GET['palette'];
+  foreach (array('floor', 'range', 'contrast') as $k) if (isset($_GET[$k]) && is_numeric($_GET[$k])) $q[$k] = $_GET[$k];
+  $png = $clip ? review_worker_get('/spectro?' . http_build_query($q)) : false;
+  if ($png === false) { http_response_code(404); die(); }
+  header('Content-Type: image/png');
+  header('Cache-Control: private, max-age=3600');
+  echo $png;
   die();
 }
 
@@ -341,9 +388,9 @@ if (get_included_files()[0] === __FILE__) {
 }
 
 ?>
-<script src="static/custom-audio-player.js"></script>
+<script src="static/custom-audio-player.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/custom-audio-player.js"); ?>"></script>
 <script src="static/detection-actions.js"></script>
-<script src="static/review-player.js"></script>
+<script src="static/review-player.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/review-player.js"); ?>"></script>
 
 <?php
 #If no specific species

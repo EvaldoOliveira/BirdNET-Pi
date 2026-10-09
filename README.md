@@ -1,7 +1,8 @@
 <p align="center">
-  <img src="homepage/images/BirdNetBr.png" alt="BirdNET-Pi" width="140" />
+  <img src="homepage/images/BirdNetBr.png" alt="BirdnetPi++" width="140" />
 </p>
-<h1 align="center">BirdNET-Pi — long-term monitoring edition</h1>
+<h1 align="center">BirdnetPi++</h1>
+<p align="center"><i>The long-term monitoring edition of BirdNET-Pi</i></p>
 <p align="center"><b>Turn a Raspberry Pi into a 24/7 bird observatory that listens, identifies, records and tells you what matters.</b></p>
 <p align="center">
   <a href="https://github.com/EvaldoOliveira/BirdNET-Pi/releases"><img alt="Release" src="https://img.shields.io/github/v/release/EvaldoOliveira/BirdNET-Pi?include_prereleases&label=release&color=4a8f3c"></a>
@@ -10,7 +11,7 @@
   <a href="LICENSE"><img alt="Licence" src="https://img.shields.io/badge/licence-CC%20BY--NC--SA%204.0-lightgrey"></a>
 </p>
 <p align="center">
-  <a href="#how-to-get-this-edition"><b>Installation guide</b></a> ·
+  <a href="#how-to-get-birdnetpi"><b>Installation guide</b></a> ·
   <a href="#features"><b>Features</b></a> ·
   <a href="#screenshots"><b>Screenshots</b></a> ·
   <a href="https://github.com/EvaldoOliveira/BirdNET-Pi/releases"><b>Releases</b></a> ·
@@ -20,16 +21,16 @@
   <img src="docs/screenshots/now.png" alt="The Now page of a station" width="900" />
   <br><sub><i>The Now page of the pilot station in São Paulo — BirdNET+ V3 with Brazilian (CBRO) names.</i></sub>
 </p>
-<p align="center"><sub>⚠️ <a href="LICENSE">Review the licence</a> — BirdNET-Pi may not be used to develop a commercial product.</sub></p>
+<p align="center"><sub>⚠️ <a href="LICENSE">Review the licence</a> — BirdnetPi++, like BirdNET-Pi, may not be used to develop a commercial product.</sub></p>
 
 ## More than bird identification
 
-This repository is an independent edition of BirdNET-Pi, maintained as a hard fork of
+**BirdnetPi++** is an independent edition of BirdNET-Pi, maintained as a hard fork of
 [Nachtzuster/BirdNET-Pi](https://github.com/Nachtzuster/BirdNET-Pi) — itself the maintained continuation of
 [mcguirepr89/BirdNET-Pi](https://github.com/mcguirepr89/BirdNET-Pi) — from upstream commit `88985a3` (v0.11 line,
 forked on 2026-08-29).
 
-It keeps everything BirdNET-Pi does — continuous recording, real-time identification, clip extraction, charts,
+BirdnetPi++ keeps everything BirdNET-Pi does — continuous recording, real-time identification, clip extraction, charts,
 live audio — and adds what a station needs to run for years: the newest model, trustworthy data, notifications
 that only interrupt you for what matters, and a station that tells you when something is wrong.
 
@@ -84,7 +85,7 @@ The model's distribution, one of your own lists, or a **Brazilian state** built 
 <td valign="top">
 
 #### 🧭 Redesigned interface
-A side menu with one address per page, a *Now* page, *All Detections*, and detection cards with WikiAves, eBird, Birds of the World and Wikipedia links and every action in place.
+A side menu with one address per page (Now, Detections › By Hour / By Week, Species, Lists, Settings, System), the last 50 detections as cards or one standard sortable table, and six colour themes plus a custom one (*Settings › Appearance*).
 </td>
 </tr>
 <tr>
@@ -101,19 +102,19 @@ One page checks services, microphone, recording, analysis backlog, disk, model, 
 <td valign="top">
 
 #### 🆕 Release badge
-Once a day the station compares the newest release of this edition with the installed one and shows a badge and the release notes in *System Controls*.
+Once a day the station compares the newest release of BirdnetPi++ with the installed one and shows a badge and the release notes in *System Controls*.
 </td>
 </tr>
 <tr>
 <td valign="top">
 
 #### 🐦 A page for every species
-Totals, the last 12 months as a calendar, activity by month and hour, the season the location model expects, the best clips, the latest detections, thresholds, lists and reviews — in one place. Open it from the green species-card icon before every common name (cards, lists, Species Management), by clicking a species row in the daily charts, or from *Detections › Species Pages* — all species, filterable and sortable.
+Totals, the last 12 months as a calendar, activity by month and hour, the season the location model expects, the best clips, the latest detections, thresholds, lists and reviews — in one place. *Species › Species Pages* lists every species (detected, or **All** the station can detect) with its threshold, notification tier and lists, names in Common / Scientific / English.
 </td>
 <td valign="top">
 
 #### ✅ Review your detections
-*Is this the bird?* — **Yes**, **Not this bird** or **Can't tell** on any card (keys Y / N / U). Confirmed clips are protected; rejections suggest a species threshold.
+One review player everywhere: the clip's spectrogram playing, **Yes / Not this bird / Can't tell** (keys Y N U), *Which bird was it?* from the station's model in about a second, causes, undo, skip reviewed, progress marks, tunable spectrogram. Confirmed clips are protected.
 </td>
 <td valign="top">
 
@@ -121,14 +122,31 @@ Totals, the last 12 months as a calendar, activity by month and hour, the season
 The best detections of every species and every confirmed one are **never deleted** when disk space is freed; if the protection list cannot be refreshed, nothing is deleted.
 </td>
 </tr>
+<tr>
+<td valign="top">
+
+#### 📊 By hour and by week
+Every species by half hour of the day and by calendar week of the year — heat tables with detections and species per slot, drill-down to a species and a week.
+</td>
+<td valign="top">
+
+#### 🧾 Settings kept with each detection
+Min. confidence, species override, location threshold, sensitivity, recording length and overlap are stored with every detection and written into the clip (FLAC tags) — old detections never show today's settings.
+</td>
+<td valign="top">
+
+#### 🗂️ Species lists by type and region
+Custom Species, Excluded and Whitelisted show the species still available beside the list, filtered by group (birds, mammals, amphibians, insects, domestic) and by continent — from a GBIF-built table of every model label.
+</td>
+</tr>
 </table>
 
-### How to get this edition
+### How to get BirdnetPi++
 
 There are two ways:
 
 - **Option 1 — New installation:** you start from a blank microSD card. Recommended.
-- **Option 2 — Upgrade:** you already run Nachtzuster's BirdNET-Pi and want to switch it to this edition.
+- **Option 2 — Upgrade:** you already run Nachtzuster's BirdNET-Pi and want to switch it to BirdnetPi++.
 
 ---
 
@@ -194,7 +212,7 @@ to the card's *bootfs* drive as `birdnet-setup.conf`, fill in the answers, then 
    ./scripts/update_birdnet.sh -b stable
    ```
 3. Open the station in the browser. Your detections and settings are kept. From now on
-   *System › System Controls › Update* installs the new versions of this edition.
+   *System › System Controls › Update* installs the new versions of BirdnetPi++.
 
 To go back to Nachtzuster's version:
 ```
@@ -209,24 +227,24 @@ Pilot station, São Paulo (BirdNET+ V3, Portuguese Brazil (CBRO) names).
 
 <table>
 <tr>
-<td width="50%" align="center"><b>Today's Detections</b><br><img src="docs/screenshots/todays-detections.png" alt="Today's Detections"></td>
 <td width="50%" align="center"><b>Now — the start page</b><br><img src="docs/screenshots/now.png" alt="Now"></td>
+<td width="50%" align="center"><b>Review player — Is this the bird?</b><br><img src="docs/screenshots/review.png" alt="Review player"></td>
 </tr>
 <tr>
+<td align="center"><b>By Hour — every species by half hour</b><br><img src="docs/screenshots/by-hour.png" alt="By Hour"></td>
+<td align="center"><b>By Week — the year by calendar week</b><br><img src="docs/screenshots/by-week.png" alt="By Week"></td>
+</tr>
+<tr>
+<td align="center"><b>Species Pages — every species, its settings and lists</b><br><img src="docs/screenshots/species-pages.png" alt="Species Pages"></td>
 <td align="center"><b>A page for every species</b><br><img src="docs/screenshots/species-page.png" alt="Species page"></td>
-<td align="center"><b>Detections › Species Pages — filter, sort, A–Z</b><br><img src="docs/screenshots/species-pages.png" alt="Species Pages"></td>
+</tr>
+<tr>
+<td align="center"><b>Lists — available species by group and region</b><br><img src="docs/screenshots/lists.png" alt="Species lists"></td>
+<td align="center"><b>Appearance — colour themes</b><br><img src="docs/screenshots/appearance.png" alt="Appearance"></td>
 </tr>
 <tr>
 <td align="center"><b>Station Doctor</b><br><img src="docs/screenshots/station-doctor.png" alt="Station Doctor"></td>
-<td align="center"><b>Review — Is this the bird?</b><br><img src="docs/screenshots/review.png" alt="Review dialog" width="320"></td>
-</tr>
-<tr>
-<td align="center"><b>Species Management — threshold, tier and lists per species</b><br><img src="docs/screenshots/species-management.png" alt="Species Management"></td>
-<td align="center"><b>Detections by... (species or date)</b><br><img src="docs/screenshots/detections-by.png" alt="Detections by"></td>
-</tr>
-<tr>
 <td align="center"><b>Live spectrogram — palettes and detection labels</b><br><img src="docs/screenshots/live-spectrogram.png" alt="Live spectrogram"></td>
-<td align="center"><b>All Detections — click a species row to open its page</b><br><img src="docs/screenshots/all-detections.png" alt="All Detections chart"></td>
 </tr>
 <tr>
 <td align="center"><b>Settings — models, shadow model and species filter</b><br><img src="docs/screenshots/settings-models.png" alt="Settings models"></td>
@@ -239,15 +257,13 @@ On a phone (the menu opens from the ☰ button):
 <table>
 <tr>
 <td align="center"><b>Now</b><br><img src="docs/screenshots/mobile-now.png" alt="Now on a phone" width="220"></td>
-<td align="center"><b>Today's Detections</b><br><img src="docs/screenshots/mobile-todays.png" alt="Today's Detections on a phone" width="220"></td>
-<td align="center"><b>All Detections</b><br><img src="docs/screenshots/mobile-all-detections.png" alt="All Detections on a phone" width="220"></td>
 <td align="center"><b>Species page</b><br><img src="docs/screenshots/mobile-species-page.png" alt="Species page on a phone" width="220"></td>
 </tr>
 </table>
 
 ### Reporting issues
 
-- Matters specific to **this edition** (the stories above, the upgrade package): please open an
+- Matters specific to **BirdnetPi++** (the stories above, the upgrade package): please open an
   [issue in this repository](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/new/choose) — user story, defect or epic.
 - Behaviour that also occurs on a standard installation belongs to
   [Nachtzuster's tracker](https://github.com/Nachtzuster/BirdNET-Pi/issues).
@@ -259,7 +275,7 @@ On a phone (the menu opens from the ☰ button):
 [CC BY-NC-SA 4.0](LICENSE), inherited from BirdNET-Pi and from the BirdNET models — **non-commercial use only**,
 share alike, with attribution. This edition stands on the work of
 [@mcguirepr89](https://github.com/mcguirepr89) (BirdNET-Pi), [@Nachtzuster](https://github.com/Nachtzuster) (the
-maintained fork this edition is based on), [@kahst](https://github.com/kahst) and the
+maintained fork BirdnetPi++ is based on), [@kahst](https://github.com/kahst) and the
 [BirdNET team](https://github.com/birdnet-team) at the K. Lisa Yang Center for Conservation Bioacoustics (Cornell Lab
 of Ornithology) and Chemnitz University of Technology (the BirdNET models), and every contributor credited in the
 sections below.
@@ -268,7 +284,7 @@ sections below.
 
 # BirdNET-Pi — standard information (from the upstream README)
 
-The sections below come from Nachtzuster's README and apply to this edition unchanged, unless a note says otherwise.
+The sections below come from Nachtzuster's README and apply to BirdnetPi++ unchanged, unless a note says otherwise.
 
 ## About Nachtzuster's fork
 Nachtzuster built on [mcguirepr89's](https://github.com/mcguirepr89/BirdNET-Pi) work to update and improve
@@ -322,13 +338,13 @@ Please note that installing BirdNET-Pi on top of other servers is not supported.
 
 [Raspberry Pi 3B[+] and 0W2 installation guide available here](https://github.com/mcguirepr89/BirdNET-Pi/wiki/RPi0W2-Installation-Guide)
 
-To install this edition, follow [How to get this edition](#how-to-get-this-edition). The installer takes care of
+To install BirdnetPi++, follow [How to get BirdnetPi++](#how-to-get-birdnetpi). The installer takes care of
 any and all necessary updates, so you can run it as the very first command upon the first boot.
 
 The installation creates a log in `$HOME/installation-$(date "+%F").txt`.
 
 ## Access
-The BirdNET-Pi can be accessed from any web browser on the same network:
+BirdnetPi++ can be accessed from any web browser on the same network:
 - http://birdnetpi.local OR your Pi's IP address
 - Default Basic Authentication Username: birdnet
 - Password is empty by default. Set this in "Settings" > "Advanced Settings"
@@ -348,7 +364,7 @@ Please take a look at the [wiki](https://github.com/mcguirepr89/BirdNET-Pi/wiki)
 
 Use the web interface and go to "System" > "System Controls" > "Update". If you encounter any issues with that, or suspect that the update did not work for some reason, please save its output and post it in an issue where we can help.
 
-> **Note for this edition:** the web updater follows the release channel set by `UPDATE_BRANCH` in `birdnet.conf`
+> **Note for BirdnetPi++:** the web updater follows the release channel set by `UPDATE_BRANCH` in `birdnet.conf`
 > (`stable` by default) on the `origin` remote of the installation; an installation switched with
 > `update_birdnet.sh -r evaldo -b stable` is updated by running that same command again.
 
@@ -388,13 +404,13 @@ cpu-model: BirdNet
 Before switching, make sure your installation is fully up-to-date. Also make sure to have a backup, that is also the only way to get back to the original BirdNET-Pi.
 Please note that upgrading your underlying OS to Bookworm is not going to work. Please stick to Bullseye. If you do want Bookworm, you need to start from a fresh install and copy back your data. (remember the backup!)
 
-To move an existing installation to this edition, see
+To move an existing installation to BirdnetPi++, see
 [Option 2 — Upgrade an existing Nachtzuster installation](#option-2--upgrade-an-existing-nachtzuster-installation).
 
 ## Troubleshooting and Ideas
 *Hint: A lot of weird problems can be solved by simply restarting the core services. Do this from the web interface "System" > "Services" > "Restart Core Services"*
 
-For this edition see [Reporting issues](#reporting-issues). For a standard installation, Nachtzuster asks: submit an *issue for trouble* and a *discussion for ideas*, search the repository before creating a new one, and do not open issues about "false positives" — the repository has nothing to do with the validity of the detection results.
+For BirdnetPi++ see [Reporting issues](#reporting-issues). For a standard installation, Nachtzuster asks: submit an *issue for trouble* and a *discussion for ideas*, search the repository before creating a new one, and do not open issues about "false positives" — the repository has nothing to do with the validity of the detection results.
 
 ## Sharing
 Please join a Discussion!! and please join [BirdWeather!!](https://app.birdweather.com)

@@ -23,7 +23,7 @@ if (get_included_files()[0] === __FILE__) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BirdNET-Pi DB</title>
+  <title>BirdnetPi++</title>
 </head>';
 }
 ?>
@@ -142,7 +142,7 @@ function setModalText(iter, title, text, authorlink) {
     echo '<div class="gcard"' . review_item_attrs($g['Date'] . '/' . $folder . '/' . $g['File_Name'], $g['Com_Name'] . ' · ' . $g['Date'] . ' ' . $g['Time'] . ' · ' . round($g['MaxConfidence'] * 100) . '%', $g['Sci_Name'], array('Date' => $g['Date'], 'Time' => $g['Time'], 'Com_Name' => $g['Com_Name'], 'Confidence' => $g['MaxConfidence'])) . ' data-q="' . htmlspecialchars(mb_strtolower($g['Com_Name'] . ' ' . $g['Sci_Name']), ENT_QUOTES) . '">'
       . '<div class="gbody">' . species_title($g['Sci_Name'], '<a href="' . $page . '" title="Open the species page"><b>' . htmlspecialchars($g['Com_Name']) . '</b></a>', '', false, false)
       . '<div class="gmeta">' . number_format(intval($g['Count'])) . (intval($g['Count']) == 1 ? ' detection' : ' detections') . ' · best ' . round($g['MaxConfidence'] * 100) . '% · ' . htmlspecialchars($g['Date'] . ' ' . $g['Time']) . '</div>'
-      . '<img class="gspec" loading="lazy" src="' . htmlspecialchars($clip) . '.png" alt="spectrogram" title="Listen and review" onclick="openReviewPlayer(this)"></div></div>';
+      . '<img class="gspec" loading="lazy" src="' . htmlspecialchars($clip) . '.png" alt="spectrogram" title="Listen and review" onclick="reviewDetection(this)"></div></div>';
   }
   echo '</div><script>function galFilter(q){q=q.toLowerCase();document.querySelectorAll("#spgallery .gcard").forEach(function(c){c.style.display=c.dataset.q.indexOf(q)<0?"none":"";});}'
     . '</script><script src="static/spectro-dialog.js"></script>';

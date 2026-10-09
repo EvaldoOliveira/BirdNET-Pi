@@ -13,7 +13,7 @@ git log -n 1 --pretty=oneline --no-color --decorate
 source install_helpers.sh
 
 if [ "$(uname -m)" != "aarch64" ] && [ "$(uname -m)" != "x86_64" ];then
-  echo "BirdNET-Pi requires a 64-bit OS.
+  echo "BirdnetPi++ requires a 64-bit OS.
 It looks like your operating system is using $(uname -m),
 but would need to be aarch64."
   exit 1
@@ -64,5 +64,8 @@ CURRENT_TIMEZONE=$(timedatectl show --value --property=Timezone)
 ./install_audio.sh || echo "Microphone setup failed - check Tools -> Settings -> Advanced (audio card)"
 
 ./install_language_label.sh || exit 1
+
+# what each species is and where it lives: only the labels missing from model/species_info.csv (background, GBIF)
+./update_species_info.sh || true
 
 exit 0

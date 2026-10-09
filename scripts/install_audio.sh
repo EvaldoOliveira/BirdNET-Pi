@@ -36,7 +36,7 @@ if [ -z "$max_ch" ]; then
 fi
 [ "$max_ch" = "1" ] && channels=1
 
-new_conf="# Managed by BirdNET-Pi scripts/install_audio.sh - USB microphone: ${name} (card ${card})
+new_conf="# Managed by BirdnetPi++ scripts/install_audio.sh - USB microphone: ${name} (card ${card})
 pcm.birdnet_shared {
   type dsnoop
   ipc_key 7340032

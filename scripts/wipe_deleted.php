@@ -1,5 +1,5 @@
 <?php
-/* Delete Removed (owner 2026-10-09): detections removed anywhere in the interface ("Remove detection") wait in
+/* Purge Removed (owner 2026-10-09): detections removed anywhere in the interface ("Remove detection") wait in
  * ~/BirdSongs/Extracted/Removed (files) and deleted_detections (database lines) until they are deleted here for good —
  * all of them or one species. It always asks first, with the number of files per species.
  * Opened as views.php?view=Wipe. */
@@ -16,19 +16,15 @@ $size = (int)trim((string)shell_exec('du -sb ' . escapeshellarg(deleted_dir()) .
 ?>
 <style>
 .wipe { max-width: 900px; margin: 0 auto; text-align: left; padding: 0 12px; }
-.wipe table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,.55); border-radius: 8px; }
-.wipe th { text-align: left !important; padding: 5px 6px; border-bottom: 2px solid rgba(128,128,128,.4); font-size: .9em; }
-.wipe td { text-align: left !important; padding: 4px 6px; border-top: 1px solid rgba(128,128,128,.2); }
-.wipe td.num, .wipe th.num { text-align: right !important; }
 .wipe button.wipebtn { width: auto; padding: 4px 12px; border-radius: 12px; border: 1px solid #c62828; background: #fff; color: #c62828; font-weight: 600; cursor: pointer; }
 .wipe button.wipebtn:hover { background: #c62828; color: #fff; }
-.wipe a.folderbtn { margin-left: 8px; padding: 3px 10px; border-radius: 12px; border: 1px solid #2b5e22; background: #fff; color: #2b5e22; font-weight: 600; text-decoration: none; white-space: nowrap; }
-.wipe a.folderbtn:hover { background: #2b5e22; color: #fff; }
-.wipe button.restorebtn { width: auto; padding: 4px 12px; border-radius: 12px; border: 1px solid #2b5e22; background: #fff; color: #2b5e22; font-weight: 600; cursor: pointer; }
-.wipe button.restorebtn:hover { background: #2b5e22; color: #fff; }
+.wipe a.folderbtn { margin-left: 8px; padding: 3px 10px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.wipe a.folderbtn:hover { background: var(--accent,#2b5e22); color: #fff; }
+.wipe button.restorebtn { width: auto; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; }
+.wipe button.restorebtn:hover { background: var(--accent,#2b5e22); color: #fff; }
 </style>
 <div class="wipe">
-  <h2>&#128465; Delete Removed</h2>
+  <h2>&#128465; Purge Removed</h2>
   <p>"Remove detection" takes a detection out of the BirdNET folders and statistics and moves it to the Removed folder.
     Nothing is deleted automatically: deleting is manual and happens only here.</p>
   <p><b><?php echo number_format($total); ?></b> removed detections (<?php echo round($size / 1048576, 1); ?> MB) in
@@ -38,10 +34,10 @@ $size = (int)trim((string)shell_exec('du -sb ' . escapeshellarg(deleted_dir()) .
   <?php if (!$rows) { echo '<p>Nothing removed.</p>'; } else { ?>
   <p><button type="button" class="restorebtn" onclick="restoreRemoved('', this)">Restore all</button>
     <button type="button" class="wipebtn" onclick="wipeDeleted('', this)">Delete all removed detections</button></p>
-  <table>
-    <tr><th>Species</th><th>Scientific name</th><th class="num">Files</th><th>Removed</th><th></th></tr>
+  <table class="stdtable">
+    <tr><th><select class="namemode" title="Names shown"><option value="com">Common name</option><option value="sci">Scientific name</option><option value="en">English name</option></select></th><th class="num">Files</th><th>Removed</th><th></th></tr>
     <?php foreach ($rows as $r) {
-      echo '<tr><td><a href="views.php?view=Bird&amp;sci=' . rawurlencode($r['Sci_Name']) . '">' . $h($r['com']) . '</a></td><td><i>' . $h($r['Sci_Name']) . '</i></td>'
+      echo '<tr><td>' . '<a href="views.php?view=Bird&amp;sci=' . rawurlencode($r['Sci_Name']) . '" data-com="' . $h($r['com']) . '" data-sci="' . $h($r['Sci_Name']) . '" data-en="' . $h(get_english_name($r['Sci_Name'])) . '">' . $h($r['com']) . '</a>' . '</td>'
         . '<td class="num">' . number_format($r['n']) . '</td><td>' . $h(substr($r['first'], 0, 16) . ($r['first'] !== $r['last'] ? ' … ' . substr($r['last'], 0, 16) : '')) . '</td>'
         . '<td style="text-align:right !important;white-space:nowrap"><button type="button" class="restorebtn" onclick="restoreRemoved(' . $h(json_encode($r['Sci_Name'])) . ', this)">Restore</button> '
         . '<button type="button" class="wipebtn" onclick="wipeDeleted(' . $h(json_encode($r['Sci_Name'])) . ', this)">Delete</button></td></tr>';
@@ -51,3 +47,5 @@ $size = (int)trim((string)shell_exec('du -sb ' . escapeshellarg(deleted_dir()) .
 </div>
 <script src="static/species-modal.js"></script>
 <script src="static/wipe-deleted.js"></script>
+<script src="static/std-table.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/std-table.js"); ?>"></script>
+<script src="static/name-mode.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/name-mode.js"); ?>"></script>

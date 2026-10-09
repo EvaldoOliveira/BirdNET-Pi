@@ -256,7 +256,7 @@ button:hover {
 }
 
 .topnav button.active {
-  background-color: #04AA6D;
+  background-color: var(--accent2,#04aa6d);
   color: white;
 }
 
@@ -1026,7 +1026,7 @@ pre#timer.bash {
 }
 
 /* Header on phones (owner 2026-10-08): one row — small logo, station name, Live Audio; the centred
-   BirdNET-Pi wordmark is left out so nothing overlaps */
+   BirdnetPi++ wordmark is left out so nothing overlaps */
 @media screen and (max-width: 800px) {
   .banner { height: 48px; margin-left: 0; padding: 0 8px; }
   .banner h1 { display: none; }
@@ -1050,7 +1050,12 @@ pre#timer.bash {
 .sidenav ~ .views .settings,
 .sidenav ~ .views .play,
 .sidenav ~ .views .stats,
-.sidenav ~ .views .splist { margin-left: 0 !important; margin-right: auto !important; }
+.sidenav ~ .views .splist,
+/* the newer pages too (owner 2026-10-09: every page against the menu, never centred) */
+.sidenav ~ .views .dash, .sidenav ~ .views .sea, .sidenav ~ .views .spx, .sidenav ~ .views .sp, .sidenav ~ .views .cur,
+.sidenav ~ .views .wipe, .sidenav ~ .views .doctor, .sidenav ~ .views .app { margin-left: 0 !important; margin-right: auto !important; }
+.sidenav ~ .views .systemcontrols button { margin-left: 0 !important; margin-right: auto !important; }
+.sidenav ~ .views .btn-group-center, .sidenav ~ .views .systemcontrols p, .sidenav ~ .views .systemcontrols pre { text-align: left !important; }
 .sidenav ~ .views .overview-stats { justify-content: flex-start; }
 .sidenav ~ .views > h3,
 .sidenav ~ .views .centered,
@@ -1144,8 +1149,6 @@ body.sidenav-collapsed .sidenav ~ .views iframe { left: 40px; width: calc(100% -
 .overview-stats.part-records #customimage { display: none !important; }
 
 /* Species Management: the header row stays on top while scrolling, like a frozen row in a spreadsheet */
-#speciesTable { overflow: visible !important; }
-#speciesTable thead th { position: sticky; top: 0; z-index: 3; background-color: #2b2b2b; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.15); }
 
 /* phones: the card actions stay top right and the card text starts below them, so they do not cover the name */
 @media screen and (max-width: 800px) {
@@ -1162,7 +1165,7 @@ a.spicon:hover img { transform: scale(1.2); }
 .chartwrap a.chartrow { position: absolute; display: block; border-radius: 3px; }
 .chartwrap a.chartrow:hover { background: rgba(217, 122, 0, .18); outline: 2px solid #d97a00; }
 .chartwrap a.chartrow:hover::after { content: attr(data-label); position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
-  background: #2b5e22; color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 10px; white-space: nowrap; }
+  background: var(--accent,#2b5e22); color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 10px; white-space: nowrap; }
 .charthint { font-size: 12px; opacity: .8; margin: 2px 0 4px; }
 
 /* species title: [icon] [common / scientific name] [link icons at the height of both lines] (owner 2026-10-08) */
@@ -1194,8 +1197,8 @@ th .sptitle i { font-weight: normal; }
 @media (max-width: 600px) { .spphoto { float: none; width: 100%; max-width: none; margin: 8px 0; } .spphoto img { max-height: 240px; object-fit: cover; } }
 
 /* Review button of the review loop (owner 2026-10-08) */
-button.validatebtn { font-size: 11px; line-height: 1; padding: 4px 7px; border-radius: 10px; border: 1px solid #2b5e22;
-  background: #fff; color: #2b5e22; cursor: pointer; white-space: nowrap; font-weight: 600; width: auto !important; vertical-align: middle; }
+button.validatebtn { font-size: 11px; line-height: 1; padding: 4px 7px; border-radius: 10px; border: 1px solid var(--accent,#2b5e22);
+  background: #fff; color: var(--accent,#2b5e22); cursor: pointer; white-space: nowrap; font-weight: 600; width: auto !important; vertical-align: middle; }
 button.validatebtn.positioned { position: absolute; top: 9px; right: 7px; left: auto; }
 button.validatebtn.v-yes { background: #2e7d32; border-color: #2e7d32; color: #fff; }
 button.validatebtn.v-no { background: #c62828; border-color: #c62828; color: #fff; }
@@ -1235,7 +1238,7 @@ tr.relative + tr.relative > td { border-top: 3px solid #1a1a1a !important; }
 @media (max-width: 600px) { .recentacts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin: 4px 0 0; white-space: normal; } }
 
 /* "Open" = the spectrogram dialog, playing (species page, Now) */
-button.openbtn { font-size: 11px; line-height: 1; padding: 4px 9px; border-radius: 10px; border: 1px solid #2b5e22; background: #2b5e22;
+button.openbtn { font-size: 11px; line-height: 1; padding: 4px 9px; border-radius: 10px; border: 1px solid var(--accent,#2b5e22); background: var(--accent,#2b5e22);
   color: #fff; cursor: pointer; font-weight: 600; width: auto !important; white-space: nowrap; vertical-align: middle; }
 button.openbtn:hover { background: #d97a00; border-color: #d97a00; }
 
@@ -1250,8 +1253,8 @@ button.openbtn:hover { background: #d97a00; border-color: #d97a00; }
 
 /* Now page: Spectrogram / List switch (owner 2026-10-09) */
 .nowmodes { display: inline-flex; gap: 6px; margin-left: 12px; vertical-align: middle; font-weight: normal; }
-.nowmodes button { font-size: 12px; padding: 4px 12px; border-radius: 12px; border: 1px solid #2b5e22; background: #fff; color: #2b5e22; cursor: pointer; width: auto; }
-.nowmodes button.active { background: #2b5e22; color: #fff; }
+.nowmodes button { font-size: 12px; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); cursor: pointer; width: auto; }
+.nowmodes button.active { background: var(--accent,#2b5e22); color: #fff; }
 .nowmodes button.nowdefault { border-style: dashed; }
 .nowlist { overflow-x: auto; }
 .nowlist table.list { width: 100%; border-collapse: collapse; background: rgba(0,0,0,.25); border-radius: 8px; }
@@ -1261,13 +1264,68 @@ button.openbtn:hover { background: #d97a00; border-color: #d97a00; }
 .nowlist audio { height: 28px; width: 200px; vertical-align: middle; }
 
 /* standard detection list + review player rows (owner 2026-10-09) */
-.reviewlist { overflow-x: auto; }
-.reviewlist table.list { width: 100%; border-collapse: collapse; background: rgba(0,0,0,.25); border-radius: 8px; }
-.reviewlist th { text-align: left !important; padding: 5px 6px; border-bottom: 2px solid rgba(128,128,128,.4); font-size: .9em; white-space: nowrap; }
-.reviewlist td { text-align: left !important; padding: 5px 6px; border-top: 1px solid rgba(128,128,128,.2); vertical-align: middle; }
-.reviewlist td.num, .reviewlist th.num { text-align: right !important; white-space: nowrap; }
+/* sideways scroll only on a phone: on a desktop it would stop the header row from staying at the top */
+@media (max-width: 800px) { .reviewlist { overflow-x: auto; } }
 .reviewlist td.nw { white-space: nowrap; }
 .reviewlist td.rv, .reviewlist th.rv { text-align: right !important; }
 .reviewlist tr.rvrow { cursor: pointer; }
-.reviewlist tr.rvrow:hover td { background: rgba(217,122,0,.12); }
 .reviewlist .spen2 { font-size: .85em; opacity: .8; }
+
+/* Now: today's totals + search above the most recent detections (owner 2026-10-09) */
+.nowtoday { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin: 4px 0 6px; }
+.nowtoday .nowsearch input { padding: 5px 8px; font-size: 14px; }
+.namemode { font-size: 12px; padding: 1px 2px; max-width: 150px; }
+
+/* indicator cards (Now, kiosk) like All Detections (owner 2026-10-09) */
+.kpis { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 4px; text-align: left; }
+.kpis .kpi { background: rgba(0,0,0,.25); border-radius: 8px; padding: 6px 12px; color: inherit; text-decoration: none; }
+.kpis a.kpi:hover { box-shadow: 0 0 0 2px #d97a00 inset; }
+.kpis .kpi small { display: block; } .kpis .kpi b { display: block; font-size: 1.3em; }
+
+/* standard tables (owner 2026-10-09): one look for every list — Now, species pages, curation, removed detections */
+table.stdtable { width: 100%; border-collapse: separate; border-spacing: 0; background: rgba(0,0,0,.25); border-radius: 10px; overflow: clip; }
+table.stdtable th { text-align: left !important; padding: 6px 8px; font-size: .9em; white-space: nowrap; border-bottom: 2px solid rgba(128,128,128,.35); position: sticky; top: 0; z-index: 3; background-color: #2b2b2b; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.15); }
+table.stdtable td { text-align: left !important; padding: 5px 8px; border-top: 1px solid rgba(128,128,128,.18); vertical-align: middle; }
+table.stdtable td.num, table.stdtable th.num, table.stdtable td.r, table.stdtable th.r { text-align: right !important; white-space: nowrap; }
+table.stdtable tbody tr:hover td, table.stdtable tr:hover td { background: rgba(217,122,0,.10); }
+table.stdtable th.sortable { cursor: pointer; } table.stdtable th.sortable:after { content: ' \2195'; opacity: .35; font-size: .85em; }
+table.stdtable th.asc:after { content: ' \25B2'; opacity: .8; } table.stdtable th.desc:after { content: ' \25BC'; opacity: .8; }
+
+/* Now: the search sits on the Most Recent Detections line, on the right */
+.nowhead { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.nowhead .nowsearch { margin-left: auto; font-weight: normal; }
+.nowhead .nowsearch input { padding: 5px 8px; font-size: 14px; }
+
+/* Now: the same vertical rhythm between the sections (cards, Currently Analyzing, Most Recent Detections) — 14 px
+   above each title, 6 px under it, nothing extra when the live spectrogram is hidden (owner 2026-10-09) */
+.nowtoday { margin: 4px 0 0 !important; }
+.nowtoday .kpis { margin: 0; }
+h3.nowsec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 14px 0 6px !important; min-height: 30px; }
+#spectrogramimage { display: block; margin: 0 0 4px; }
+
+/* Now: analysis settings beside the cards */
+.nowtoday { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.nowanalysis { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: rgba(0,0,0,.25); border-radius: 8px; padding: 6px 10px; font-size: 12px; }
+.nowanalysis label { display: flex; flex-direction: column; gap: 2px; }
+.nowanalysis input { width: 70px; padding: 3px 5px; font-size: 14px; }
+.nowanalysis button { width: auto; padding: 5px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: var(--accent,#2b5e22); color: #fff; font-weight: 600; cursor: pointer; align-self: flex-end; }
+.nowtoday #todaystats { flex: 0 1 auto; width: auto !important; margin: 0 !important; }
+.nowtoday { flex-wrap: wrap; justify-content: flex-start; }
+/* cards and the analysis inputs on one line on a desktop */
+.nowtoday .kpis { gap: 8px; } .nowtoday .kpis .kpi { padding: 6px 10px; }
+.nowanalysis { gap: 6px; padding: 6px 8px; font-size: 11px; } .nowanalysis input { width: 56px; }
+.nowanalysis { gap: 12px; padding: 6px 12px; } .nowanalysis input { width: 72px; } .nowanalysis #na_conf { width: 90px; }
+.nowtoday .kpis { gap: 6px; } .nowtoday .kpis .kpi { padding: 5px 9px; } .nowtoday .kpis .kpi small { font-size: 11px; } .nowtoday .kpis .kpi b { font-size: 1.2em; }
+.nowanalysis label { font-size: 11px; }
+.nowanalysis { gap: 10px; } .nowanalysis input { width: 64px; } .nowanalysis #na_conf { width: 80px; }
+.nowanalysis #na_conf { width: 64px; }
+/* the analysis inputs end on the right edge of the tables below */
+.nowtoday .nowanalysis { margin-left: auto; }
+/* today and all-days cards are different contexts (owner 2026-10-09): three times the gap before "Total (all days)" */
+.kpis .kpi.kpi2 { margin-left: 20px; } .nowtoday .kpis .kpi.kpi2 { margin-left: 12px; }
+/* Now filters beside the search box: All / Low Conf / Low Prob + the value */
+.nowhead .nowsearch { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.nowfilters select { padding: 3px 6px; font-size: 13px; border-radius: 10px; }
+.nowanalysis .nagroup { display: flex; gap: 8px; padding: 3px 8px; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; }
+.nowanalysis #na_apply { min-width: 64px; }
+.nowstatus { font-size: 12px; font-weight: normal; margin-left: 10px; opacity: .85; } .nowstatus.late { color: #b71c1c; font-weight: 600; opacity: 1; }

@@ -31,7 +31,7 @@ iframe {
 
 body {
   margin: 0;
-  background-color: rgb(119, 196, 135);
+  background-color: var(--bg,#77c487);
 }
 
 table {
@@ -48,7 +48,7 @@ table {
 td {
   padding: 10px;
   vertical-align: top;
-  background-color: rgb(219, 255, 235);
+  background-color: var(--panel,#dbffeb);
   font-weight: lighter;
   text-align: center;
 }
@@ -212,7 +212,7 @@ button:hover {
 }
 
 .topnav {
-  background-color: rgb(159, 226, 155);
+  background-color: var(--menu,#9fe29b);
   display: flex;
   flex: 0 1 auto;
   width: auto;
@@ -247,17 +247,17 @@ button:hover {
 }
 
 .topnav button:hover {
-  background-color: rgb(219, 255, 235);
+  background-color: var(--panel,#dbffeb);
   color: black;
 }
 
 .topnav button.active {
-  background-color: #04AA6D;
+  background-color: var(--accent2,#04aa6d);
   color: white;
 }
 
 .topnav .button-hover {
-  background-color: rgb(219, 255, 235) !important;
+  background-color: var(--panel,#dbffeb) !important;
   color: black;
 }
 
@@ -266,7 +266,7 @@ button:hover {
 }
 
 .overview th {
-  background-color: rgb(219, 255, 235);
+  background-color: var(--panel,#dbffeb);
   text-align: center;
   padding: 12px;
 }
@@ -333,14 +333,14 @@ button:hover {
 }
 
 .views .centered button {
-  background-color: rgb(219, 255, 235);
+  background-color: var(--panel,#dbffeb);
   padding: 12px;
   transition:box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow:0px 3px 1px -2px rgb(0 0 0 / 20%), 0px 2px 2px 0px rgb(0 0 0 / 14%), 0px 1px 5px 0px rgb(0 0 0 / 12%);
 }
 
 .views .centered button:hover {
-  background-color: rgb(159, 226, 155);
+  background-color: var(--menu,#9fe29b);
   color: black;
   box-shadow:0px 2px 4px -1px rgb(0 0 0 / 20%), 0px 4px 5px 0px rgb(0 0 0 / 14%), 0px 1px 10px 0px rgb(0 0 0 / 12%);
 }
@@ -362,12 +362,12 @@ button:hover {
 }
 
 .settings button {
-  background-color: rgb(219, 255, 235);
+  background-color: var(--panel,#dbffeb);
   padding: 12px;
 }
 
 .settings button:hover {
-  background-color: rgb(159, 226, 155);
+  background-color: var(--menu,#9fe29b);
   color: black;
 }
 
@@ -392,7 +392,7 @@ button:hover {
 
 .customlabels button,.customlabels2 button {
   padding: 12px;
-  background-color: rgb(219, 255, 235);
+  background-color: var(--panel,#dbffeb);
   
   width: 100%;
 }
@@ -442,13 +442,13 @@ button:hover {
 }
 
 .servicecontrols button {
-  background-color: rgb(219, 255, 235);
+  background-color: var(--panel,#dbffeb);
   padding: 12px;
   width: 50%;
 }
 
 .systemcontrols button {
-  background-color: rgb(219, 255, 235);
+  background-color: var(--panel,#dbffeb);
   display: block;
   padding: 12px;
   width: 50%;
@@ -484,7 +484,7 @@ button:hover {
   width: 25px;
   height: 25px;
   border-radius: 50%;
-  background: #04AA6D;
+  background: var(--accent2,#04aa6d);
   cursor: pointer;
 }
 
@@ -492,7 +492,7 @@ button:hover {
   width: 25px;
   height: 25px;
   border-radius: 50%;
-  background: #04AA6D;
+  background: var(--accent2,#04aa6d);
   cursor: pointer;
 }
 
@@ -547,7 +547,7 @@ button:hover {
   .systemcontrols button,.servicecontrols button {
     width: 60%;
     padding: 12px;
-    background-color: rgb(219, 255, 235);
+    background-color: var(--panel,#dbffeb);
   }
   .topnav {
     flex: 100%;
@@ -587,7 +587,7 @@ button:hover {
   .systemcontrols button,.servicecontrols button {
     width: 80%;
     padding: 12px;
-    background-color: rgb(219, 255, 235);
+    background-color: var(--panel,#dbffeb);
   }
   .stats img {
     width: 100%;
@@ -674,18 +674,18 @@ button:hover {
 .sortbutton {
   margin-top:10px;
   font-size:x-large;
-  background:#77c487;
+  background:var(--bg,#77c487);
   padding:5px;
   box-shadow: 0px 0px 5px 2px rgba(0, 0, 0, 0.10);
 }
 
 .sortbutton:hover {
-  background-color: #dbffeb;
+  background-color: var(--panel,#dbffeb);
   color: white;
 }
 
 .sortbutton.active {
-  background-color: #dbffeb;
+  background-color: var(--panel,#dbffeb);
   color: white;
 }
 
@@ -697,7 +697,7 @@ button.legacyview {
   z-index:100;
   position:relative;
   font-size:small;
-  background:#dbffeb;
+  background:var(--panel,#dbffeb);
   padding:5px;
   transition:box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow:0px 3px 1px -2px rgb(0 0 0 / 20%), 0px 2px 2px 0px rgb(0 0 0 / 14%), 0px 1px 5px 0px rgb(0 0 0 / 12%);
@@ -710,7 +710,7 @@ button.legacyview:hover  {
 button.loadmore {
   margin-top:10px;
   font-size:x-large;
-  background:#dbffeb;
+  background:var(--panel,#dbffeb);
   padding:10px;
   transition:box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow:0px 3px 1px -2px rgb(0 0 0 / 20%), 0px 2px 2px 0px rgb(0 0 0 / 14%), 0px 1px 5px 0px rgb(0 0 0 / 12%);
@@ -730,7 +730,7 @@ button.loadmore:hover {
 }
 
 tr {
-  background-color:#9fe29b;
+  background-color:var(--menu,#9fe29b);
 }
 
 .history.centered form {
@@ -834,7 +834,7 @@ dialog::backdrop {
 
 .brbanner {
   padding:15px;
-  background-color:rgb(159, 226, 155);
+  background-color:var(--menu,#9fe29b);
   text-align:center;
   font-size:large;
 }
@@ -934,7 +934,7 @@ pre#timer.bash {
   height:5px;
   line-height:5px;
   padding:3px;
-  background-color:#9fe29b
+  background-color:var(--menu,#9fe29b)
 }
 
 #newrtspstream{
@@ -943,12 +943,12 @@ pre#timer.bash {
   height: 5px;
   line-height: 5px;
   padding: 3px;
-  background-color: #9fe29b;
+  background-color: var(--menu,#9fe29b);
 }
 
 .exclude_species_list_option_highlight {
   color: black;
-  background-color: rgb(119, 196, 135);
+  background-color: var(--bg,#77c487);
   font-weight: bolder;
 }
 
@@ -966,27 +966,27 @@ pre#timer.bash {
 .modelstable tr.shadow-off td b { opacity: 0.5; }
 
 /* Side menu (owner 2026-10-08): groups like webmin, one link per page */
-.sidenav { position: fixed; top: 0; left: 0; bottom: 0; width: 180px; overflow-y: auto; background-color: rgb(159, 226, 155);
+.sidenav { position: fixed; top: 0; left: 0; bottom: 0; width: 180px; overflow-y: auto; background-color: var(--menu,#9fe29b);
   box-shadow: 0px 0px 28px 1px rgba(0, 0, 0, 0.10); padding: 6px 0; z-index: 20; font-size: 14px; }
 .sidenav ~ .views { margin-left: 188px; }
 .sidenav a.navitem { display: block; padding: 6px 14px; color: black; text-decoration: none; white-space: nowrap; }
 .sidenav details a.navitem { padding-left: 26px; }
-.sidenav a.navitem:hover, .sidenav a.navitem.active { background-color: rgb(219, 255, 235); color: black; }
+.sidenav a.navitem:hover, .sidenav a.navitem.active { background-color: var(--panel,#dbffeb); color: black; }
 .sidenav a.navitem.active { font-weight: bold; }
 .sidenav summary { padding: 6px 14px; cursor: pointer; font-weight: bold; color: black; list-style-position: inside; }
-.sidenav summary:hover { background-color: rgb(219, 255, 235); }
+.sidenav summary:hover { background-color: var(--panel,#dbffeb); }
 .sidenav .updatenumber { display: inline-block; position: static; margin-left: 6px; }
 .sidenav-toggle { display: none; }
 @media screen and (max-width: 800px) {
   .sidenav { display: none; }
   .sidenav ~ .views { margin-left: 0; padding-top: 40px; }
   .sidenav-toggle { display: block; position: fixed; top: 4px; left: 4px; z-index: 30; padding: 4px 10px; font-size: 20px;
-    background-color: rgb(159, 226, 155); color: black; border-radius: 4px; }
+    background-color: var(--menu,#9fe29b); color: black; border-radius: 4px; }
   body.sidenav-open .sidenav { display: block; width: 220px; padding-top: 44px; }
 }
 
 /* Header on phones (owner 2026-10-08): one row — small logo, station name, Live Audio; the centred
-   BirdNET-Pi wordmark is left out so nothing overlaps */
+   BirdnetPi++ wordmark is left out so nothing overlaps */
 @media screen and (max-width: 800px) {
   .banner { height: 48px; margin-left: 0; padding: 0 8px; }
   .banner h1 { display: none; }
@@ -1010,7 +1010,12 @@ pre#timer.bash {
 .sidenav ~ .views .settings,
 .sidenav ~ .views .play,
 .sidenav ~ .views .stats,
-.sidenav ~ .views .splist { margin-left: 0 !important; margin-right: auto !important; }
+.sidenav ~ .views .splist,
+/* the newer pages too (owner 2026-10-09: every page against the menu, never centred) */
+.sidenav ~ .views .dash, .sidenav ~ .views .sea, .sidenav ~ .views .spx, .sidenav ~ .views .sp, .sidenav ~ .views .cur,
+.sidenav ~ .views .wipe, .sidenav ~ .views .doctor, .sidenav ~ .views .app { margin-left: 0 !important; margin-right: auto !important; }
+.sidenav ~ .views .systemcontrols button { margin-left: 0 !important; margin-right: auto !important; }
+.sidenav ~ .views .btn-group-center, .sidenav ~ .views .systemcontrols p, .sidenav ~ .views .systemcontrols pre { text-align: left !important; }
 .sidenav ~ .views .overview-stats { justify-content: flex-start; }
 .sidenav ~ .views > h3,
 .sidenav ~ .views .centered,
@@ -1080,7 +1085,7 @@ body > iframe { top: 54px; left: 0; height: calc(100vh - 54px) !important; heigh
 
 /* collapsible side menu (owner 2026-10-08) */
 .sidenav-collapse { display: block; width: 100%; text-align: right; padding: 2px 12px; font-size: 18px; color: black; background: transparent; }
-.sidenav-collapse:hover { background-color: rgb(219, 255, 235); }
+.sidenav-collapse:hover { background-color: var(--panel,#dbffeb); }
 @media screen and (min-width: 801px) {
 body.sidenav-collapsed .sidenav { width: 40px; overflow: hidden; }
 body.sidenav-collapsed .sidenav > :not(.sidenav-collapse) { display: none; }
@@ -1104,8 +1109,6 @@ body.sidenav-collapsed .sidenav ~ .views iframe { left: 40px; width: calc(100% -
 .overview-stats.part-records #customimage { display: none !important; }
 
 /* Species Management: the header row stays on top while scrolling, like a frozen row in a spreadsheet */
-#speciesTable { overflow: visible !important; }
-#speciesTable thead th { position: sticky; top: 0; z-index: 3; background-color: rgb(159, 226, 155); box-shadow: 0 2px 3px rgba(0, 0, 0, 0.15); }
 
 /* phones: the card actions stay top right and the card text starts below them, so they do not cover the name */
 @media screen and (max-width: 800px) {
@@ -1122,7 +1125,7 @@ a.spicon:hover img { transform: scale(1.2); }
 .chartwrap a.chartrow { position: absolute; display: block; border-radius: 3px; }
 .chartwrap a.chartrow:hover { background: rgba(217, 122, 0, .18); outline: 2px solid #d97a00; }
 .chartwrap a.chartrow:hover::after { content: attr(data-label); position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
-  background: #2b5e22; color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 10px; white-space: nowrap; }
+  background: var(--accent,#2b5e22); color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 10px; white-space: nowrap; }
 .charthint { font-size: 12px; opacity: .8; margin: 2px 0 4px; }
 
 /* species title: [icon] [common / scientific name] [link icons at the height of both lines] (owner 2026-10-08) */
@@ -1154,8 +1157,8 @@ th .sptitle i { font-weight: normal; }
 @media (max-width: 600px) { .spphoto { float: none; width: 100%; max-width: none; margin: 8px 0; } .spphoto img { max-height: 240px; object-fit: cover; } }
 
 /* Review button of the review loop (owner 2026-10-08) */
-button.validatebtn { font-size: 11px; line-height: 1; padding: 4px 7px; border-radius: 10px; border: 1px solid #2b5e22;
-  background: #fff; color: #2b5e22; cursor: pointer; white-space: nowrap; font-weight: 600; width: auto !important; vertical-align: middle; }
+button.validatebtn { font-size: 11px; line-height: 1; padding: 4px 7px; border-radius: 10px; border: 1px solid var(--accent,#2b5e22);
+  background: #fff; color: var(--accent,#2b5e22); cursor: pointer; white-space: nowrap; font-weight: 600; width: auto !important; vertical-align: middle; }
 button.validatebtn.positioned { position: absolute; top: 9px; right: 7px; left: auto; }
 button.validatebtn.v-yes { background: #2e7d32; border-color: #2e7d32; color: #fff; }
 button.validatebtn.v-no { background: #c62828; border-color: #c62828; color: #fff; }
@@ -1182,7 +1185,7 @@ button.validatebtn:hover { filter: brightness(1.08); }
 /* lists of detections: everything aligned to the top of the row, and at least 3 px of page colour between two
    records so they never run together (owner 2026-10-08) */
 tr.relative > td { vertical-align: top !important; }
-tr.relative + tr.relative > td { border-top: 3px solid rgb(119, 196, 135) !important; }
+tr.relative + tr.relative > td { border-top: 3px solid var(--bg,#77c487) !important; }
 
 /* Now page, 5 most recent: the small actions on one line under the names */
 .rowactions { white-space: nowrap; margin-top: 3px; text-align: left; }
@@ -1195,7 +1198,7 @@ tr.relative + tr.relative > td { border-top: 3px solid rgb(119, 196, 135) !impor
 @media (max-width: 600px) { .recentacts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin: 4px 0 0; white-space: normal; } }
 
 /* "Open" = the spectrogram dialog, playing (species page, Now) */
-button.openbtn { font-size: 11px; line-height: 1; padding: 4px 9px; border-radius: 10px; border: 1px solid #2b5e22; background: #2b5e22;
+button.openbtn { font-size: 11px; line-height: 1; padding: 4px 9px; border-radius: 10px; border: 1px solid var(--accent,#2b5e22); background: var(--accent,#2b5e22);
   color: #fff; cursor: pointer; font-weight: 600; width: auto !important; white-space: nowrap; vertical-align: middle; }
 button.openbtn:hover { background: #d97a00; border-color: #d97a00; }
 
@@ -1210,8 +1213,8 @@ button.openbtn:hover { background: #d97a00; border-color: #d97a00; }
 
 /* Now page: Spectrogram / List switch (owner 2026-10-09) */
 .nowmodes { display: inline-flex; gap: 6px; margin-left: 12px; vertical-align: middle; font-weight: normal; }
-.nowmodes button { font-size: 12px; padding: 4px 12px; border-radius: 12px; border: 1px solid #2b5e22; background: #fff; color: #2b5e22; cursor: pointer; width: auto; }
-.nowmodes button.active { background: #2b5e22; color: #fff; }
+.nowmodes button { font-size: 12px; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); cursor: pointer; width: auto; }
+.nowmodes button.active { background: var(--accent,#2b5e22); color: #fff; }
 .nowmodes button.nowdefault { border-style: dashed; }
 .nowlist { overflow-x: auto; }
 .nowlist table.list { width: 100%; border-collapse: collapse; background: rgba(255,255,255,.55); border-radius: 8px; }
@@ -1221,13 +1224,68 @@ button.openbtn:hover { background: #d97a00; border-color: #d97a00; }
 .nowlist audio { height: 28px; width: 200px; vertical-align: middle; }
 
 /* standard detection list + review player rows (owner 2026-10-09) */
-.reviewlist { overflow-x: auto; }
-.reviewlist table.list { width: 100%; border-collapse: collapse; background: rgba(255,255,255,.55); border-radius: 8px; }
-.reviewlist th { text-align: left !important; padding: 5px 6px; border-bottom: 2px solid rgba(128,128,128,.4); font-size: .9em; white-space: nowrap; }
-.reviewlist td { text-align: left !important; padding: 5px 6px; border-top: 1px solid rgba(128,128,128,.2); vertical-align: middle; }
-.reviewlist td.num, .reviewlist th.num { text-align: right !important; white-space: nowrap; }
+/* sideways scroll only on a phone: on a desktop it would stop the header row from staying at the top */
+@media (max-width: 800px) { .reviewlist { overflow-x: auto; } }
 .reviewlist td.nw { white-space: nowrap; }
 .reviewlist td.rv, .reviewlist th.rv { text-align: right !important; }
 .reviewlist tr.rvrow { cursor: pointer; }
-.reviewlist tr.rvrow:hover td { background: rgba(217,122,0,.12); }
 .reviewlist .spen2 { font-size: .85em; opacity: .8; }
+
+/* Now: today's totals + search above the most recent detections (owner 2026-10-09) */
+.nowtoday { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin: 4px 0 6px; }
+.nowtoday .nowsearch input { padding: 5px 8px; font-size: 14px; }
+.namemode { font-size: 12px; padding: 1px 2px; max-width: 150px; }
+
+/* indicator cards (Now, kiosk) like All Detections (owner 2026-10-09) */
+.kpis { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 4px; text-align: left; }
+.kpis .kpi { background: rgba(255,255,255,.55); border-radius: 8px; padding: 6px 12px; color: inherit; text-decoration: none; }
+.kpis a.kpi:hover { box-shadow: 0 0 0 2px #d97a00 inset; }
+.kpis .kpi small { display: block; } .kpis .kpi b { display: block; font-size: 1.3em; }
+
+/* standard tables (owner 2026-10-09): one look for every list — Now, species pages, curation, removed detections */
+table.stdtable { width: 100%; border-collapse: separate; border-spacing: 0; background: rgba(255,255,255,.55); border-radius: 10px; overflow: clip; }
+table.stdtable th { text-align: left !important; padding: 6px 8px; font-size: .9em; white-space: nowrap; border-bottom: 2px solid rgba(128,128,128,.35); position: sticky; top: 0; z-index: 3; background-color: var(--menu,#9fe29b); box-shadow: 0 2px 3px rgba(0, 0, 0, 0.15); }
+table.stdtable td { text-align: left !important; padding: 5px 8px; border-top: 1px solid rgba(128,128,128,.18); vertical-align: middle; }
+table.stdtable td.num, table.stdtable th.num, table.stdtable td.r, table.stdtable th.r { text-align: right !important; white-space: nowrap; }
+table.stdtable tbody tr:hover td, table.stdtable tr:hover td { background: rgba(217,122,0,.10); }
+table.stdtable th.sortable { cursor: pointer; } table.stdtable th.sortable:after { content: ' \2195'; opacity: .35; font-size: .85em; }
+table.stdtable th.asc:after { content: ' \25B2'; opacity: .8; } table.stdtable th.desc:after { content: ' \25BC'; opacity: .8; }
+
+/* Now: the search sits on the Most Recent Detections line, on the right */
+.nowhead { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.nowhead .nowsearch { margin-left: auto; font-weight: normal; }
+.nowhead .nowsearch input { padding: 5px 8px; font-size: 14px; }
+
+/* Now: the same vertical rhythm between the sections (cards, Currently Analyzing, Most Recent Detections) — 14 px
+   above each title, 6 px under it, nothing extra when the live spectrogram is hidden (owner 2026-10-09) */
+.nowtoday { margin: 4px 0 0 !important; }
+.nowtoday .kpis { margin: 0; }
+h3.nowsec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 14px 0 6px !important; min-height: 30px; }
+#spectrogramimage { display: block; margin: 0 0 4px; }
+
+/* Now: analysis settings beside the cards */
+.nowtoday { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.nowanalysis { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: rgba(255,255,255,.55); border-radius: 8px; padding: 6px 10px; font-size: 12px; }
+.nowanalysis label { display: flex; flex-direction: column; gap: 2px; }
+.nowanalysis input { width: 70px; padding: 3px 5px; font-size: 14px; }
+.nowanalysis button { width: auto; padding: 5px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: var(--accent,#2b5e22); color: #fff; font-weight: 600; cursor: pointer; align-self: flex-end; }
+.nowtoday #todaystats { flex: 0 1 auto; width: auto !important; margin: 0 !important; }
+.nowtoday { flex-wrap: wrap; justify-content: flex-start; }
+/* cards and the analysis inputs on one line on a desktop */
+.nowtoday .kpis { gap: 8px; } .nowtoday .kpis .kpi { padding: 6px 10px; }
+.nowanalysis { gap: 6px; padding: 6px 8px; font-size: 11px; } .nowanalysis input { width: 56px; }
+.nowanalysis { gap: 12px; padding: 6px 12px; } .nowanalysis input { width: 72px; } .nowanalysis #na_conf { width: 90px; }
+.nowtoday .kpis { gap: 6px; } .nowtoday .kpis .kpi { padding: 5px 9px; } .nowtoday .kpis .kpi small { font-size: 11px; } .nowtoday .kpis .kpi b { font-size: 1.2em; }
+.nowanalysis label { font-size: 11px; }
+.nowanalysis { gap: 10px; } .nowanalysis input { width: 64px; } .nowanalysis #na_conf { width: 80px; }
+.nowanalysis #na_conf { width: 64px; }
+/* the analysis inputs end on the right edge of the tables below */
+.nowtoday .nowanalysis { margin-left: auto; }
+/* today and all-days cards are different contexts (owner 2026-10-09): three times the gap before "Total (all days)" */
+.kpis .kpi.kpi2 { margin-left: 20px; } .nowtoday .kpis .kpi.kpi2 { margin-left: 12px; }
+/* Now filters beside the search box: All / Low Conf / Low Prob + the value */
+.nowhead .nowsearch { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.nowfilters select { padding: 3px 6px; font-size: 13px; border-radius: 10px; }
+.nowanalysis .nagroup { display: flex; gap: 8px; padding: 3px 8px; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; }
+.nowanalysis #na_apply { min-width: 64px; }
+.nowstatus { font-size: 12px; font-weight: normal; margin-left: 10px; opacity: .85; } .nowstatus.late { color: #b71c1c; font-weight: 600; opacity: 1; }

@@ -72,6 +72,9 @@ if (isset($_POST['wizard_save'])) {
   $pwd = $p['password'] ?? '';
   if ($pwd !== '' && !preg_match('/^[A-Za-z0-9]+$/', $pwd)) $errors[] = 'The password may only contain letters and digits';
   if ($pwd !== ($p['password2'] ?? '')) $errors[] = 'The two passwords differ';
+  // app colours (System Appearance themes; the custom theme is set later in Settings › Appearance)
+  $theme = strtolower($p['app_theme'] ?? 'forest');
+  if (!isset(theme_presets()[$theme])) $errors[] = 'Unknown colour theme';
   $bw = $p['birdweather_id'] ?? '';
   if ($bw !== '' && !preg_match('/^[A-Za-z0-9]+$/', $bw)) $errors[] = 'Invalid BirdWeather ID';
 
@@ -94,6 +97,7 @@ if (isset($_POST['wizard_save'])) {
     $contents = wizard_set_key($contents, 'SPECIES_LIST', $sel);
     if (strpos($lang, 'pt') === 0 || $state !== '') $contents = wizard_set_key($contents, 'INFO_SITE', '"EBIRD"');
     $contents = wizard_set_key($contents, 'BIRDWEATHER_ID', $bw);
+    $contents = wizard_set_key($contents, 'APP_THEME', "\"$theme\"");
     $update_caddy = false;
     if ($pwd !== '' && $pwd !== ($config['CADDY_PWD'] ?? '')) {
       $contents = wizard_set_key($contents, 'CADDY_PWD', "\"$pwd\"");
@@ -190,6 +194,39 @@ foreach ($langs as $l) {
       </optgroup>
     </select></label>
   </td></tr></table><br>
+  <table class="settingstable"><tr><td>
+    <h2>Appearance</h2>
+    <div class="wizthemes">
+<?php $cur_theme = strtolower(trim($config['APP_THEME'] ?? 'forest')); if (!isset(theme_presets()[$cur_theme])) $cur_theme = 'forest';
+  foreach (theme_presets() as $k => $t) {
+    echo '<label class="wiztheme"><input type="radio" name="app_theme" value="' . $k . '"' . ($k === $cur_theme ? ' checked' : '') . ' data-colors="' . implode(',', array_slice($t, 1)) . '">'
+      . '<span class="mock" style="background:' . $t[1] . '"><span class="mm" style="background:' . $t[2] . '"></span><span class="mp" style="background:' . $t[3] . '"><i style="background:' . $t[4] . '"></i><i style="background:' . $t[5] . '"></i></span></span>'
+      . '<b>' . $h($t[0]) . '</b></label>';
+  } ?>
+    </div>
+    <small>Colours of the app, shown at once; a custom theme can be made later in Settings › Appearance.</small>
+  </td></tr></table><br>
+  <style>
+    .wizthemes { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0; }
+    .wiztheme { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 6px; border-radius: 10px; border: 2px solid rgba(0,0,0,.08); }
+    .wiztheme input { display: none; } .wiztheme:has(input:checked) { border-color: var(--accent, #2b5e22); box-shadow: 0 0 0 2px var(--accent, #2b5e22); }
+    .wiztheme .mock { display: flex; width: 110px; height: 56px; border-radius: 6px; padding: 5px; gap: 5px; box-sizing: border-box; }
+    .wiztheme .mm { width: 26%; border-radius: 3px; } .wiztheme .mp { flex: 1; border-radius: 3px; display: flex; align-items: flex-end; gap: 3px; padding: 4px; }
+    .wiztheme .mp i { display: block; width: 20px; height: 9px; border-radius: 5px; }
+  </style>
+  <script>
+    // a theme is shown on this page and on the frame around it as soon as it is picked; saved with the rest
+    document.querySelectorAll('.wiztheme input').forEach(function (r) {
+      r.addEventListener('change', function () {
+        var c = r.dataset.colors.split(','), vars = ['--bg', '--menu', '--panel', '--accent', '--accent2'];
+        [document, window.parent && window.parent.document].forEach(function (doc) {
+          if (!doc) return;
+          c.forEach(function (v, i) { doc.documentElement.style.setProperty(vars[i], v); });
+          doc.documentElement.style.setProperty('--accent-rgb', [1, 3, 5].map(function (j) { return parseInt(c[3].substr(j, 2), 16); }).join(','));
+        });
+      });
+    });
+  </script>
   <table class="settingstable"><tr><td>
     <h2>Web Access</h2>
     <label>Web password (letters and digits; empty = keep <?php echo empty($config['CADDY_PWD']) ? 'no password' : 'the current one'; ?>):

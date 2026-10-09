@@ -12,105 +12,8 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
 $db = get_db();
 
 if ($sci === '') {
-  // Species Pages (menu Detections › Species Pages): every species detected here — filter, sort by any column,
-  // jump by initial; a click opens the species page (owner 2026-10-08)
-  $res = $db->query('SELECT Sci_Name, MAX(Com_Name) AS com, COUNT(*) AS n, MIN(Date) AS first, MAX(Date) AS last,'
-    . ' COUNT(DISTINCT Date) AS days, MAX(Confidence) AS maxc FROM detections WHERE 1' . not_rejected_sql() . ' GROUP BY Sci_Name');
-  $rows = array();
-  while ($res && ($r = $res->fetchArray(SQLITE3_ASSOC))) $rows[] = $r;
-  usort($rows, function ($x, $y) { return intval($y['n']) - intval($x['n']); });  // most detections first
-  $today = date('Y-m-d');
-  ?>
-<style>
-.spx { max-width: 1100px; margin: 0 auto; text-align: left; padding: 0 12px; }
-.spx .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
-.spx input[type=search] { flex: 1 1 240px; max-width: 360px; padding: 6px 8px; font-size: 15px; }
-.spx .az a { display: inline-block; min-width: 1.3em; text-align: center; padding: 1px 2px; text-decoration: none; font-weight: 600; }
-.spx .az a.off { opacity: .3; pointer-events: none; }
-.spx table { width: 100%; border-collapse: collapse; }
-.spx th { cursor: pointer; text-align: left !important; white-space: nowrap; padding: 6px; position: sticky; top: 0; }
-.spx th:after { content: ' \2195'; opacity: .4; }
-.spx td { text-align: left !important; padding: 5px 6px; border-top: 1px solid rgba(128,128,128,.25); }
-.spx td.num, .spx th.num { text-align: right !important; }
-.spx tr.sprow { cursor: pointer; }
-.spx tr.sprow:hover td { background: rgba(217,122,0,.12); }
-.spx .new { font-size: 11px; background: #d97a00; color: #fff; border-radius: 8px; padding: 0 6px; margin-left: 4px; }
-@media (max-width: 700px) { .spx .hide-m { display: none; } }
-</style>
-<div class="spx">
-  <h2><img src="images/species-page.svg" style="width:30px;height:30px;vertical-align:middle" alt=""> Species Pages</h2>
-  <div class="bar">
-    <input type="search" id="spq" placeholder="Filter by common or scientific name..." oninput="spFilter()" autofocus>
-    <span id="spcount"></span>
-  </div>
-  <div class="az" id="spaz"></div>
-  <table id="sptable">
-    <thead><tr>
-      <th data-k="com">Species</th><th data-k="sci" class="hide-m">Scientific name</th>
-      <th data-k="n" class="num">Detections</th><th data-k="days" class="num hide-m">Days</th>
-      <th data-k="maxc" class="num hide-m">Best</th><th data-k="first" class="hide-m">First seen</th><th data-k="last">Last seen</th>
-    </tr></thead>
-    <tbody>
-    <?php foreach ($rows as $r) {
-      $url = 'views.php?view=Bird&amp;sci=' . rawurlencode($r['Sci_Name']);
-      echo '<tr class="sprow" data-href="' . $url . '" data-com="' . $h(mb_strtolower($r['com'])) . '" data-sci="' . $h(strtolower($r['Sci_Name'])) . '"'
-        . ' data-n="' . intval($r['n']) . '" data-days="' . intval($r['days']) . '" data-maxc="' . round($r['maxc'], 3) . '" data-first="' . $h($r['first']) . '" data-last="' . $h($r['last']) . '">'
-        . '<td>' . species_icon($r['Sci_Name']) . '<a href="' . $url . '">' . $h($r['com']) . '</a>' . ($r['first'] === $today ? '<span class="new">new today</span>' : '') . '</td>'
-        . '<td class="hide-m"><i>' . $h($r['Sci_Name']) . '</i></td><td class="num">' . number_format(intval($r['n'])) . '</td>'
-        . '<td class="num hide-m">' . intval($r['days']) . '</td><td class="num hide-m">' . round($r['maxc'] * 100) . '%</td>'
-        . '<td class="hide-m">' . $h($r['first']) . '</td><td>' . $h($r['last']) . '</td></tr>';
-    } ?>
-    </tbody>
-  </table>
-</div>
-<script>
-(function () {
-  var tbody = document.querySelector('#sptable tbody'), rows = Array.prototype.slice.call(tbody.rows);
-  // always opens sorted by detections, most first (owner 2026-10-08); a column click re-sorts for this visit only
-  var sortKey = 'n', asc = false;
-  rows.forEach(function (r) { r.addEventListener('click', function (e) { if (!e.target.closest('a')) location.href = r.dataset.href; }); });
-  function norm(s) { return s.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
-  window.spFilter = function () {
-    var q = norm(document.getElementById('spq').value.toLowerCase().trim()), shown = 0;
-    rows.forEach(function (r) {
-      var ok = !q || norm(r.dataset.com).indexOf(q) >= 0 || r.dataset.sci.indexOf(q) >= 0;
-      r.style.display = ok ? '' : 'none'; if (ok) shown++;
-    });
-    document.getElementById('spcount').textContent = shown + ' of ' + rows.length + ' species';
-  };
-  function sort() {
-    var num = ['n', 'days', 'maxc'].indexOf(sortKey) >= 0;
-    rows.sort(function (a, b) {
-      var x = a.dataset[sortKey], y = b.dataset[sortKey];
-      var c = num ? (parseFloat(x) - parseFloat(y)) : norm(x).localeCompare(norm(y));
-      return asc ? c : -c;
-    });
-    rows.forEach(function (r) { tbody.appendChild(r); });
-  }
-  document.querySelectorAll('#sptable th').forEach(function (th) {
-    th.addEventListener('click', function () {
-      if (sortKey === th.dataset.k) asc = !asc; else { sortKey = th.dataset.k; asc = ['com', 'sci'].indexOf(sortKey) >= 0; }
-      sort();
-    });
-  });
-  // A–Z: jump to the first species with that initial (common name order)
-  var az = document.getElementById('spaz'), initials = {};
-  rows.forEach(function (r) { initials[norm(r.dataset.com).charAt(0).toUpperCase()] = true; });
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(function (l) {
-    var a = document.createElement('a'); a.textContent = l; a.href = '#';
-    if (!initials[l]) a.className = 'off';
-    a.onclick = function (e) {
-      e.preventDefault(); document.getElementById('spq').value = ''; spFilter();
-      if (sortKey !== 'com' || !asc) { sortKey = 'com'; asc = true; sort(); }
-      var t = rows.filter(function (r) { return norm(r.dataset.com).charAt(0).toUpperCase() === l; })[0];
-      if (t) { t.scrollIntoView({ block: 'start' }); t.style.outline = '2px solid #d97a00'; setTimeout(function () { t.style.outline = ''; }, 1500); }
-    };
-    az.appendChild(a);
-  });
-  sort(); spFilter();
-})();
-</script>
-<?php
+  // the species list is scripts/species_tools.php (Species Pages = the old Species Management, owner 2026-10-09)
+  include __DIR__ . '/species_tools.php';
   return;
 }
 $nr = not_rejected_sql();
@@ -145,8 +48,8 @@ $hours = array_fill(0, 24, 0);
 foreach ($q("SELECT CAST(substr(Time, 1, 2) AS INT) AS hh, COUNT(*) AS n FROM detections WHERE Sci_Name = :sci $nr GROUP BY hh") as $r) {
   $hours[intval($r['hh'])] = intval($r['n']);
 }
-$best = $q("SELECT Date, Time, Confidence, Cutoff, Sens, Overlap, File_Name FROM detections WHERE Sci_Name = :sci $nr ORDER BY Confidence DESC, Date DESC LIMIT 6");
-$recent = $q("SELECT Date, Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, File_Name FROM detections WHERE Sci_Name = :sci ORDER BY Date DESC, Time DESC LIMIT 30");
+$best = $q("SELECT Date, Time, Confidence, Cutoff, Sens, Overlap, Loc_Thresh, Rec_Length, Sp_Override, File_Name FROM detections WHERE Sci_Name = :sci $nr ORDER BY Confidence DESC, Date DESC LIMIT 6");
+$recent = $q("SELECT Date, Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, Loc_Thresh, Rec_Length, Sp_Override, File_Name FROM detections WHERE Sci_Name = :sci ORDER BY Date DESC, Time DESC LIMIT 30");
 
 // review verdicts and the suggested threshold: ≥ 3 rejections in 90 days → just above the best rejected one
 $reviews = array('yes' => 0, 'no' => 0, 'unsure' => 0);
@@ -177,7 +80,7 @@ if ($nr !== '') {
   }
   // samples for a calibration round: up to 4 unreviewed detections per band, at random
   foreach ($bands as $b) {
-    foreach ($q("SELECT Date, Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, File_Name FROM detections WHERE Sci_Name = :sci
+    foreach ($q("SELECT Date, Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, Loc_Thresh, Rec_Length, Sp_Override, File_Name FROM detections WHERE Sci_Name = :sci
                  AND Confidence >= " . $b[0] . " AND Confidence < " . $b[1] . " AND File_Name NOT IN (SELECT File_Name FROM detection_reviews)
                  ORDER BY RANDOM() LIMIT 4") as $r) $samples[] = $r;
   }
@@ -216,7 +119,7 @@ if (is_file($pf)) {
   if (isset($p['data'][$sci])) $profile = $p['data'][$sci];
 }
 $week48 = min(48, (intval(date('n')) - 1) * 4 + min(4, intdiv(intval(date('j')) - 1, 7) + 1));
-// the location model's probability for this week (same value as the Probability column of Species Management)
+// the location model's probability for this week (same value as the Probability column of the Species Pages list)
 $model_prob = $profile ? floatval($profile[$week48 - 1]) : null;
 if ($model_prob === null) {
   $out = (string)shell_exec('sudo -u ' . escapeshellarg(get_user()) . ' ' . escapeshellarg($home . '/BirdNET-Pi/birdnet/bin/python3') . ' '
@@ -252,9 +155,6 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
 .sp .lists { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; padding: 10px 12px; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; margin: 18px 0 4px; }
 .sp .lists label { font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 .sp .lists input { width: 18px; height: 18px; cursor: pointer; }
-.sp table.list th { text-align: left !important; padding: 4px; border-bottom: 2px solid rgba(128,128,128,.4); font-size: .9em; }
-.sp table.list td.num, .sp table.list th.num { text-align: right !important; }
-.sp table.list audio { height: 28px; width: 220px; vertical-align: middle; }
 .sp .card { min-width: 0; flex: 1 1 280px; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; padding: 10px 12px; }
 .sp .card h3 { margin: 0 0 8px; font-size: 1em; }
 .sp-bars { display: flex; align-items: flex-end; gap: 2px; height: 70px; }
@@ -264,15 +164,13 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
 .sp-axis { display: flex; justify-content: space-between; font-size: 10px; opacity: .7; }
 .sp-cal { display: grid; grid-template-rows: repeat(7, 10px); grid-auto-flow: column; grid-auto-columns: 10px; gap: 2px; overflow-x: auto; padding-bottom: 4px; }
 .sp-cal i { display: block; width: 10px; height: 10px; border-radius: 2px; background: rgba(128,128,128,.15); }
-.sp-cal i.l1 { background: #b7dfa5; } .sp-cal i.l2 { background: #7fc263; } .sp-cal i.l3 { background: #4a8f3c; } .sp-cal i.l4 { background: #2b5e22; }
-.sp table.list { width: 100%; border-collapse: collapse; }
-.sp table.list td { text-align: left; vertical-align: middle; padding: 3px 4px; border-top: 1px solid rgba(128,128,128,.2); }
+.sp-cal i.l1 { background: #b7dfa5; } .sp-cal i.l2 { background: #7fc263; } .sp-cal i.l3 { background: #4a8f3c; } .sp-cal i.l4 { background: var(--accent,#2b5e22); }
 .sp .clips { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
 .sp .clip { position: relative; padding-top: 32px; }
 .sp button.wipebtn { width: auto; padding: 3px 10px; border-radius: 12px; border: 1px solid #c62828; background: #fff; color: #c62828; font-weight: 600; cursor: pointer; }
 .sp button.wipebtn:hover { background: #c62828; color: #fff; }
-.sp button.restorebtn { width: auto; padding: 3px 10px; border-radius: 12px; border: 1px solid #2b5e22; background: #fff; color: #2b5e22; font-weight: 600; cursor: pointer; }
-.sp button.restorebtn:hover { background: #2b5e22; color: #fff; }
+.sp button.restorebtn { width: auto; padding: 3px 10px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; }
+.sp button.restorebtn:hover { background: var(--accent,#2b5e22); color: #fff; }
 .sp table.calib { border-collapse: collapse; margin: 6px 0; font-size: 12px; }
 .sp table.calib th, .sp table.calib td { padding: 1px 8px 1px 0; text-align: left; }
 .sp img.clipspec { display: block; width: 100%; border-radius: 6px; cursor: pointer; margin-top: 4px; transition: filter .15s; }
@@ -352,11 +250,11 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
           <button type="button" class="openbtn" onclick="applyThreshold(<?php echo $h(json_encode($sci)); ?>, <?php echo $calib; ?>, this)">Apply</button></div>
       <?php } ?>
       <?php if ($samples) { ?>
-        <button type="button" class="openbtn" style="margin-top:6px" onclick="openReviewPlayer(document.querySelector('#calibsamples [data-ri]'))"
+        <button type="button" class="openbtn" style="margin-top:6px" onclick="reviewDetection(document.querySelector('#calibsamples [data-ri]'))"
           title="Review a sample across the confidence bands; the threshold above is recalculated from the answers">&#127919; Calibrate: review <?php echo count($samples); ?> samples</button>
         <div id="calibsamples" data-review-list="1" style="display:none"><?php foreach ($samples as $r) {
           $f = $r['Date'] . '/' . $folder . '/' . $r['File_Name'];
-          echo '<div' . review_item_attrs($f, $r['Com_Name'] . ' · ' . $r['Date'] . ' ' . $r['Time'] . ' · ' . round($r['Confidence'] * 100) . '%', $sci, $r) . '>' . validate_button($f, '', false, 'openReviewPlayer(this)') . '</div>';
+          echo '<div' . review_item_attrs($f, $r['Com_Name'] . ' · ' . $r['Date'] . ' ' . $r['Time'] . ' · ' . round($r['Confidence'] * 100) . '%', $sci, $r) . '>' . validate_button($f, '') . '</div>';
         } ?></div>
       <?php } ?>
     </div>
@@ -369,7 +267,7 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
     <?php $ndel = deleted_count($sci); if ($ndel) { ?>
       <span style="margin-left:auto">Removed detections: <b><?php echo $ndel; ?></b>
         <button type="button" class="restorebtn" onclick="restoreRemoved(<?php echo $h(json_encode($sci)); ?>, this)">Restore</button>
-        <button type="button" class="wipebtn" onclick="wipeDeleted(<?php echo $h(json_encode($sci)); ?>, this)">Delete removed</button></span>
+        <button type="button" class="wipebtn" onclick="wipeDeleted(<?php echo $h(json_encode($sci)); ?>, this)">Purge removed</button></span>
     <?php } ?>
   </div>
   <h3 class="section">Best detections</h3>
@@ -379,7 +277,7 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
     // the spectrogram picture; a click opens it playing, like "open" in Latest detections
     $label = $com . ' · ' . $b['Date'] . ' ' . $b['Time'] . ' · ' . round($b['Confidence'] * 100) . '%';
     echo '<div class="clip"' . review_item_attrs($file, $label, $sci, $b + array('Com_Name' => $com)) . '>' . detection_actions($file) . '<b>' . $h($b['Date'] . ' ' . $b['Time']) . '</b> · ' . round($b['Confidence'] * 100) . '%'
-      . '<img class="clipspec" loading="lazy" src="/By_Date/' . $h($file) . '.png" alt="spectrogram" title="Listen and review" onclick="openReviewPlayer(this)"></div>';
+      . '<img class="clipspec" loading="lazy" src="/By_Date/' . $h($file) . '.png" alt="spectrogram" title="Listen and review" onclick="reviewDetection(this)"></div>';
   } ?>
   </div>
   <h3 class="section">Latest detections</h3>
@@ -387,14 +285,16 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
   echo detection_review_table($recent, false); ?>
 </div>
 <script>document.querySelectorAll('.sp-cal').forEach(function (c) { c.scrollLeft = c.scrollWidth; });</script>
-<script src="static/custom-audio-player.js"></script>
+<script src="static/custom-audio-player.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/custom-audio-player.js"); ?>"></script>
 <script src="static/detection-actions.js"></script>
 <script src="static/species-modal.js"></script>
 <script src="static/spectro-dialog.js"></script>
-<script src="static/review-player.js"></script>
+<script src="static/review-player.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/review-player.js"); ?>"></script>
+<script src="static/std-table.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/std-table.js"); ?>"></script>
+<script src="static/name-mode.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/name-mode.js"); ?>"></script>
 <script src="static/wipe-deleted.js"></script>
 <script>
-// list switches: the same modal and texts as Species Management (static/species-modal.js); whitelist and exclude
+// list switches: the same modal and texts as the Species Pages list (static/species-modal.js); whitelist and exclude
 // default to No
 function spList(box, list, species) {
   var action = box.checked ? 'add' : 'del';
@@ -412,7 +312,7 @@ function spList(box, list, species) {
     x.send();
   });
 }
-// calibrated threshold: saved as the species threshold (same endpoint as Species Management)
+// calibrated threshold: saved as the species threshold (same endpoint as the Species Pages list)
 function applyThreshold(sci, value, btn) {
   var x = new XMLHttpRequest();
   x.onload = function () {
@@ -422,7 +322,7 @@ function applyThreshold(sci, value, btn) {
   x.open('GET', 'scripts/species_tools.php?setconf=1&species=' + encodeURIComponent(sci) + '&value=' + value, true);
   x.send();
 }
-// notification tier of the species (same file and endpoint as Species Management), saved at once
+// notification tier of the species (same file and endpoint as the Species Pages list), saved at once
 function spTier(sel, sci) {
   var was = sel.dataset.was;
   var x = new XMLHttpRequest();

@@ -1,4 +1,4 @@
-# Releasing this edition
+# Releasing BirdnetPi++
 
 Branch model (decided 2026-10-07, US-51e):
 

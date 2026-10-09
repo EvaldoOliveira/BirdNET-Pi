@@ -12,6 +12,10 @@ from .models import get_model
 log = logging.getLogger(__name__)
 
 MODEL = None
+# birdnet.conf as last read here: a change (Now page: minimum confidence, sensitivity, overlap) applies from the next
+# recording without restarting the service (owner 2026-10-09)
+_CONF_MTIME = None
+_MODEL_SENS = None
 # time slots of the last analysed file that the privacy filter blanked (start, end)
 LAST_HUMAN_SLOTS = []
 
@@ -161,7 +165,26 @@ def load_global_model():
     return MODEL
 
 
+def reload_settings_if_changed():
+    global _CONF_MTIME, _MODEL_SENS, MODEL
+    try:
+        mtime = os.path.getmtime('/etc/birdnet/birdnet.conf')
+    except OSError:
+        return
+    if _CONF_MTIME is not None and mtime != _CONF_MTIME:
+        conf = get_settings(force_reload=True)
+        log.info('settings changed: confidence %s, sensitivity %s, overlap %s, location threshold %s',
+                 conf.get('CONFIDENCE'), conf.get('SENSITIVITY'), conf.get('OVERLAP'), conf.get('SF_THRESH'))
+        # the sensitivity and the location threshold are built into the model object: load it again when they changed
+        if _MODEL_SENS is not None and (conf.get('SENSITIVITY'), conf.get('SF_THRESH')) != _MODEL_SENS:
+            MODEL = None
+    _CONF_MTIME = mtime
+    if _MODEL_SENS is None or MODEL is None:
+        _MODEL_SENS = (get_settings().get('SENSITIVITY'), get_settings().get('SF_THRESH'))
+
+
 def run_analysis(file):
+    reload_settings_if_changed()
     include_list = loadCustomSpeciesList(os.path.expanduser("~/BirdNET-Pi/include_species_list.txt"))
     exclude_list = loadCustomSpeciesList(os.path.expanduser("~/BirdNET-Pi/exclude_species_list.txt"))
     whitelist_list = loadCustomSpeciesList(os.path.expanduser("~/BirdNET-Pi/whitelist_species_list.txt"))

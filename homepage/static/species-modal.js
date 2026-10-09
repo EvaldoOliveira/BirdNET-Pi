@@ -21,12 +21,12 @@ function askModal(title, text, okLabel, defaultNo = false) {
       const st = document.createElement('style');
       st.textContent = '#spModal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1000}'
         + '#spModal .spm-box{background:#fff;color:#000;border-radius:10px;max-width:460px;width:calc(100% - 32px);overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.35);text-align:left;font-size:14px}'
-        + '#spModal .spm-head{display:flex;align-items:center;gap:10px;background:#2b5e22;color:#fff;padding:10px 14px}'
+        + '#spModal .spm-head{display:flex;align-items:center;gap:10px;background:var(--accent,#2b5e22);color:#fff;padding:10px 14px}'
         + '#spModal .spm-head img{width:26px;height:26px}#spModal h3{margin:0;font-size:16px;color:#fff;text-align:left}'
         + '#spModal p{margin:0;padding:14px 16px;white-space:pre-line;line-height:1.4}'
         + '#spModal .spm-buttons{display:flex;justify-content:flex-end;gap:8px;padding:0 16px 14px}'
-        + '#spModal .spm-buttons button{min-width:72px;padding:6px 14px;border-radius:14px;border:1px solid #2b5e22;background:#fff;color:#2b5e22;font-weight:600;cursor:pointer;width:auto}'
-        + '#spModal .spm-buttons button.primary{background:#2b5e22;color:#fff}'
+        + '#spModal .spm-buttons button{min-width:72px;padding:6px 14px;border-radius:14px;border:1px solid var(--accent,#2b5e22);background:#fff;color:var(--accent,#2b5e22);font-weight:600;cursor:pointer;width:auto}'
+        + '#spModal .spm-buttons button.primary{background:var(--accent,#2b5e22);color:#fff}'
         + '#spModal .spm-buttons button:focus{outline:2px solid #d97a00;outline-offset:1px}';
       document.head.appendChild(st);
     }

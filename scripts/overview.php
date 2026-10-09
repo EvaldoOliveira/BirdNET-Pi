@@ -39,6 +39,50 @@ if(isset($_GET['blacklistimage'])) {
   die("OK");
 }
 
+// Analysis settings from the Now page: CONFIDENCE, SENSITIVITY, OVERLAP (the analysis reloads them on the next file)
+if (isset($_GET['set_analysis'])) {
+  ensure_authenticated('You must be authenticated to change the settings.');
+  $limits = array('CONFIDENCE' => array('confidence', 0.01, 0.99), 'SENSITIVITY' => array('sensitivity', 0.5, 1.5), 'OVERLAP' => array('overlap', 0.0, 2.9),
+                  'SF_THRESH' => array('sf_thresh', 0.0005, 0.99));
+  $f = '/etc/birdnet/birdnet.conf';
+  $c = file_get_contents($f);
+  foreach ($limits as $key => $l) {
+    $v = str_replace(',', '.', trim($_GET[$l[0]] ?? ''));
+    if ($v === '' || !is_numeric($v) || floatval($v) < $l[1] || floatval($v) > $l[2]) { echo "Invalid $l[0] (" . $l[1] . ' – ' . $l[2] . ')'; die(); }
+    $v = rtrim(rtrim(sprintf($key === 'SF_THRESH' ? '%.4f' : '%.2f', floatval($v)), '0'), '.');
+    $c = preg_match("/^$key=/m", $c) ? preg_replace("/^$key=.*/m", "$key=$v", $c) : $c . "\n$key=$v\n";
+  }
+  // recording length (owner 2026-10-09): whole seconds 3–60; the extraction length can not be longer; the recording
+  // service is restarted so the next file has the new length
+  $len = trim($_GET['recording_length'] ?? '');
+  $restart = false;
+  if ($len !== '') {
+    if (!ctype_digit($len) || intval($len) < 3 || intval($len) > 60) { echo 'Invalid recording length (3 – 60 s)'; die(); }
+    $restart = intval($len) !== intval($config['RECORDING_LENGTH'] ?? 15);
+    $c = preg_match('/^RECORDING_LENGTH=/m', $c) ? preg_replace('/^RECORDING_LENGTH=.*/m', 'RECORDING_LENGTH=' . intval($len), $c) : $c . "\nRECORDING_LENGTH=" . intval($len) . "\n";
+    if (intval($config['EXTRACTION_LENGTH'] ?? 0) > intval($len)) $c = preg_replace('/^EXTRACTION_LENGTH=.*/m', 'EXTRACTION_LENGTH=' . intval($len), $c);
+  }
+  $ok = file_put_contents($f, $c) !== false;
+  if ($ok && $restart) exec('sudo systemctl restart birdnet_recording.service > /dev/null 2>&1 &');
+  echo $ok ? 'OK' : 'Error writing the settings';
+  die();
+}
+
+// Currently Analyzing status (owner 2026-10-09): recordings waiting for the analysis (StreamData *.wav minus the one
+// being recorded), how far behind real time that is, and the recording the spectrogram shows (analyzing_now.txt)
+if (isset($_GET['analysis_status'])) {
+  header('Content-Type: application/json');
+  $sd = rtrim($config['RECS_DIR'] ?? ($home . '/BirdSongs'), '/') . '/StreamData';
+  $waiting = max(0, count(glob($sd . '/*.wav') ?: array()) - 1);
+  $now = trim((string)@file_get_contents($sd . '/analyzing_now.txt'));
+  $shown = preg_match('/(\d{4}-\d{2}-\d{2})_(\d{2})h(\d{2})m(\d{2})s/', basename($now), $m) ? "$m[2]:$m[3]:$m[4]" : '';
+  // behind = age of the recording being analysed (its name carries when it started); without it, waiting × length
+  $behind = $shown !== '' ? max(0, time() - strtotime("$m[1] $shown")) : $waiting * max(1, intval($config['RECORDING_LENGTH'] ?? 15));
+  $running = trim((string)shell_exec('systemctl is-active birdnet_analysis.service 2>/dev/null')) === 'active';
+  echo json_encode(array('waiting' => $waiting, 'behind' => $behind, 'shown' => $shown, 'running' => $running));
+  die();
+}
+
 // "Set as default" of Currently Analyzing: NOW_ANALYZING = show | hide
 if (isset($_GET['set_now_analyzing'])) {
   ensure_authenticated('You must be authenticated to change the settings.');
@@ -161,7 +205,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true" && isse
     $result2 = $statement2->execute();
     $todaycount = $result2->fetchArray(SQLITE3_ASSOC);
     if($todaycount['COUNT(*)'] > 0) {
-      echo "<h3>Your system is currently processing a backlog of audio. This can take several hours before normal functionality of your BirdNET-Pi resumes.</h3>";
+      echo "<h3>Your system is currently processing a backlog of audio. This can take several hours before normal functionality of your BirdnetPi++ resumes.</h3>";
     } else {
       echo "<h3>No Detections For Today.</h3>";
     }
@@ -191,7 +235,7 @@ if(isset($_GET['ajax_left_chart']) && $_GET['ajax_left_chart'] == "true") {
   </tr>
   <tr>
     <td><?php echo $chart_data['totalcount'];?></td>
-    <td><form action="" method="GET"><button type="submit" name="view" value="Todays Detections"><?php echo $chart_data['todaycount'];?></button></form></td>
+    <td><form action="" method="GET"><button type="submit" name="view" value="Now"><?php echo $chart_data['todaycount'];?></button></form></td>
     <td><form action="" method="GET"><button type="submit" name="view" value="Species Stats"><?php echo $chart_data['totalspeciestally'];?></button></form></td>
     <td><form action="" method="GET"><input type="hidden" name="view" value="Recordings"><button type="submit" name="date" value="<?php echo date('Y-m-d');?>"><?php echo $chart_data['speciestally'];?></button></form></td>
     <td><?php echo $new_today; ?></td>
@@ -215,7 +259,7 @@ if(isset($_GET['ajax_center_chart']) && $_GET['ajax_center_chart'] == "true") {
       </tr>
       <tr>
       <td><?php echo $chart_data['totalcount'];?></td>
-      <td><form action="" method="GET"><input type="hidden" name="view" value="Todays Detections"><?php echo $chart_data['todaycount'];?></td></form>
+      <td><form action="" method="GET"><input type="hidden" name="view" value="Now"><?php echo $chart_data['todaycount'];?></td></form>
       <td><?php echo $chart_data['hourcount'];?></td>
       <td><form action="" method="GET"><button type="submit" name="view" value="Species Stats"><?php echo $chart_data['totalspeciestally'];?></button></td></form>
       <td><form action="" method="GET"><input type="hidden" name="view" value="Recordings"><button type="submit" name="date" value="<?php echo date('Y-m-d');?>"><?php echo $chart_data['speciestally'];?></button></td></form>
@@ -462,18 +506,35 @@ if($dividedrefresh < 1) {
 $time = time();
 if (file_exists('./Charts/'.$chart)) {
   // every species row of the chart opens its species page (row map written by daily_plot.py)
-  echo "<div class='charthint'><img src='images/species-page.svg' style='width:16px;height:16px;vertical-align:middle'> Click a species in the chart to open its page</div>";
   echo "<div class='chartwrap'><img id='chart' src=\"Charts/$chart?nocache=$time\" onload='chartRowLinks(this)'></div>";
 } 
 ?>
 </div>
 
+<!-- today's totals and the search, formerly the top of Today's Detections (owner 2026-10-09) -->
+<div class="now-only nowtoday"><div id="todaystats" class="overview"></div>
+  <!-- analysis settings, applied from the next recording (owner 2026-10-09) -->
+  <form class="nowanalysis" onsubmit="saveAnalysis(event)" title="Applied from the next recording (about <?php echo intval($config['RECORDING_LENGTH'] ?? 15); ?> s), no restart">
+    <!-- two groups (owner 2026-10-09): the thresholds, then the analysis settings -->
+    <span class="nagroup" title="Thresholds">
+      <label title="Min. Conf. — minimum confidence (CONFIDENCE)&#10;Range 0.01 – 0.99 · default 0.35 with BirdNET+ V3, 0.70 with V2.4&#10;Lower: more detections, more of them wrong. Higher: fewer, more reliable; quiet or distant birds are missed.&#10;A species threshold (Sp. Override, Species Pages) replaces it for that species.">Min. Conf. <input type="number" id="na_conf" min="0.01" max="0.99" step="any" value="<?php echo htmlspecialchars($config['CONFIDENCE'] ?? ''); ?>"></label>
+      <label title="Loc. Thresh. — location threshold (SF_THRESH)&#10;Range 0.0005 – 0.99 · default 0.50 with V3, 0.03 with V2.4&#10;Species the location model expects here this week with a probability below it are left out.&#10;Lower: more species allowed (rare and vagrant ones too, more errors). Higher: only the species expected here; the Whitelist bypasses it.">Loc. Thresh. <input type="number" id="na_sf" min="0.0005" max="0.99" step="any" value="<?php echo htmlspecialchars($config['SF_THRESH'] ?? ''); ?>"></label>
+    </span>
+    <span class="nagroup" title="Analysis">
+      <label title="Sigm. Sens. — sigmoid sensitivity (SENSITIVITY)&#10;Range 0.5 – 1.5 · default 1.0 with V3, 1.25 with V2.4&#10;Bends the model's scores before Min. Conf. is applied.&#10;Higher: scores rise, more detections, more false ones. Lower: scores fall, fewer detections.">Sigm. Sens. <input type="number" id="na_sens" min="0.5" max="1.5" step="any" value="<?php echo htmlspecialchars($config['SENSITIVITY'] ?? ''); ?>"></label>
+      <label title="Rec. Length — recording length in seconds (RECORDING_LENGTH)&#10;Range 3 – 60 · default 15&#10;The length of each file recorded and analysed.&#10;Shorter: detections appear sooner, more files and a little more work per minute. Longer: fewer files, a detection shows up later.&#10;A change restarts the recording service; the extraction length is kept within it.">Rec. Length <input type="number" id="na_len" min="3" max="60" step="any" value="<?php echo htmlspecialchars($config['RECORDING_LENGTH'] ?? '15'); ?>"></label>
+      <label title="Overlap — seconds of overlap between the 3 s analysis windows (OVERLAP)&#10;Range 0 – 2.9 · default 1.2 with V3, 0 with V2.4&#10;Higher: more windows per recording, calls on a window edge are caught, more CPU and repeated detections of one call. 0: windows side by side, fastest.">Overlap <input type="number" id="na_over" min="0" max="2.9" step="any" value="<?php echo htmlspecialchars($config['OVERLAP'] ?? ''); ?>"></label>
+    </span>
+    <button type="submit" id="na_apply">Apply</button>
+  </form>
+</div>
 <!-- Now page (owner 2026-10-08): Currently Analyzing first, then the 30 most recent detections as cards. The most recent
      detection card is no longer shown; it is still loaded (hidden) because the page watches it to notice a new
      detection and refresh the cards (30, like Best Detections). -->
-<h3 class="now-only">Currently Analyzing
+<h3 class="now-only nowsec">Currently Analyzing
   <span class="nowmodes"><button type="button" id="analyzing_toggle" onclick="toggleAnalyzing()">Hide spectrogram</button>
-  <button type="button" class="nowdefault" id="analyzing_default" onclick="analyzingSetDefault()" title="Keep it like this when the page opens (Basic Settings › Spectrogram and colours)">Set as default</button></span></h3>
+  <button type="button" class="nowdefault" id="analyzing_default" onclick="analyzingSetDefault()" title="Keep it like this when the page opens (Basic Settings › Spectrogram and colours)">Set as default</button></span>
+  <span id="analysis_status" class="nowstatus" title="Recordings waiting for the analysis (behind real time), and the time of the recording the spectrogram shows"></span></h3>
 <?php
 $refresh = $config['RECORDING_LENGTH'];
 $time = time();
@@ -481,10 +542,14 @@ echo "<img id=\"spectrogramimage\" src=\"spectrogram.png?nocache=$time\">";
 
 ?>
 <div id="most_recent_detection" style="display:none"></div>
-<br>
-<h3 class="now-only now-cards">Most Recent Detections
+<h3 class="now-only now-cards nowhead nowsec">Last 50 Detections
   <span class="nowmodes"><button type="button" data-mode="spectrogram" onclick="nowMode('spectrogram')">Spectrogram</button><button type="button" data-mode="list" onclick="nowMode('list')">List</button>
-  <button type="button" class="nowdefault" id="nowview_default" onclick="nowSetDefault()" title="Show this view first (Basic Settings › Spectrogram and colours)">Set as default</button></span></h3>
+  <button type="button" class="nowdefault" id="nowview_default" onclick="nowSetDefault()" title="Show this view first (Basic Settings › Spectrogram and colours)">Set as default</button></span>
+  <span class="nowsearch"><span class="nowmodes nowfilters" title="Only the detections worth a look: confidence or location probability below the value">
+    <button type="button" data-filter="" onclick="nowFilter('')">All</button><button type="button" data-filter="lowconf" onclick="nowFilter('lowconf')">Low Conf</button><button type="button" data-filter="lowprob" onclick="nowFilter('lowprob')">Low Prob</button>
+    <select id="nowbelow" onchange="nowBelowChanged(this.value)" title="Below this value"><?php for ($v = 5; $v <= 95; $v += 5) echo '<option value="' . $v . '">&lt; ' . $v . '%</option>'; ?></select></span>
+    <input autocomplete="off" size="22" type="search" placeholder="Search detections..." id="searchterm"
+    title="Common or scientific name, time, confidence; start with NOT to leave matches out" oninput="nowSearchTyped(this.value)"></span></h3>
 <div style="padding-bottom:10px;" id="detections_table"><h3>Loading...</h3></div>
 
 <div id="customimage"></div>
@@ -505,6 +570,7 @@ function loadDetectionIfNewExists(previous_detection_identifier=undefined) {
       // only going to load left chart & the recent cards if there's a new detection (cards: newest page only)
       loadLeftChart();
       if (nowOffset === 0 || previous_detection_identifier == undefined) loadFiveMostRecentDetections();
+      refreshTodayStats();
       refreshTopTen();
 
       // Now that new HTML is inserted, re-run player init:
@@ -595,8 +661,95 @@ function analyzingSetDefault() {
   x.send();
 }
 document.addEventListener('DOMContentLoaded', function () { applyAnalyzing(analyzingDefaultHidden); });
-// the Now cards page through the detections 30 at a time; only the newest page follows new detections
+function refreshAnalysisStatus() {
+  var x = new XMLHttpRequest();
+  x.onload = function () {
+    var st; try { st = JSON.parse(this.responseText); } catch (e) { return; }
+    var el = document.getElementById('analysis_status');
+    if (!el) return;
+    var behind = st.behind >= 60 ? Math.round(st.behind / 60) + ' min' : st.behind + ' s';
+    el.textContent = !st.running ? 'analysis stopped \u00b7 ' + st.waiting + ' waiting'
+      : (st.waiting === 0 ? 'up to date' : st.waiting + ' waiting \u00b7 ' + behind + ' behind') + (st.shown ? ' \u00b7 showing ' + st.shown : '');
+    el.classList.toggle('late', !st.running || st.waiting > 10);
+  };
+  x.open('GET', 'overview.php?analysis_status=1', true);
+  x.send();
+}
+document.addEventListener('DOMContentLoaded', function () { refreshAnalysisStatus(); setInterval(refreshAnalysisStatus, 5000); });
+// the Now cards page through the detections 50 at a time; only the newest page follows new detections
 var nowOffset = 0;
+var nowTerm = '';
+// any value is accepted while typing; leaving a field rounds it to its precision and keeps it inside its limits
+// (owner 2026-10-09: the browser refused 0.5 for Loc. Thresh., whose min 0.0005 + step 0.01 allowed only 0.0105, 0.0205...)
+var NA_DECIMALS = {na_conf: 2, na_sf: 4, na_sens: 2, na_over: 1, na_len: 0};
+function naRound(inp) {
+  var v = parseFloat(String(inp.value).replace(',', '.'));
+  if (isNaN(v)) return;
+  v = Math.min(parseFloat(inp.max), Math.max(parseFloat(inp.min), v));
+  inp.value = String(parseFloat(v.toFixed(NA_DECIMALS[inp.id])));
+}
+document.addEventListener('DOMContentLoaded', function () {
+  Object.keys(NA_DECIMALS).forEach(function (id) {
+    var inp = document.getElementById(id);
+    if (inp) inp.addEventListener('change', function () { naRound(inp); });
+  });
+});
+function saveAnalysis(e) {
+  Object.keys(NA_DECIMALS).forEach(function (id) { var inp = document.getElementById(id); if (inp) naRound(inp); });
+  e.preventDefault();
+  // no message beside the button (owner 2026-10-09: it pushed the line); the button itself says Saved for a moment,
+  // an error opens a dialog
+  var b = document.getElementById('na_apply');
+  var x = new XMLHttpRequest();
+  x.onload = function () {
+    if (this.status === 200 && this.responseText.trim() === 'OK') {
+      b.textContent = '\u2713';
+      b.title = 'Saved: applied from the next recording';
+      setTimeout(function () { b.textContent = 'Apply'; }, 1500);
+    } else alert('Not saved: ' + (this.status === 401 ? 'log in first' : this.responseText));
+  };
+  x.open('GET', 'overview.php?set_analysis=1&confidence=' + encodeURIComponent(document.getElementById('na_conf').value)
+    + '&sensitivity=' + encodeURIComponent(document.getElementById('na_sens').value) + '&overlap=' + encodeURIComponent(document.getElementById('na_over').value)
+    + '&sf_thresh=' + encodeURIComponent(document.getElementById('na_sf').value) + '&recording_length=' + encodeURIComponent(document.getElementById('na_len').value), true);
+  x.send();
+}
+// filters (owner 2026-10-09): All / Low Conf (confidence below N %) / Low Prob (location probability below N %), pages of
+// 30 like the full list; the filter and each one's value (picklist in steps of 5) are remembered in this browser
+var nowFilterKind = '';
+function nowStore(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; }
+function nowBelow() { return nowStore('now_below_' + nowFilterKind) || '50'; }
+function nowFilterButtons() {
+  document.querySelectorAll('.nowfilters button').forEach(function (b) { b.classList.toggle('active', b.dataset.filter === nowFilterKind); });
+  var sel = document.getElementById('nowbelow');
+  sel.style.display = nowFilterKind ? '' : 'none';
+  // the value picklist sits right after the active filter's button
+  var on = document.querySelector('.nowfilters button[data-filter="' + nowFilterKind + '"]');
+  if (nowFilterKind && on) on.after(sel);
+  sel.value = nowBelow();
+}
+function nowFilter(kind) { nowFilterKind = kind; nowStore('now_filter', kind); nowFilterButtons(); nowOffset = 0; loadFiveMostRecentDetections(); }
+function nowBelowChanged(v) { nowStore('now_below_' + nowFilterKind, v); nowOffset = 0; loadFiveMostRecentDetections(); }
+document.addEventListener('DOMContentLoaded', function () {
+  var k = nowStore('now_filter');
+  nowFilterKind = (k === 'lowconf' || k === 'lowprob') ? k : '';
+  nowFilterButtons();
+  if (nowFilterKind) loadFiveMostRecentDetections();
+});
+function nowFilterQuery() { return nowFilterKind ? '&filter=' + nowFilterKind + '&below=' + nowBelow() : ''; }
+function nowSearch(v) { nowTerm = v.trim(); nowOffset = 0; loadFiveMostRecentDetections(); }
+// search as you type (owner 2026-10-09): 300 ms after the last key; an empty box shows every detection again
+var nowSearchTimer = null;
+function nowSearchTyped(v) {
+  clearTimeout(nowSearchTimer);
+  nowSearchTimer = setTimeout(function () { if (v.trim() !== nowTerm) nowSearch(v); }, v.trim() === '' ? 0 : 300);
+}
+function refreshTodayStats() {
+  var x = new XMLHttpRequest();
+  x.onload = function () { if (this.responseText.length > 0 && !this.responseText.includes('Database is busy')) document.getElementById('todaystats').innerHTML = this.responseText; };
+  x.open('GET', 'todays_detections.php?today_stats=true', true);
+  x.send();
+}
+document.addEventListener('DOMContentLoaded', refreshTodayStats);
 // spectrogram cards or list (owner 2026-10-09): NOW_VIEW of Basic Settings is the default, the buttons switch it
 var nowView = <?php echo json_encode(($config['NOW_VIEW'] ?? 'spectrogram') === 'list' ? 'list' : 'spectrogram'); ?>;
 var nowDefault = nowView;
@@ -627,12 +780,14 @@ function loadFiveMostRecentDetections() {
   xhttp.onload = function() {
     if(this.responseText.length > 0 && !this.responseText.includes("Database is busy")) {
       document.getElementById("detections_table").innerHTML= this.responseText;
+      if (window.stdTables) stdTables(document.getElementById("detections_table"));
+      if (window.applyNameMode) applyNameMode();
     }
   }
   if (window.innerWidth > 500) {
-    xhttp.open("GET", "todays_detections.php?ajax_detections=true&display_limit=undefined&hard_limit=30&gallery=1&mode=" + nowView + "&offset=" + nowOffset, true);
+    xhttp.open("GET", "todays_detections.php?ajax_detections=true&display_limit=undefined&hard_limit=50&gallery=1&mode=" + nowView + "&offset=" + nowOffset + (nowTerm ? "&searchterm=" + encodeURIComponent(nowTerm) : "") + nowFilterQuery(), true);
   } else {
-    xhttp.open("GET", "todays_detections.php?ajax_detections=true&display_limit=undefined&hard_limit=30&gallery=1&mobile=true&mode=" + nowView + "&offset=" + nowOffset, true);
+    xhttp.open("GET", "todays_detections.php?ajax_detections=true&display_limit=undefined&hard_limit=50&gallery=1&mobile=true&mode=" + nowView + "&offset=" + nowOffset + (nowTerm ? "&searchterm=" + encodeURIComponent(nowTerm) : "") + nowFilterQuery(), true);
   }
   xhttp.send();
 }
@@ -691,9 +846,11 @@ startAutoRefresh();
   transition: opacity 0.2s ease-in-out;
 }
 </style>
-<script src="static/custom-audio-player.js"></script>
+<script src="static/custom-audio-player.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/custom-audio-player.js"); ?>"></script>
 <script src="static/spectro-dialog.js"></script>
-<script src="static/review-player.js"></script>
+<script src="static/review-player.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/review-player.js"); ?>"></script>
+<script src="static/std-table.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/std-table.js"); ?>"></script>
+<script src="static/name-mode.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/name-mode.js"); ?>"></script>
 <script src="static/detection-actions.js"></script>
 <script src="static/generateMiniGraph.js"></script>
 <script>

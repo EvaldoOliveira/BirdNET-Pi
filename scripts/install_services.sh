@@ -78,8 +78,6 @@ create_necessary_dirs() {
   sudo -u ${USER} ln -fs $my_dir/scripts/overview.php ${EXTRACTED}
   sudo -u ${USER} ln -fs $my_dir/scripts/stats.php ${EXTRACTED}
   sudo -u ${USER} ln -fs $my_dir/scripts/todays_detections.php ${EXTRACTED}
-  sudo -u ${USER} ln -fs $my_dir/scripts/history.php ${EXTRACTED}
-  sudo -u ${USER} ln -fs $my_dir/scripts/weekly_report.php ${EXTRACTED}
   sudo -u ${USER} ln -fs $my_dir/homepage/images/favicon.ico ${EXTRACTED}
   sudo -u ${USER} ln -fs ${HOME}/phpsysinfo ${EXTRACTED}
   sudo -u ${USER} ln -fs $my_dir/templates/phpsysinfo.ini ${HOME}/phpsysinfo/
@@ -267,7 +265,7 @@ EOF
 install_spectrogram_service() {
   cat << EOF > $HOME/BirdNET-Pi/templates/spectrogram_viewer.service
 [Unit]
-Description=BirdNET-Pi Spectrogram Viewer
+Description=BirdnetPi++ Spectrogram Viewer
 [Service]
 Restart=always
 RestartSec=10
@@ -285,7 +283,7 @@ install_chart_viewer_service() {
   echo "Installing the chart_viewer.service"
   cat << EOF > $HOME/BirdNET-Pi/templates/chart_viewer.service
 [Unit]
-Description=BirdNET-Pi Chart Viewer Service
+Description=BirdnetPi++ Chart Viewer Service
 [Service]
 Restart=always
 RestartSec=120
@@ -313,7 +311,7 @@ RestartSec=3
 Type=simple
 User=${USER}
 Environment=TERM=xterm-256color
-ExecStart=/usr/local/bin/gotty --address localhost -p 8080 --path log --title-format "BirdNET-Pi Log" birdnet_log.sh
+ExecStart=/usr/local/bin/gotty --address localhost -p 8080 --path log --title-format "BirdnetPi++ Log" birdnet_log.sh
 [Install]
 WantedBy=multi-user.target
 EOF
@@ -321,14 +319,14 @@ EOF
   systemctl enable birdnet_log.service
   cat << EOF > $HOME/BirdNET-Pi/templates/web_terminal.service
 [Unit]
-Description=BirdNET-Pi Web Terminal
+Description=BirdnetPi++ Web Terminal
 [Service]
 Restart=on-failure
 RestartSec=3
 Type=simple
 User=${USER}
 Environment=TERM=xterm-256color
-ExecStart=/usr/local/bin/gotty --address localhost -w -p 8888 --path terminal --title-format "BirdNET-Pi Terminal" bash -c 'read -p "Login: " username && [[ "\$username" =~ ^[-_.a-z0-9]{1,30}$ ]] && su --pty -l \$username'
+ExecStart=/usr/local/bin/gotty --address localhost -w -p 8888 --path terminal --title-format "BirdnetPi++ Terminal" bash -c 'read -p "Login: " username && [[ "\$username" =~ ^[-_.a-z0-9]{1,30}$ ]] && su --pty -l \$username'
 [Install]
 WantedBy=multi-user.target
 EOF
@@ -339,6 +337,8 @@ EOF
 configure_caddy_php() {
   echo "Configuring PHP for Caddy"
   sed -i 's/www-data/caddy/g' /etc/php/*/fpm/pool.d/www.conf
+  # the pages load several parts at once (lists, charts, review player): 5 PHP workers queue them (owner 2026-10-09)
+  sed -i 's/^pm.max_children = .*/pm.max_children = 12/; s/^pm.start_servers = .*/pm.start_servers = 3/; s/^pm.max_spare_servers = .*/pm.max_spare_servers = 6/' /etc/php/*/fpm/pool.d/www.conf
   systemctl restart php\*-fpm.service
   echo "Adding Caddy sudoers rule"
   cat << EOF > /etc/sudoers.d/010_caddy-nopasswd
@@ -372,7 +372,7 @@ config_icecast() {
 install_livestream_service() {
   cat << EOF > $HOME/BirdNET-Pi/templates/livestream.service
 [Unit]
-Description=BirdNET-Pi Live Stream
+Description=BirdnetPi++ Live Stream
 After=network-online.target
 Requires=network-online.target
 # keep restarting however often ffmpeg stops (a busy or replugged microphone), never give up
@@ -394,10 +394,6 @@ install_cleanup_cron() {
   sed "s/\$USER/$USER/g" $my_dir/templates/cleanup.cron >> /etc/crontab
 }
 
-install_weekly_cron() {
-  sed "s/\$USER/$USER/g" $my_dir/templates/weekly_report.cron >> /etc/crontab
-}
-
 install_automatic_update_cron() {
   sed "s/\$USER/$USER/g" $my_dir/templates/automatic_update.cron >> /etc/crontab
 }
@@ -408,15 +404,17 @@ install_mic_hotplug() {
   # sorts after 78-sound-card.rules, which sets ID_BUS (needed on "remove", sysfs is gone then).
   cat << EOF > $HOME/BirdNET-Pi/templates/birdnet_mic_hotplug.service
 [Unit]
-Description=BirdNET-Pi USB microphone hot-plug (state-driven)
+Description=BirdnetPi++ USB microphone hot-plug (state-driven)
 After=sound.target
 [Service]
 Type=oneshot
+# the unplug path waits until the analysis has emptied the queue
+TimeoutStartSec=infinity
 ExecStart=/usr/local/bin/mic_hotplug.sh
 EOF
   ln -sf $HOME/BirdNET-Pi/templates/birdnet_mic_hotplug.service /usr/lib/systemd/system
   cat << EOF > /etc/udev/rules.d/79-birdnet-mic.rules
-# BirdNET-Pi USB microphone hot-plug (install_services.sh)
+# BirdnetPi++ USB microphone hot-plug (install_services.sh)
 ACTION=="add",    SUBSYSTEM=="sound", KERNEL=="card[0-9]*", SUBSYSTEMS=="usb", RUN+="/usr/bin/systemctl --no-block restart birdnet_mic_hotplug.service"
 ACTION=="remove", SUBSYSTEM=="sound", KERNEL=="card[0-9]*", ENV{ID_BUS}=="usb", RUN+="/usr/bin/systemctl --no-block restart birdnet_mic_hotplug.service"
 EOF
@@ -460,7 +458,6 @@ install_services() {
   install_sound_repo_upload_service
   install_mic_hotplug
   install_cleanup_cron
-  install_weekly_cron
   install_automatic_update_cron
   increase_caddy_timeout
 
