@@ -12,13 +12,13 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
 $db = get_db();
 
 if ($sci === '') {
-  // Species Pages (menu Species › Species Pages): every species detected here — filter, sort by any column,
+  // Species Pages (menu Detections › Species Pages): every species detected here — filter, sort by any column,
   // jump by initial; a click opens the species page (owner 2026-10-08)
   $res = $db->query('SELECT Sci_Name, MAX(Com_Name) AS com, COUNT(*) AS n, MIN(Date) AS first, MAX(Date) AS last,'
     . ' COUNT(DISTINCT Date) AS days, MAX(Confidence) AS maxc FROM detections WHERE 1' . not_rejected_sql() . ' GROUP BY Sci_Name');
   $rows = array();
   while ($res && ($r = $res->fetchArray(SQLITE3_ASSOC))) $rows[] = $r;
-  usort($rows, function ($x, $y) { return strcoll(mb_strtolower($x['com']), mb_strtolower($y['com'])); });
+  usort($rows, function ($x, $y) { return intval($y['n']) - intval($x['n']); });  // most detections first
   $today = date('Y-m-d');
   ?>
 <style>
@@ -66,8 +66,8 @@ if ($sci === '') {
 <script>
 (function () {
   var tbody = document.querySelector('#sptable tbody'), rows = Array.prototype.slice.call(tbody.rows);
-  var sortKey = 'com', asc = true;
-  try { var saved = JSON.parse(localStorage.getItem('sp_sort') || 'null'); if (saved) { sortKey = saved[0]; asc = saved[1]; } } catch (e) {}
+  // always opens sorted by detections, most first (owner 2026-10-08); a column click re-sorts for this visit only
+  var sortKey = 'n', asc = false;
   rows.forEach(function (r) { r.addEventListener('click', function (e) { if (!e.target.closest('a')) location.href = r.dataset.href; }); });
   function norm(s) { return s.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
   window.spFilter = function () {
@@ -86,7 +86,6 @@ if ($sci === '') {
       return asc ? c : -c;
     });
     rows.forEach(function (r) { tbody.appendChild(r); });
-    try { localStorage.setItem('sp_sort', JSON.stringify([sortKey, asc])); } catch (e) {}
   }
   document.querySelectorAll('#sptable th').forEach(function (th) {
     th.addEventListener('click', function () {
@@ -146,8 +145,8 @@ $hours = array_fill(0, 24, 0);
 foreach ($q("SELECT CAST(substr(Time, 1, 2) AS INT) AS hh, COUNT(*) AS n FROM detections WHERE Sci_Name = :sci $nr GROUP BY hh") as $r) {
   $hours[intval($r['hh'])] = intval($r['n']);
 }
-$best = $q("SELECT Date, Time, Confidence, File_Name FROM detections WHERE Sci_Name = :sci $nr ORDER BY Confidence DESC, Date DESC LIMIT 5");
-$recent = $q("SELECT Date, Time, Confidence, File_Name FROM detections WHERE Sci_Name = :sci ORDER BY Date DESC, Time DESC LIMIT 10");
+$best = $q("SELECT Date, Time, Confidence, File_Name FROM detections WHERE Sci_Name = :sci $nr ORDER BY Confidence DESC, Date DESC LIMIT 6");
+$recent = $q("SELECT Date, Time, Confidence, Cutoff, Sens, Overlap, File_Name FROM detections WHERE Sci_Name = :sci ORDER BY Date DESC, Time DESC LIMIT 10");
 
 // review verdicts and the suggested threshold: ≥ 3 rejections in 90 days → just above the best rejected one
 $reviews = array('yes' => 0, 'no' => 0, 'unsure' => 0);
@@ -175,7 +174,9 @@ $in_list = function ($file) use ($sci) {
   return false;
 };
 $threshold = $read_kv($home . '/BirdNET-Pi/species_confidence.txt')[$sci] ?? null;
-$tier = $read_kv($home . '/BirdNET-Pi/notification_tiers.txt')[$sci] ?? 'normal';
+$default_tier = strtolower($config['NOTIFICATION_DEFAULT_TIER'] ?? 'normal');
+if (!in_array($default_tier, array('normal', 'muted', 'rare'), true)) $default_tier = 'normal';
+$tier = strtolower($read_kv($home . '/BirdNET-Pi/notification_tiers.txt')[$sci] ?? $default_tier);
 $lists = array();
 foreach (array('Confirmed' => 'confirmed_species_list.txt', 'Custom list' => 'include_species_list.txt',
                'Whitelist' => 'whitelist_species_list.txt', 'Excluded' => 'exclude_species_list.txt') as $label => $f) {
@@ -190,6 +191,21 @@ if (is_file($pf)) {
   if (isset($p['data'][$sci])) $profile = $p['data'][$sci];
 }
 $week48 = min(48, (intval(date('n')) - 1) * 4 + min(4, intdiv(intval(date('j')) - 1, 7) + 1));
+// the location model's probability for this week (same value as the Probability column of Species Management)
+$model_prob = $profile ? floatval($profile[$week48 - 1]) : null;
+if ($model_prob === null) {
+  $out = (string)shell_exec('sudo -u ' . escapeshellarg(get_user()) . ' ' . escapeshellarg($home . '/BirdNET-Pi/birdnet/bin/python3') . ' '
+    . escapeshellarg($home . '/BirdNET-Pi/scripts/species.py') . ' --threshold 0 2>/dev/null');
+  foreach (explode("\n", $out) as $l) {
+    if (preg_match('/^(.*)\s-\s([0-9.]+)\s*$/', trim($l), $m) && explode('_', trim($m[1]), 2)[0] === $sci) { $model_prob = floatval($m[2]); break; }
+  }
+}
+$sf_thresh = floatval($config['SF_THRESH'] ?? 0);
+// list membership for the switches above the best detections
+$identifier = $sci . '_' . $com;
+$in_confirmed = $in_list(__DIR__ . '/confirmed_species_list.txt');
+$in_whitelist = $in_list(__DIR__ . '/whitelist_species_list.txt');
+$in_exclude = $in_list(__DIR__ . '/exclude_species_list.txt');
 
 $bar = function ($values, $labels, $title, $now = null) use ($h) {
   $max = max(1, max($values));
@@ -204,7 +220,16 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
 <style>
 .sp { max-width: 1000px; margin: 0 auto; text-align: left; padding: 0 12px; }
 .sp h2 { margin-bottom: 0; }
-.sp .grid { display: flex; flex-wrap: wrap; gap: 12px; }
+.sp .grid { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.sp .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+@media (max-width: 700px) { .sp .charts { grid-template-columns: 1fr; } }
+.sp h3.section { font-size: 1.3em; margin: 22px 0 12px; }
+.sp .lists { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; padding: 10px 12px; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; margin: 18px 0 4px; }
+.sp .lists label { font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.sp .lists input { width: 18px; height: 18px; cursor: pointer; }
+.sp table.list th { text-align: left !important; padding: 4px; border-bottom: 2px solid rgba(128,128,128,.4); font-size: .9em; }
+.sp table.list td.num, .sp table.list th.num { text-align: right !important; }
+.sp table.list audio { height: 28px; width: 220px; vertical-align: middle; }
 .sp .card { min-width: 0; flex: 1 1 280px; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; padding: 10px 12px; }
 .sp .card h3 { margin: 0 0 8px; font-size: 1em; }
 .sp-bars { display: flex; align-items: flex-end; gap: 2px; height: 70px; }
@@ -216,17 +241,36 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
 .sp-cal i { display: block; width: 10px; height: 10px; border-radius: 2px; background: rgba(128,128,128,.15); }
 .sp-cal i.l1 { background: #b7dfa5; } .sp-cal i.l2 { background: #7fc263; } .sp-cal i.l3 { background: #4a8f3c; } .sp-cal i.l4 { background: #2b5e22; }
 .sp table.list { width: 100%; border-collapse: collapse; }
-.sp table.list td { text-align: left; padding: 3px 4px; border-top: 1px solid rgba(128,128,128,.2); }
+.sp table.list td { text-align: left; vertical-align: middle; padding: 3px 4px; border-top: 1px solid rgba(128,128,128,.2); }
 .sp .clips { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
 .sp .clip { position: relative; padding-top: 32px; }
+.sp img.clipspec { display: block; width: 100%; border-radius: 6px; cursor: pointer; margin-top: 4px; transition: filter .15s; }
+.sp img.clipspec:hover { filter: brightness(1.15); outline: 2px solid #d97a00; }
 </style>
 <div class="sp">
-  <h2><img src="images/species-page.svg" width="30" height="30" alt="" style="vertical-align:middle"> <?php echo $h($com); ?></h2>
-  <i><?php echo $h($sci); ?></i> <?php echo species_links($sci, 'width: unset !important; display: inline; height: 1em; cursor: pointer;', 20); ?>
+  <?php $photo = species_photo($sci);
+  if ($photo && !empty($photo['image_url'])) { ?>
+  <div class="spphoto"><img src="<?php echo $h($photo['image_url']); ?>" alt="<?php echo $h($com); ?>">
+    <small><?php echo $h($photo['title'] ?? ''); ?><?php if (!empty($photo['author_url'])) { ?> · <a href="<?php echo $h($photo['author_url']); ?>" target="_blank">author</a><?php } ?>
+    <?php if (!empty($photo['license_url'])) { ?> · <a href="<?php echo $h($photo['license_url']); ?>" target="_blank">licence</a><?php } ?></small></div>
+  <?php } ?>
+  <div style="font-size:1.3em;margin-top:10px"><?php echo species_title($sci, '<b>' . $h($com) . '</b>', '', true); ?></div>
   <p><b><?php echo number_format(intval($sum['n'])); ?></b> detections on <b><?php echo intval($sum['days']); ?></b> day<?php echo intval($sum['days']) == 1 ? '' : 's'; ?> ·
     first <?php echo $h($sum['first']); ?> · last <?php echo $h($sum['last']); ?> ·
-    best <?php echo round(floatval($sum['maxc']) * 100); ?>% · mean <?php echo round(floatval($sum['avgc']) * 100); ?>%</p>
-  <div class="grid">
+    best <?php echo round(floatval($sum['maxc']) * 100); ?>% · mean <?php echo round(floatval($sum['avgc']) * 100); ?>%<br>
+    Model Probability = <b style="color:<?php echo ($model_prob !== null && $model_prob >= $sf_thresh) ? '#1b5e20' : '#b71c1c'; ?>"><?php echo $model_prob !== null ? number_format($model_prob * 100, 1) . '%' : '—'; ?></b>
+    <small>(location model, this week<?php echo $sf_thresh > 0 ? '; the station filter keeps species ≥ ' . round($sf_thresh * 100) . '%' : ''; ?>)</small></p>
+  <div class="charts">
+    <?php if ($profile) { ?>
+    <div class="card"><h3>Expected here (location model, by week)</h3>
+      <?php echo $bar(array_combine(range(1, 48), array_map(function ($v) { return round($v * 100); }, $profile)),
+        array_combine(range(1, 48), array_map(function ($w) { return 'week ' . $w . ' (%)'; }, range(1, 48))), 'occurrence probability', $week48); ?>
+      <div class="sp-axis"><span>Jan</span><span>Apr</span><span>Jul</span><span>Oct</span><span>Dec</span></div>
+      <small>Peak <?php echo round(max($profile) * 100); ?>%, this week <?php echo round($profile[$week48 - 1] * 100); ?>% (orange).</small>
+    </div>
+    <?php } else { ?>
+    <div class="card"><h3>Expected here (location model, by week)</h3><small>The location profile is not computed yet (it is built with the first notification of the day).</small></div>
+    <?php } ?>
     <div class="card"><h3>Last 12 months</h3>
       <div class="sp-cal"><?php
         $start = strtotime('-364 days', strtotime(date('Y-m-d')));
@@ -247,48 +291,93 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
       <?php echo $bar($hours, array_combine(range(0, 23), array_map(function ($x) { return sprintf('%02d h', $x); }, range(0, 23))), 'detections per hour', intval(date('G'))); ?>
       <div class="sp-axis"><span>0 h</span><span>6 h</span><span>12 h</span><span>18 h</span><span>23 h</span></div>
     </div>
-    <?php if ($profile) { ?>
-    <div class="card"><h3>Expected here (location model, by week)</h3>
-      <?php echo $bar(array_combine(range(1, 48), array_map(function ($v) { return round($v * 100); }, $profile)),
-        array_combine(range(1, 48), array_map(function ($w) { return 'week ' . $w . ' (%)'; }, range(1, 48))), 'occurrence probability', $week48); ?>
-      <div class="sp-axis"><span>Jan</span><span>Apr</span><span>Jul</span><span>Oct</span><span>Dec</span></div>
-      <small>Peak <?php echo round(max($profile) * 100); ?>%, this week <?php echo round($profile[$week48 - 1] * 100); ?>% (orange).</small>
-    </div>
-    <?php } ?>
+  </div>
+  <div class="grid">
     <div class="card"><h3>Station settings</h3>
       Species threshold: <b><?php echo $threshold !== null ? round(floatval($threshold) * 100) . '%' : 'global (' . round(floatval($config['CONFIDENCE'] ?? 0.7) * 100) . '%)'; ?></b><br>
-      Notifications: <b><?php echo $h($tier); ?></b><br>
-      Lists: <b><?php echo $lists ? $h(implode(', ', $lists)) : '—'; ?></b><br>
-      <small><a href="views.php?view=Species%20Management">Change in Species Management</a></small>
+      Notifications: <select onchange="spTier(this, <?php echo $h(json_encode($sci)); ?>)" data-was="<?php echo $h($tier); ?>">
+        <?php foreach (array('muted' => 'Muted', 'normal' => 'Normal', 'rare' => 'Prio') as $tv => $tl) {
+          echo '<option value="' . $tv . '"' . ($tier === $tv ? ' selected' : '') . '>' . $tl . ($tv === $default_tier ? ' (default)' : '') . '</option>';
+        } ?>
+      </select><br>
     </div>
-    <div class="card"><h3>Review</h3>
+    <div class="card"><h3>Reviews</h3>
       Yes <b><?php echo $reviews['yes']; ?></b> · Not this bird <b><?php echo $reviews['no']; ?></b> · Can't tell <b><?php echo $reviews['unsure']; ?></b><br>
       <?php if ($suggest !== null) { ?>
         Suggested species threshold: <b><?php echo round($suggest * 100); ?>%</b>
         <small>(just above the best of the <?php echo intval($rej['n']); ?> rejected in 90 days)</small>
       <?php } else { ?>
-        <small>Use the <img src="images/review.svg" width="14" style="vertical-align:middle"> icon on a detection to review it; three rejections in 90 days suggest a species threshold.</small>
+        <small>Use the <b>Review</b> button on a detection to review it.<br>Three rejections in 90 days suggest a species threshold.</small>
       <?php } ?>
     </div>
   </div>
-  <h3>Best detections</h3>
+  <div class="lists">
+    <span>Lists:</span>
+    <label title="A curation marker: you have checked that the species occurs here"><input type="checkbox" <?php echo $in_confirmed ? 'checked' : ''; ?> onchange="spList(this, 'confirmed', <?php echo $h(json_encode($sci)); ?>)"> Confirmed</label>
+    <label title="Accepted even when the location filter does not expect it here and now"><input type="checkbox" <?php echo $in_whitelist ? 'checked' : ''; ?> onchange="spList(this, 'whitelist', <?php echo $h(json_encode($identifier)); ?>)"> Whitelist</label>
+    <label title="Never detected again"><input type="checkbox" <?php echo $in_exclude ? 'checked' : ''; ?> onchange="spList(this, 'exclude', <?php echo $h(json_encode($identifier)); ?>)"> Exclude</label>
+  </div>
+  <h3 class="section">Best detections</h3>
   <div class="clips">
   <?php foreach ($best as $b) {
     $file = $b['Date'] . '/' . $folder . '/' . $b['File_Name'];
+    // the spectrogram picture; a click opens it playing, like "open" in Latest detections
+    $label = $com . ' · ' . $b['Date'] . ' ' . $b['Time'] . ' · ' . round($b['Confidence'] * 100) . '%';
     echo '<div class="clip">' . detection_actions($file) . '<b>' . $h($b['Date'] . ' ' . $b['Time']) . '</b> · ' . round($b['Confidence'] * 100) . '%'
-      . '<div class="custom-audio-player" data-audio-src="/By_Date/' . $h($file) . '" data-image-src="/By_Date/' . $h($file) . '.png"></div></div>';
+      . '<img class="clipspec" loading="lazy" src="/By_Date/' . $h($file) . '.png" alt="spectrogram" title="Play"'
+      . ' onclick="openSpectrogram(' . $h(json_encode('/By_Date/' . $file)) . ', ' . $h(json_encode($label)) . ')"></div>';
   } ?>
   </div>
-  <h3>Latest detections</h3>
+  <h3 class="section">Latest detections</h3>
   <table class="list">
+  <tr><th>Date</th><th>Time</th><th class="num">Confidence</th><th class="num" title="Minimum confidence in force when it was detected">Min. confidence</th>
+    <th class="num" title="Sensitivity / overlap of the analysis">Sens. / overlap</th><th>Listen</th><th>Spectrogram</th><th style="text-align:right !important">Review</th></tr>
   <?php foreach ($recent as $r) {
-    $v = review_verdict($r['File_Name']);
-    echo '<tr><td>' . $h($r['Date'] . ' ' . $r['Time']) . '</td><td>' . round($r['Confidence'] * 100) . '%</td><td>'
-      . ($v ? $h(array('yes' => 'confirmed', 'no' => 'not this bird', 'unsure' => "can't tell")[$v]) : '') . '</td>'
-      . '<td><a href="/By_Date/' . $h($r['Date'] . '/' . $folder . '/' . $r['File_Name']) . '" target="_blank">clip</a></td></tr>';
+    $file = $r['Date'] . '/' . $folder . '/' . $r['File_Name'];
+    echo '<tr><td>' . $h($r['Date']) . '</td><td>' . $h($r['Time']) . '</td><td class="num">' . round($r['Confidence'] * 100) . '%</td>'
+      . '<td class="num">' . ($r['Cutoff'] !== null ? round($r['Cutoff'] * 100) . '%' : '') . '</td>'
+      . '<td class="num">' . $h(($r['Sens'] ?? '') . ' / ' . ($r['Overlap'] ?? '')) . '</td>'
+      . '<td><audio controls preload="none" src="/By_Date/' . $h($file) . '"></audio></td>'
+      . '<td><button type="button" class="openbtn" onclick="openSpectrogram(' . $h(json_encode('/By_Date/' . $file)) . ', ' . $h(json_encode($com . ' · ' . $r['Date'] . ' ' . $r['Time'] . ' · ' . round($r['Confidence'] * 100) . '%')) . ')" title="Open the spectrogram and play">&#9654; Open</button></td>'
+      . '<td style="text-align:right !important">' . validate_button($file) . '</td></tr>';
   } ?>
   </table>
 </div>
 <script>document.querySelectorAll('.sp-cal').forEach(function (c) { c.scrollLeft = c.scrollWidth; });</script>
 <script src="static/custom-audio-player.js"></script>
 <script src="static/detection-actions.js"></script>
+<script src="static/species-modal.js"></script>
+<script src="static/spectro-dialog.js"></script>
+<script>
+// list switches: the same modal and texts as Species Management (static/species-modal.js); whitelist and exclude
+// default to No
+function spList(box, list, species) {
+  var action = box.checked ? 'add' : 'del';
+  box.checked = !box.checked;   // only changes once confirmed and saved
+  var t = SPECIES_TOGGLE_TEXT[list][action];
+  askModal(t[0].replace('NAME', <?php echo json_encode($com . ' (' . $sci . ')'); ?>), t[1], 'Yes', list === 'whitelist' || list === 'exclude').then(function (ok) {
+    if (!ok) return;
+    var x = new XMLHttpRequest();
+    x.onload = function () {
+      if (this.status === 200 && this.responseText.trim() === 'OK') box.checked = (action === 'add');
+      else alert('Not changed: ' + (this.status === 401 ? 'log in first' : this.responseText));
+    };
+    x.onerror = function () { alert('Not changed (network error)'); };
+    x.open('GET', 'scripts/species_tools.php?toggle=' + list + '&species=' + encodeURIComponent(species) + '&action=' + action, true);
+    x.send();
+  });
+}
+// notification tier of the species (same file and endpoint as Species Management), saved at once
+function spTier(sel, sci) {
+  var was = sel.dataset.was;
+  var x = new XMLHttpRequest();
+  x.onload = function () {
+    if (this.status === 200 && this.responseText.trim() === 'OK') { sel.dataset.was = sel.value; sel.style.outline = '2px solid #2e7d32'; setTimeout(function () { sel.style.outline = ''; }, 1200); }
+    else { sel.value = was; alert('Not changed: ' + (this.status === 401 ? 'log in first' : this.responseText)); }
+  };
+  x.onerror = function () { sel.value = was; alert('Not changed (network error)'); };
+  x.open('GET', 'scripts/species_tools.php?settier=1&species=' + encodeURIComponent(sci) + '&tier=' + encodeURIComponent(sel.value), true);
+  x.send();
+}
+document.addEventListener('play', function (e) { document.querySelectorAll('.sp audio').forEach(function (a) { if (a !== e.target) a.pause(); }); }, true);
+</script>

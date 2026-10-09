@@ -1,4 +1,4 @@
-function initCustomAudioPlayers() {
+function initCustomAudioPlayers(root) {
   // =================== Config & Helpers ===================
   const CONFIG = {
     LEFT_MARGIN_PERCENT: 6,
@@ -131,7 +131,10 @@ function initCustomAudioPlayers() {
   };
 
   // =================== Main Loop over all .custom-audio-player ===================
-  document.querySelectorAll(".custom-audio-player").forEach((player) => {
+  // root: only the players inside it (e.g. one added later); a player is never set up twice
+  ((root && root.querySelectorAll) ? root : document).querySelectorAll(".custom-audio-player").forEach((player) => {
+    if (player.dataset.ready) return;
+    player.dataset.ready = "1";
     let hasLoaded = false; // set to true once metadata is available
 
     // Audio/player data
@@ -734,8 +737,11 @@ Channels: ${channels}`
         hideOverlays();
       }
     });
+
+    // data-autoplay="1": start playing as soon as it is set up (the species page "open" dialog)
+    if (player.dataset.autoplay === "1") debouncedPlayPause();
   });
 }
 
 // Initialize on DOM ready
-document.addEventListener("DOMContentLoaded", initCustomAudioPlayers);
+document.addEventListener("DOMContentLoaded", () => initCustomAudioPlayers());

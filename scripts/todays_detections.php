@@ -171,7 +171,11 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
   } else {
     // legacy mode
     if(isset($_GET['hard_limit']) && is_numeric($_GET['hard_limit'])) {
-      $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, File_Name FROM detections WHERE Date == Date(\'now\', \'localtime\') '.$searchquery.' ORDER BY Time DESC LIMIT '.$_GET['hard_limit']);
+      // the Now page's most recent detections: not only today's, so the list is never empty after midnight
+      // gallery pages: offset = how many newer detections are skipped; one extra row tells whether older ones exist
+      $g_offset = max(0, intval($_GET['offset'] ?? 0));
+      $g_limit = intval($_GET['hard_limit']) + (isset($_GET['gallery']) ? 1 : 0);
+      $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, File_Name FROM detections WHERE 1 '.$searchquery.' ORDER BY Date DESC, Time DESC LIMIT '.$g_limit.' OFFSET '.$g_offset);
     } else {
       $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, File_Name FROM detections WHERE Date == Date(\'now\', \'localtime\') '.$searchquery.' ORDER BY Time DESC');
     }
@@ -179,6 +183,42 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
   }
   ensure_db_ok($statement0);
   $result0 = $statement0->execute();
+
+  // Now page (owner 2026-10-08): the most recent detections as cards like Best Detections — names (common name =
+  // species page), time and confidence, delete + Review top right, and the spectrogram picture that opens big and
+  // playing (static/spectro-dialog.js)
+  if (isset($_GET['gallery'])) {
+    echo '<div class="spgallery nowgallery">';
+    $n = 0;
+    $page = intval($_GET['hard_limit']);
+    $more = false;
+    while ($g = $result0->fetchArray(SQLITE3_ASSOC)) {
+      if ($n >= $page) { $more = true; break; }
+      $n++;
+      $folder = str_replace("'", '', str_replace(' ', '_', $g['Com_Name']));
+      $file = $g['Date'] . '/' . $folder . '/' . $g['File_Name'];
+      $clip = '/By_Date/' . $file;
+      $when = ($g['Date'] !== date('Y-m-d') ? substr($g['Date'], 5) . ' ' : '') . $g['Time'];
+      $fj = htmlspecialchars(json_encode($file), ENT_QUOTES);
+      echo '<div class="gcard"><div class="gbody"><div class="gtop">'
+        . '<div class="gnames"><a href="views.php?view=Bird&amp;sci=' . rawurlencode($g['Sci_Name']) . '" title="Open the species page"><b>' . htmlspecialchars($g['Com_Name']) . '</b></a><br><i>' . htmlspecialchars($g['Sci_Name']) . '</i></div>'
+        . '<div class="gacts"><img src="images/delete.svg" title="Delete Detection" onclick="deleteDetection(' . $fj . ')">' . validate_button($file) . '</div></div>'
+        . '<div class="gmeta">' . htmlspecialchars($when) . ' · ' . round($g['Confidence'] * 100) . '%</div>'
+        . '<img class="gspec" loading="lazy" src="' . htmlspecialchars($clip) . '.png" alt="spectrogram" title="Play"'
+        . ' onclick="openSpectrogram(' . htmlspecialchars(json_encode($clip), ENT_QUOTES) . ', ' . htmlspecialchars(json_encode($g['Com_Name'] . ' · ' . $when . ' · ' . round($g['Confidence'] * 100) . '%'), ENT_QUOTES) . ')"></div></div>';
+    }
+    echo '</div>';
+    if ($n == 0) echo '<h3>No detections yet.</h3>';
+    // newer / older pages of 30
+    if ($g_offset > 0 || $more) {
+      echo '<div class="nowpager">'
+        . ($g_offset > 0 ? '<button type="button" class="openbtn" onclick="nowPage(' . max(0, $g_offset - $page) . ')">&#9664; Newer ' . $page . '</button>' : '<span></span>')
+        . '<span>' . ($g_offset + 1) . '–' . ($g_offset + $n) . '</span>'
+        . ($more ? '<button type="button" class="openbtn" onclick="nowPage(' . ($g_offset + $page) . ')">Older ' . $page . ' &#9654;</button>' : '<span></span>')
+        . '</div>';
+    }
+    die();
+  }
 
   ?> <table>
    <?php
@@ -196,7 +236,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
     $comname = preg_replace('/ /', '_', $todaytable['Com_Name']);
     $comnamegraph = str_replace("'", "\'", $todaytable['Com_Name']);
     $comname = preg_replace('/\'/', '', $comname);
-    $filename = "/By_Date/".date('Y-m-d')."/".$comname."/".$todaytable['File_Name'];
+    $filename = "/By_Date/".$todaytable['Date']."/".$comname."/".$todaytable['File_Name'];
     $filename_formatted = $todaytable['Date']."/".$comname."/".$todaytable['File_Name'];
     $sciname = preg_replace('/ /', '_', $todaytable['Sci_Name']);
     $engname = get_com_en_name($todaytable['Sci_Name']);
@@ -231,49 +271,51 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
             <?php echo detection_actions($filename_formatted); ?>
         
             
-          <div class="centered_image_container">
+          <!-- photo on the left, then time, names (common name = link to the species page, scientific, English), links
+               and confidence (owner 2026-10-08) -->
+          <div class="tdhead">
             <?php if(!empty($config["IMAGE_PROVIDER"]) && strlen($image[2]) > 0) { ?>
               <img onclick='setModalText(<?php echo $iterations; ?>,"<?php echo urlencode($image[2]); ?>", "<?php echo $image[3]; ?>", "<?php echo $image[4]; ?>", "<?php echo $image[1]; ?>", "<?php echo $image[5]; ?>")' src="<?php echo $image[1]; ?>" class="img1">
             <?php } ?>
-
-            <?php echo $todaytable['Time'];?><br>   
-          <?php echo species_icon($todaytable['Sci_Name']); ?><b><a class="a2" href="<?php echo $url;?>" target="top"><?php echo $todaytable['Com_Name'];?></a></b><br>
-          <i><?php echo $todaytable['Sci_Name'];?></i>
-          <?php echo species_links($todaytable['Sci_Name'], 'cursor:pointer;float:unset;display:inline', 20); ?>
-          <img style=";cursor:pointer;float:unset;display:inline" title="View species stats" onclick="generateMiniGraph(this, '<?php echo $comnamegraph; ?>')" width=20 src="images/chart.svg"><br>
-          <b>Confidence:</b> <?php echo round((float)round($todaytable['Confidence'],2) * 100 ) . '%';?><br></div><br>
+            <div class="tdinfo">
+              <div class="tdtime"><?php echo $todaytable['Time'];?></div>
+              <?php echo species_title($todaytable['Sci_Name'], '<b><a class="a2" href="views.php?view=Bird&amp;sci=' . rawurlencode($todaytable['Sci_Name']) . '" title="Open the species page">' . $todaytable['Com_Name'] . '</a></b>',
+                '<img class="splink" title="View species stats" onclick="generateMiniGraph(this, \'' . $comnamegraph . '\')" src="images/chart.svg">', true, false); ?>
+              <div><b>Confidence:</b> <?php echo round((float)round($todaytable['Confidence'],2) * 100 ) . '%';?></div>
+            </div>
+          </div>
           <div class='custom-audio-player' data-audio-src="<?php echo $filename; ?>" data-image-src="<?php echo $filename.".png";?>"></div>
           </td>
         <?php } else { //legacy mode ?>
           <tr class="relative" id="<?php echo $iterations; ?>">
-          <td><?php if($_GET['kiosk'] == true) { echo relativeTime(strtotime($todaytable['Time'])); } else {echo $todaytable['Time'];}?><br></td>
+          <td><?php if($_GET['kiosk'] == true) { echo relativeTime(strtotime($todaytable['Time'])); } else { echo ($todaytable['Date'] !== date('Y-m-d') ? '<small>' . substr($todaytable['Date'], 5) . '</small> ' : '') . $todaytable['Time']; }?><br></td>
           <td id="recent_detection_middle_td">
           <div>
             <div>
-            <?php if(!empty($config["IMAGE_PROVIDER"]) && (isset($_GET['hard_limit']) || $_GET['kiosk'] == true) && strlen($image[2]) > 0) { ?>
+            <?php // the bird photo only in the kiosk view; the Now page's 5 most recent rows go without it (owner 2026-10-08)
+            if(!empty($config["IMAGE_PROVIDER"]) && $_GET['kiosk'] == true && strlen($image[2]) > 0) { ?>
               <img style="float:left;height:75px;" onclick='setModalText(<?php echo $iterations; ?>,"<?php echo urlencode($image[2]); ?>", "<?php echo $image[3]; ?>", "<?php echo $image[4]; ?>", "<?php echo $image[1]; ?>", "<?php echo $image[5]; ?>")' src="<?php echo $image[1]; ?>" id="birdimage" class="img1">
             <?php } ?>
           </div>
             <div>
             <form action="" method="GET">
                     <input type="hidden" name="view" value="Species Stats">
-          <?php echo species_icon($todaytable['Sci_Name']); ?><button class="a2" type="submit" name="species" value="<?php echo $todaytable['Com_Name'];?>"><?php echo $todaytable['Com_Name'];?></button>
-	            <br><i>
-          <?php echo $todaytable['Sci_Name'];?>
-	                <br>
-	                    <?php echo species_links($todaytable['Sci_Name'], 'height: 1em;cursor:pointer;float:unset;display:inline', 25); ?>
-      	    <?php if($_GET['kiosk'] == false){?>
-	                    <img style="height: 1em;cursor:pointer;float:unset;display:inline" title="View species stats" onclick="generateMiniGraph(this, '<?php echo $comnamegraph; ?>')" width=25 src="images/chart.svg">
-	                    <?php echo detection_actions($filename_formatted, false, 'height: 1em;float:unset;display:inline', 16); ?>
-          	    <?php } ?></i>
+          <?php // just "Common name - Scientific name"; the common name opens the species page (owner 2026-10-08) ?>
+          <span class="recentname"><a class="a2" href="views.php?view=Bird&amp;sci=<?php echo rawurlencode($todaytable['Sci_Name']); ?>" title="Open the species page"><b><?php echo $todaytable['Com_Name']; ?></b></a> - <i><?php echo $todaytable['Sci_Name']; ?></i></span>
 	                <br>
 	            </div>
             </form>
           </div>
           </td>
-          <td><?php if(!isset($_GET['mobile'])) { echo '<b>Confidence:</b>';} echo round((float)round($todaytable['Confidence'],2) * 100 ) . '%';?><br></td>
+          <td><?php if(!isset($_GET['mobile'])) { echo '<b>Confidence:</b>';} echo round((float)round($todaytable['Confidence'],2) * 100 ) . '%';?><br>
+            <?php if(isset($_GET['mobile']) && $_GET['kiosk'] == false) echo '<span class="recentacts">' . '<button type="button" class="openbtn" title="Open the spectrogram and play" onclick="openSpectrogram(' . htmlspecialchars(json_encode($filename), ENT_QUOTES) . ', ' . htmlspecialchars(json_encode($todaytable['Com_Name'] . ' · ' . $todaytable['Time'] . ' · ' . round($todaytable['Confidence'] * 100) . '%'), ENT_QUOTES) . ')">&#9654; Open</button>' . ' ' . detection_actions($filename_formatted, false, 'height: 1.2em;float:unset;display:inline', 18, false) . ' ' . validate_button($filename_formatted) . '</span>'; ?></td>
           <?php if(!isset($_GET['mobile'])) { ?>
-              <td style="min-width:180px"><audio controls preload="none" src="<?php echo $filename;?>"></audio></td>
+              <!-- the Review button beside the audio controls (owner 2026-10-08) -->
+              <td style="white-space:nowrap">
+                <?php // Open (the spectrogram playing, like the species page), delete / change species / protect /
+                // frequency shift, and Review always last on the right (owner 2026-10-08); the kiosk keeps the audio control
+                if($_GET['kiosk'] == true) echo '<audio controls preload="none" src="' . htmlspecialchars($filename) . '"></audio>';
+                else echo '<span class="recentacts">' . '<button type="button" class="openbtn" title="Open the spectrogram and play" onclick="openSpectrogram(' . htmlspecialchars(json_encode($filename), ENT_QUOTES) . ', ' . htmlspecialchars(json_encode($todaytable['Com_Name'] . ' · ' . $todaytable['Time'] . ' · ' . round($todaytable['Confidence'] * 100) . '%'), ENT_QUOTES) . ')">&#9654; Open</button>' . ' ' . detection_actions($filename_formatted, false, 'height: 1.2em;float:unset;display:inline', 18, false) . ' ' . validate_button($filename_formatted) . '</span>'; ?></td>
           <?php } ?>
         <?php } ?>
   <?php }?>

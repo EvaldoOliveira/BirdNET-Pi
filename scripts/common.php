@@ -520,6 +520,14 @@ function review_verdicts() {
   }
   return $verdicts;
 }
+function validate_button($file, $verdict = null, $positioned = false) {
+  if ($verdict === null) $verdict = review_verdict(basename($file));
+  $labels = array('' => 'Review', 'yes' => '&#10003; Valid', 'no' => '&#10007; Not this bird', 'unsure' => "? Can't tell");
+  $titles = array('' => 'Is this the bird? Review this detection', 'yes' => 'Reviewed: yes, this bird (species confirmed, clip protected from purge)',
+                  'no' => 'Reviewed: not this bird', 'unsure' => "Reviewed: can't tell");
+  return '<button type="button" class="validatebtn v-' . ($verdict ?: 'none') . ($positioned ? ' positioned' : '') . '" title="' . $titles[$verdict]
+    . '" onclick="reviewDetection(' . htmlspecialchars(json_encode($file), ENT_QUOTES) . ', this)">' . $labels[$verdict] . '</button>';
+}
 function review_verdict($file_name) {
   return review_verdicts()[$file_name] ?? '';
 }
@@ -537,7 +545,7 @@ function not_rejected_sql() {
 // Action icons of one detection (delete, change species, protect from purge, frequency shift), the same
 // ones the Recordings page shows, so a card does not need the "open in new tab" detour (owner 2026-10-08).
 // $file = "<date>/<common name>/<file>"; $positioned = the absolute top-right layout of the cards.
-function detection_actions($file, $positioned = true, $style = '', $width = 25) {
+function detection_actions($file, $positioned = true, $style = '', $width = 25, $with_review = true) {
   static $locked = null;
   $home = get_home();
   if ($locked === null) {
@@ -545,10 +553,6 @@ function detection_actions($file, $positioned = true, $style = '', $width = 25) 
     $locked = is_file($list) ? array_flip(file($list, FILE_IGNORE_NEW_LINES)) : array();
   }
   $verdict = review_verdict(basename($file));
-  $rv = array('' => array('images/review.svg', 'Review: is this the bird? (not reviewed)'),
-              'yes' => array('images/review_yes.svg', 'Reviewed: yes, this bird (protected from purge)'),
-              'no' => array('images/review_no.svg', 'Reviewed: not this bird'),
-              'unsure' => array('images/review_unsure.svg', "Reviewed: can't tell"))[$verdict];
   $f = htmlspecialchars(json_encode($file), ENT_QUOTES);
   $lock = isset($locked[$file])
     ? array('del', 'images/lock.svg', 'This file is excluded from being purged.')
@@ -557,19 +561,20 @@ function detection_actions($file, $positioned = true, $style = '', $width = 25) 
     ? array('unshift', 'images/unshift.svg', 'This file has been shifted down in frequency.')
     : array('shift', 'images/shift.svg', 'This file is not shifted in frequency.');
   $icons = array(
-    array("reviewDetection($f, this)", $rv[0], $rv[1], '155px'),
-    array("deleteDetection($f)", 'images/delete.svg', 'Delete Detection', '120px'),
-    array("changeDetection($f)", 'images/bird.svg', 'Change Detection', '85px'),
-    array("toggleLock($f, &quot;$lock[0]&quot;, this)", $lock[1], $lock[2], '45px'),
-    array("toggleShiftFreq($f, &quot;$shift[0]&quot;, this)", $shift[1], $shift[2], ''),
+    array("deleteDetection($f)", 'images/delete.svg', 'Delete Detection', '190px'),
+    array("changeDetection($f)", 'images/bird.svg', 'Change Detection', '155px'),
+    array("toggleLock($f, &quot;$lock[0]&quot;, this)", $lock[1], $lock[2], '115px'),
+    array("toggleShiftFreq($f, &quot;$shift[0]&quot;, this)", $shift[1], $shift[2], '80px'),
   );
+  // Review loop: a narrow "Review" button (owner 2026-10-08), its label and colour show the verdict; the last
+  // button on the right of the action row
   $html = '';
   foreach ($icons as $i) {
     $css = 'cursor:pointer;' . ($positioned && $i[3] !== '' ? "right:$i[3];" : '') . $style;
     $html .= "<img style=\"$css\" src=\"$i[1]\" onclick=\"$i[0]\"" . ($positioned ? ' class="copyimage"' : '')
       . " width=\"$width\" title=\"" . htmlspecialchars($i[2], ENT_QUOTES) . '"> ';
   }
-  return $html;
+  return $html . ($with_review ? validate_button($file, $verdict, $positioned) : '');
 }
 
 // for the birds eBird knows, and Wikipedia in the station language. $style/$width are the page's icon style.
@@ -578,6 +583,53 @@ function detection_actions($file, $positioned = true, $style = '', $width = 25) 
 function species_icon($sciname, $size = 20) {
   return '<a class="spicon" href="views.php?view=Bird&amp;sci=' . rawurlencode($sciname) . '" title="Species page: totals, calendar, best clips, settings">'
     . '<img src="images/species-page.svg" style="width:' . intval($size) . 'px;height:' . intval($size) . 'px" alt="Species page"></a>';
+}
+
+// Species title block (owner 2026-10-08): [species-page icon] [common name / scientific name] [links], the
+// WikiAves / eBird / Birds of the World / Wikipedia icons beside the names at the height of both lines.
+// $name_html = the common name as the page renders it (a link, a button...); $extra = more icons for the link row.
+// $english = true: a third line with the English (eBird/Clements) name when the station shows names in another language
+function species_title($sciname, $name_html, $extra = '', $english = false, $icon = true) {
+  $en = '';
+  if ($english && (get_config()['DATABASE_LANG'] ?? 'en') !== 'en') {
+    $en_name = get_english_name($sciname);
+    if ($en_name !== '' && mb_strtolower($en_name) !== mb_strtolower(trim(strip_tags($name_html)))) {
+      $en = '<br><span class="spen" title="English name (eBird / Clements)">' . htmlspecialchars($en_name) . '</span>';
+    }
+  }
+  return '<div class="sptitle">' . ($icon ? species_icon($sciname, 26) : '') . '<div class="spnames">' . $name_html . '<br><i>'
+    . htmlspecialchars($sciname) . '</i>' . $en . '</div><div class="splinks">' . species_links($sciname, '', 0) . $extra . '</div></div>';
+}
+
+// English (eBird / Clements) name of a species: the V3 model labels ("Sci_English", always English, whatever the
+// station language), else the upstream English labels; '' when unknown
+function get_english_name($sciname) {
+  static $map = null;
+  if ($map === null) {
+    $map = array();
+    $model = get_home() . '/BirdNET-Pi/model/';
+    foreach (glob($model . 'BirdNET-Plus_*_Labels.txt') ?: array() as $f) {
+      if (strpos($f, '_Geo_') !== false) continue;
+      foreach (file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $l) {
+        $p = explode('_', $l, 2);
+        if (count($p) === 2 && !isset($map[$p[0]])) $map[$p[0]] = $p[1];
+      }
+    }
+    if (!$map) {
+      $en = json_decode((string)@file_get_contents($model . 'l18n/labels_en.json'), true);
+      if (is_array($en)) $map = $en;
+    }
+  }
+  return $map[$sciname] ?? '';
+}
+
+// Photo of a species from the image provider of the Settings (cached in its own database); false when none
+function species_photo($sciname) {
+  static $provider = null;
+  $config = get_config();
+  if (empty($config['IMAGE_PROVIDER'])) return false;
+  if ($provider === null) $provider = ($config['IMAGE_PROVIDER'] === 'FLICKR') ? new Flickr() : new Wikipedia();
+  try { return $provider->get_image($sciname); } catch (Throwable $e) { return false; }
 }
 
 function species_links($sciname, $style = '', $width = 20) {
@@ -601,7 +653,7 @@ function species_links($sciname, $style = '', $width = 20) {
   $html = '';
   foreach ($links as $l) {
     $html .= '<a href="' . htmlspecialchars($l[0], ENT_QUOTES) . '" target="_blank"><img style="' . htmlspecialchars($style, ENT_QUOTES)
-      . '" title="' . $l[1] . '" src="' . $l[2] . '" width="' . intval($width) . '"></a> ';
+      . '" title="' . $l[1] . '" src="' . $l[2] . '"' . ($width ? ' width="' . intval($width) . '"' : '') . '></a> ';
   }
   return $html;
 }

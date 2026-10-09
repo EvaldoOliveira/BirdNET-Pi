@@ -51,6 +51,9 @@ foreach ([$confirm_file, $exclude_file, $whitelist_file, $tiers_file, $conf_file
 
 /* Notification tiers: 'Sci_Name=tier' per non-normal species (muted/rare) */
 $species_tiers = [];
+// a species without its own line follows the default tier of Settings (Notifications)
+$default_tier_view = strtolower(get_config()['NOTIFICATION_DEFAULT_TIER'] ?? 'normal');
+if (!in_array($default_tier_view, ['normal', 'muted', 'rare'], true)) $default_tier_view = 'normal';
 foreach (file_exists($tiers_file) ? file($tiers_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [] as $l) {
     [$t_sci, $t_tier] = array_pad(explode('=', trim($l), 2), 2, '');
     if ($t_sci !== '' && $t_tier !== '') $species_tiers[$t_sci] = strtolower($t_tier);
@@ -110,7 +113,11 @@ if (isset($_GET['settier'], $_GET['species'], $_GET['tier'])) {
   if (!in_array($tier, ['normal', 'muted', 'rare'], true)) { header('Content-Type: text/plain'); echo 'Invalid tier'; exit; }
   $lines = file_exists($tiers_file) ? file($tiers_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
   $lines = array_values(array_filter($lines, fn($l) => explode('=', trim($l), 2)[0] !== $species));
-  if ($tier !== 'normal') $lines[] = $species . '=' . $tier;
+  // a line only when the tier differs from the default one (NOTIFICATION_DEFAULT_TIER); "normal" on a station
+  // whose default is muted must be written, or the species would stay muted
+  $default_tier = strtolower(get_config()['NOTIFICATION_DEFAULT_TIER'] ?? 'normal');
+  if (!in_array($default_tier, ['normal', 'muted', 'rare'], true)) $default_tier = 'normal';
+  if ($tier !== $default_tier) $lines[] = $species . '=' . $tier;
   sort($lines, SORT_STRING);
   file_put_contents($tiers_file, implode("\n", $lines) . (empty($lines) ? "" : "\n"), LOCK_EX);
   header('Content-Type: text/plain'); echo 'OK'; exit;
@@ -239,7 +246,7 @@ $result = $db->query($sql);
   <table id="speciesTable">
     <thead>
       <tr>
-        <th onclick="sortTable(0)">Common Name</th>
+        <th onclick="sortTable(0)" style="text-align:left !important">Common Name</th>
         <th onclick="sortTable(1)">Scientific Name</th>
         <th onclick="sortTable(2)">Max. Detected Confidence</th>
         <th onclick="sortTable(3)" title="Minimum confidence for this species; empty = the global Minimum Confidence (<?php echo htmlspecialchars(sprintf('%.2f', $global_conf)); ?>)">Species Threshold</th>
@@ -266,7 +273,7 @@ $result = $db->query($sql);
   $lastSeen = $row['LastSeen'] ?? '';
   $lastSeenSort = $lastSeen ? (strtotime($lastSeen) ?: 0) : 0;
 
-  $common_link = "<a href='views.php?view=Bird&sci=" . rawurlencode($row['Sci_Name']) . "'>{$common}</a>";
+  $common_link = "<a href='views.php?view=Bird&sci=" . rawurlencode($row['Sci_Name']) . "' title='Open the species page'>{$common}</a>";
 
   $is_confirmed   = in_array($identifier_sci, $confirmed_species, true);
   $is_excluded    = in_array($identifier_sci, $excluded_species, true);
@@ -290,7 +297,7 @@ $result = $db->query($sql);
     ? "<img style='cursor:pointer;max-width:12px;max-height:12px' src='images/check.svg' onclick=\"toggleSpecies('whitelist','{$identifier_js}','del')\">"
     : "<span class='circle-icon' onclick=\"toggleSpecies('whitelist','{$identifier_js}','add')\"></span>";
 
-  $species_tier = $species_tiers[$identifier_sci] ?? 'normal';
+  $species_tier = $species_tiers[$identifier_sci] ?? $default_tier_view;
   $tier_cell = "<select onchange=\"setTier('{$identifier_sci_js}', this.value)\">";
   foreach (['normal' => 'Normal', 'muted' => 'Muted', 'rare' => 'Rare'] as $t_val => $t_label) {
     $t_sel = $species_tier === $t_val ? " selected" : "";
@@ -316,7 +323,7 @@ $result = $db->query($sql);
     }
     
   echo "<tr data-comname=\"{$common}\" data-sciname=\"{$scient}\">"
-     . "<td style='white-space:nowrap'>" . species_icon($row['Sci_Name']) . " {$common_link}</td>"
+     . "<td style='white-space:nowrap;text-align:left !important'>{$common_link}</td>"
      . "<td>{$scient_link}</td>"
      . "<td data-sort='{$max_confidence}'>{$max_confidence}%</td>"
      . "<td data-sort='{$conf_sort}'>".$conf_cell."</td>"
@@ -336,6 +343,7 @@ $result = $db->query($sql);
 </div>
 <script src="static/Chart.bundle.js"></script>
 <script src="static/generateMiniGraph.js"></script>
+<script src="static/species-modal.js"></script>
 <script>
 const scriptsBase = 'scripts/';
 const sfThresh = <?php echo json_encode($sf_thresh, JSON_UNESCAPED_UNICODE); ?>;
@@ -430,44 +438,7 @@ function setConf(species, input) {
     });
 }
 /* confirmation modal for the Confirmed / Whitelist / Exclude columns (owner 2026-10-08) */
-function askModal(title, text, okLabel, defaultNo = false) {
-  return new Promise(resolve => {
-    let m = document.getElementById('spModal');
-    if (!m) {
-      m = document.createElement('div');
-      m.id = 'spModal';
-      m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:50;';
-      m.innerHTML = '<div style="background:#fff;color:#000;border-radius:6px;max-width:440px;padding:16px 18px;box-shadow:0 4px 18px rgba(0,0,0,0.35);text-align:left;">'
-        + '<h3 id="spModalTitle" style="margin:0 0 8px;text-align:left"></h3><p id="spModalText" style="margin:0 0 14px;white-space:pre-line"></p>'
-        + '<div style="text-align:right"><button id="spModalCancel" style="padding:6px 12px;margin-right:6px">No</button>'
-        + '<button id="spModalOk" style="padding:6px 12px;font-weight:bold;background:rgb(219,255,235);border-radius:4px"></button></div></div>';
-      document.body.appendChild(m);
-    }
-    document.getElementById('spModalTitle').textContent = title;
-    document.getElementById('spModalText').textContent = text;
-    document.getElementById('spModalOk').textContent = okLabel;
-    m.style.display = 'flex';
-    // the safe answer is the default: highlighted and focused (Enter = it)
-    const yes = document.getElementById('spModalOk'), no = document.getElementById('spModalCancel');
-    const primary = 'padding:6px 12px;font-weight:bold;background:rgb(219,255,235);border-radius:4px;';
-    const plain = 'padding:6px 12px;font-weight:normal;background:transparent;';
-    yes.style.cssText = defaultNo ? plain : primary;
-    no.style.cssText = (defaultNo ? primary : plain) + 'margin-right:6px;';
-    (defaultNo ? no : yes).focus();
-    const done = v => { m.style.display = 'none'; resolve(v); };
-    document.getElementById('spModalOk').onclick = () => done(true);
-    document.getElementById('spModalCancel').onclick = () => done(false);
-    m.onclick = e => { if (e.target === m) done(false); };
-  });
-}
-const SPECIES_TOGGLE_TEXT = {
-  confirmed: { add: ['Confirm NAME?', 'What it does: marks the species as confirmed — you have checked that it really occurs at this station.\n\nImpact: a curation marker only; detection, filters and notifications do not change.'],
-               del: ['Remove the confirmation of NAME?', 'What it does: the species is no longer marked as confirmed.\n\nImpact: a curation marker only; detection, filters and notifications do not change.'] },
-  whitelist: { add: ['Whitelist NAME?', 'What it does: the species is accepted even when the location filter (species occurrence threshold) does not expect it here and in this week.\n\nImpact: it can be detected all year; if it does not occur here, more false detections are possible. The minimum confidence and the species list still apply.'],
-               del: ['Remove NAME from the whitelist?', 'What it does: the location filter applies to the species again.\n\nImpact: it is only detected in the weeks the model expects it here.'] },
-  exclude:   { add: ['Exclude NAME?', 'What it does: the species is never detected again (exclude list).\n\nImpact: no new detections, notifications or recordings for it; its past detections are kept. Untick to detect it again.'],
-               del: ['Detect NAME again?', 'What it does: the species leaves the exclude list.\n\nImpact: it is detected again whenever it passes the minimum confidence and the filters.'] },
-};
+// askModal() and SPECIES_TOGGLE_TEXT live in static/species-modal.js (shared with the species page)
 function toggleSpecies(list, species, action) {
   const parts = species.split('_');   // "Scientific name_Common name"
   const name = parts.length > 1 ? parts.slice(1).join('_') + ' (' + parts[0] + ')' : species;

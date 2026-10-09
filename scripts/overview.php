@@ -113,20 +113,20 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true" && isse
           <h3>Most Recent Detection: <span style="font-weight: normal;"><?php echo $mostrecent['Date']." ".$mostrecent['Time'];?></span></h3>
           <tr>
             <td class="relative"><?php echo detection_actions($mostrecent['Date'] . '/' . str_replace(array("'", ' '), array('', '_'), $mostrecent['Com_Name']) . '/' . $mostrecent['File_Name']); ?>
-            <div class="centered_image_container" style="margin-bottom: 0px !important;">
+            <!-- photo on the left, then names (common name = link to the species page, scientific, English), links and
+                 confidence — like Today's Detections (owner 2026-10-08) -->
+            <div class="tdhead">
               <?php if(!empty($config["IMAGE_PROVIDER"]) && strlen($image[2]) > 0) { ?>
                 <img onclick='setModalText(<?php echo $iterations; ?>,"<?php echo urlencode($image[2]); ?>", "<?php echo $image[3]; ?>", "<?php echo $image[4]; ?>", "<?php echo $image[1]; ?>", "<?php echo $image[5]; ?>")' src="<?php echo $image[1]; ?>" class="img1">
               <?php } ?>
-              <form action="" method="GET">
-                  <input type="hidden" name="view" value="Species Stats">
-                  <?php echo species_icon($mostrecent['Sci_Name'], 22); ?><button type="submit" name="species" value="<?php echo $mostrecent['Com_Name'];?>"><?php echo $mostrecent['Com_Name'];?></button>
-                  <br>
-                  <i><?php echo $mostrecent['Sci_Name'];?></i>
-                  <?php echo species_links($mostrecent['Sci_Name'], 'width: unset !important; display: inline; height: 1em; cursor: pointer;', 25); ?>
-                  <img style="width: unset !important;display: inline;height: 1em;cursor:pointer" title="View species stats" onclick="generateMiniGraph(this, '<?php echo $comnamegraph; ?>')" width=25 src="images/chart.svg">
-                  <br>Confidence: <?php echo $percent = round((float)round($mostrecent['Confidence'],2) * 100 ) . '%';?><br></div><br>
-                  <div class='custom-audio-player' data-audio-src="<?php echo $filename; ?>" data-image-src="<?php echo $filename.".png";?>"></div>
-                  </td></form>
+              <div class="tdinfo">
+                <?php echo species_title($mostrecent['Sci_Name'], '<b><a class="a2" href="views.php?view=Bird&amp;sci=' . rawurlencode($mostrecent['Sci_Name']) . '" title="Open the species page">' . $mostrecent['Com_Name'] . '</a></b>',
+                  '<img class="splink" title="View species stats" onclick="generateMiniGraph(this, \'' . $comnamegraph . '\')" src="images/chart.svg">', true, false); ?>
+                <div>Confidence: <?php echo $percent = round((float)round($mostrecent['Confidence'],2) * 100 ) . '%';?></div>
+              </div>
+            </div>
+            <div class='custom-audio-player' data-audio-src="<?php echo $filename; ?>" data-image-src="<?php echo $filename.".png";?>"></div>
+            </td>
           </tr>
         </table> <?php break;
       }
@@ -388,9 +388,8 @@ function display_species($species_list, $title, $show_last_seen=false) {
                         <td id="recent_detection_middle_td">
                             <div><form action="" method="GET">
                                     <input type="hidden" name="view" value="Species Stats">
-                                    <?php echo species_icon($todaytable['Sci_Name']); ?><button class="a2" type="submit" name="species" value="<?php echo $todaytable['Com_Name']; ?>"><?php echo $todaytable['Com_Name']; ?></button>
-                                    <br><i><?php echo $todaytable['Sci_Name']; ?><br>
-                                        <?php echo species_links($todaytable['Sci_Name'], 'height: 1em;cursor:pointer;float:unset;display:inline', 25); ?>
+                                    <?php echo species_title($todaytable['Sci_Name'], '<b><a class="a2" href="views.php?view=Bird&amp;sci=' . rawurlencode($todaytable['Sci_Name']) . '" title="Open the species page">' . $todaytable['Com_Name'] . '</a></b>', '', true, false); ?>
+                                    <i>
                                         <?php if ($show_last_seen): ?>
                                             <img style="height: 1em;cursor:pointer;float:unset;display:inline" title="View species stats" onclick="generateMiniGraph(this, '<?php echo $comnamegraph; ?>', 160)" width="25" src="images/chart.svg">
                                         <?php endif; ?>
@@ -445,11 +444,9 @@ if (file_exists('./Charts/'.$chart)) {
 ?>
 </div>
 
-<div id="most_recent_detection"></div>
-<br>
-<h3 class="now-only">5 Most Recent Detections</h3>
-<div style="padding-bottom:10px;" id="detections_table"><h3>Loading...</h3></div>
-
+<!-- Now page (owner 2026-10-08): Currently Analyzing first, then the 30 most recent detections as cards. The most recent
+     detection card is no longer shown; it is still loaded (hidden) because the page watches it to notice a new
+     detection and refresh the cards (30, like Best Detections). -->
 <h3 class="now-only">Currently Analyzing</h3>
 <?php
 $refresh = $config['RECORDING_LENGTH'];
@@ -457,6 +454,10 @@ $time = time();
 echo "<img id=\"spectrogramimage\" src=\"spectrogram.png?nocache=$time\">";
 
 ?>
+<div id="most_recent_detection" style="display:none"></div>
+<br>
+<h3 class="now-only now-cards">Most Recent Detections</h3>
+<div style="padding-bottom:10px;" id="detections_table"><h3>Loading...</h3></div>
 
 <div id="customimage"></div>
 <br>
@@ -473,9 +474,9 @@ function loadDetectionIfNewExists(previous_detection_identifier=undefined) {
     if(this.responseText.length > 0 && !this.responseText.includes("Database is busy") && !this.responseText.includes("No Detections") || previous_detection_identifier == undefined) {
       document.getElementById("most_recent_detection").innerHTML = this.responseText;
 
-      // only going to load left chart & 5 most recents if there's a new detection
+      // only going to load left chart & the recent cards if there's a new detection (cards: newest page only)
       loadLeftChart();
-      loadFiveMostRecentDetections();
+      if (nowOffset === 0 || previous_detection_identifier == undefined) loadFiveMostRecentDetections();
       refreshTopTen();
 
       // Now that new HTML is inserted, re-run player init:
@@ -539,6 +540,14 @@ function refreshDetection() {
     }
   }
 }
+// the Now cards page through the detections 30 at a time; only the newest page follows new detections
+var nowOffset = 0;
+function nowPage(offset) {
+  nowOffset = offset;
+  loadFiveMostRecentDetections();
+  var h = document.querySelector('h3.now-cards');
+  if (h) h.scrollIntoView({behavior: 'smooth'});
+}
 function loadFiveMostRecentDetections() {
   const xhttp = new XMLHttpRequest();
   xhttp.onload = function() {
@@ -547,9 +556,9 @@ function loadFiveMostRecentDetections() {
     }
   }
   if (window.innerWidth > 500) {
-    xhttp.open("GET", "todays_detections.php?ajax_detections=true&display_limit=undefined&hard_limit=5", true);
+    xhttp.open("GET", "todays_detections.php?ajax_detections=true&display_limit=undefined&hard_limit=30&gallery=1&offset=" + nowOffset, true);
   } else {
-    xhttp.open("GET", "todays_detections.php?ajax_detections=true&display_limit=undefined&hard_limit=5&mobile=true", true);
+    xhttp.open("GET", "todays_detections.php?ajax_detections=true&display_limit=undefined&hard_limit=30&gallery=1&mobile=true&offset=" + nowOffset, true);
   }
   xhttp.send();
 }
@@ -607,6 +616,7 @@ startAutoRefresh();
 }
 </style>
 <script src="static/custom-audio-player.js"></script>
+<script src="static/spectro-dialog.js"></script>
 <script src="static/detection-actions.js"></script>
 <script src="static/generateMiniGraph.js"></script>
 <script>

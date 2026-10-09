@@ -91,6 +91,17 @@ if(isset($_GET['review']) && isset($_GET['verdict'])) {
     $st->bindValue(':v', $verdict);
   }
   $ok = $st->execute() !== false && ($verdict === 'clear' || $rw->changes() > 0);
+  // a positive review also confirms the species (Confirmed list of Species Management), owner 2026-10-08
+  if ($ok && $verdict === 'yes') {
+    $sci = $rw->querySingle("SELECT Sci_Name FROM detections WHERE File_Name = '" . SQLite3::escapeString($file_name) . "' LIMIT 1");
+    $list = __DIR__ . '/confirmed_species_list.txt';
+    $lines = is_file($list) ? file($list, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : array();
+    if ($sci && !in_array($sci, $lines, true)) {
+      $lines[] = $sci;
+      sort($lines, SORT_STRING);
+      file_put_contents($list, implode("\n", $lines) . "\n", LOCK_EX);
+    }
+  }
   $rw->close();
   echo $ok ? "OK" : "Error - detection not found";
   die();
@@ -377,10 +388,7 @@ $sciname = $name;
 $info_url = get_info_url($sciname);
 $url = $info_url['URL'];
 echo "<table>
-  <tr><th>" . species_icon($sciname, 22) . " $com_name<br><span style=\"font-weight:normal;\">
-  <i>$sciname</i></span><br>
-    " . species_links($sciname, '', 20) . "
-  </th></tr>";
+  <tr><th>" . species_title($sciname, $com_name) . "</th></tr>";
   $iter=0;
   while($results=$result2->fetchArray(SQLITE3_ASSOC))
   {
@@ -481,10 +489,7 @@ echo "<table>
     $info_url = get_info_url($sciname);
     $url = $info_url['URL'];
     echo "<table>
-      <tr><th>" . species_icon($sciname, 22) . " $name<br>
-      <i>$sciname</i><br>
-          " . species_links($sciname, '', 20) . "
-      </th></tr>";
+      <tr><th>" . species_title($sciname, htmlspecialchars($results['Com_Name'])) . "</th></tr>";
       while($results=$result2->fetchArray(SQLITE3_ASSOC))
       {
         $comname = preg_replace('/ /', '_', $results['Com_Name']);

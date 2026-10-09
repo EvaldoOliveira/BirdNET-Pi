@@ -1124,3 +1124,86 @@ a.spicon:hover img { transform: scale(1.2); }
 .chartwrap a.chartrow:hover::after { content: attr(data-label); position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
   background: #2b5e22; color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 10px; white-space: nowrap; }
 .charthint { font-size: 12px; opacity: .8; margin: 2px 0 4px; }
+
+/* species title: [icon] [common / scientific name] [link icons at the height of both lines] (owner 2026-10-08) */
+.sptitle { display: inline-flex; align-items: flex-start; gap: 8px; text-align: left; vertical-align: top; margin: 2px 0; }
+.sptitle .spnames { line-height: 1.25; }
+.sptitle .spnames button, .sptitle .spnames a { margin: 0; padding: 0; }
+.sptitle .splinks { display: inline-flex; align-items: flex-start; gap: 6px; flex-wrap: nowrap; padding-top: 2px; }
+.sptitle .splinks a { line-height: 0; }
+.sptitle .splinks img, .sptitle img.splink { height: 2.5em !important; width: auto !important; max-width: none !important;
+  float: none !important; display: inline-block !important; cursor: pointer; margin: 0 !important; }
+.sptitle .splinks img:hover { transform: scale(1.1); }
+th .sptitle { font-weight: bold; }
+th .sptitle i { font-weight: normal; }
+@media (max-width: 600px) { .sptitle .splinks img, .sptitle img.splink { height: 2em !important; } .sptitle { gap: 6px; } }
+/* Best Detections gallery and the species page photo */
+.spgallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; text-align: left; margin: 10px 0; }
+.spgallery .gcard { background: rgba(255,255,255,.55); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+.spgallery .sptitle { display: flex; }
+.spgallery .sptitle .spnames { flex: 1; min-width: 0; }
+.spgallery .sptitle .splinks img { height: 1.4em !important; }
+.spgallery .gbody { padding: 6px 8px 8px; }
+.spgallery .gmeta { font-size: 12px; opacity: .85; margin: 2px 0 6px; }
+.spgallery .gspec { width: 100%; display: block; border-radius: 4px; cursor: pointer; transition: filter .15s; }
+.spgallery .gspec:hover { filter: brightness(1.15); outline: 2px solid #d97a00; }
+.spgallery audio { width: 100%; height: 32px; margin-top: 4px; }
+.spphoto { float: right; margin: 0 0 8px 16px; max-width: 320px; width: 38%; text-align: right; }
+.spphoto img { width: 100%; border-radius: 8px; display: block; }
+.spphoto small { opacity: .7; font-size: 11px; }
+@media (max-width: 600px) { .spphoto { float: none; width: 100%; max-width: none; margin: 8px 0; } .spphoto img { max-height: 240px; object-fit: cover; } }
+
+/* Review button of the review loop (owner 2026-10-08) */
+button.validatebtn { font-size: 11px; line-height: 1; padding: 4px 7px; border-radius: 10px; border: 1px solid #2b5e22;
+  background: #fff; color: #2b5e22; cursor: pointer; white-space: nowrap; font-weight: 600; width: auto !important; vertical-align: middle; }
+button.validatebtn.positioned { position: absolute; top: 9px; right: 7px; left: auto; }
+button.validatebtn.v-yes { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+button.validatebtn.v-no { background: #c62828; border-color: #c62828; color: #fff; }
+button.validatebtn.v-unsure { background: #9e9e9e; border-color: #9e9e9e; color: #fff; }
+button.validatebtn:hover { filter: brightness(1.08); }
+
+.sptitle .spen { font-size: inherit; font-style: normal; }
+
+/* Today's Detections card head: photo left, then time, names, links, confidence (owner 2026-10-08) */
+.tdhead { display: flex !important; align-items: flex-start; justify-content: flex-start !important; gap: 12px; text-align: left; margin: 4px 0 6px; }
+.tdhead .tdinfo { flex: 0 1 auto; margin: 0 !important; }
+.tdhead img.img1, .sidenav ~ .views .overview div.tdhead img.img1 { float: none !important; margin: 0 !important; flex: 0 0 auto; width: 90px !important; height: 70px !important; object-fit: cover; border-radius: 6px; }
+.tdhead .tdinfo { min-width: 0; }
+.tdhead .tdtime { font-weight: 600; }
+.tdhead .sptitle .splinks img, .tdhead .sptitle img.splink { height: 1.5em !important; }
+/* the card's action icons sit top right: on wide screens the photo and names start on that same line; on a phone
+   (no room beside them) below it — the card padding (td.relative) already leaves that room */
+@media (max-width: 600px) { .tdhead img.img1 { width: 64px !important; height: 52px !important; } .tdhead { margin-top: 0; } }
+
+/* Now page: the 5 most recent rows use the same small link icons */
+#recent_detection_middle_td .sptitle .splinks img { height: 1.5em !important; }
+#recent_detection_middle_td .sptitle { text-align: left; }
+
+/* lists of detections: everything aligned to the top of the row, and at least 3 px of page colour between two
+   records so they never run together (owner 2026-10-08) */
+tr.relative > td { vertical-align: top !important; }
+tr.relative + tr.relative > td { border-top: 3px solid rgb(119, 196, 135) !important; }
+
+/* Now page, 5 most recent: the small actions on one line under the names */
+.rowactions { white-space: nowrap; margin-top: 3px; text-align: left; }
+.rowactions img { margin-right: 6px !important; }
+#recent_detection_middle_td, #recent_detection_middle_td > div, #recent_detection_middle_td form { text-align: left !important; }
+
+.recentname { text-align: left; }
+.recentacts { white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; vertical-align: middle; margin-left: 6px; }
+.recentacts img { margin: 0 !important; }
+@media (max-width: 600px) { .recentacts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin: 4px 0 0; white-space: normal; } }
+
+/* "Open" = the spectrogram dialog, playing (species page, Now) */
+button.openbtn { font-size: 11px; line-height: 1; padding: 4px 9px; border-radius: 10px; border: 1px solid #2b5e22; background: #2b5e22;
+  color: #fff; cursor: pointer; font-weight: 600; width: auto !important; white-space: nowrap; vertical-align: middle; }
+button.openbtn:hover { background: #d97a00; border-color: #d97a00; }
+
+/* Now page cards: names left, delete + Review top right (Review last) */
+.nowgallery .gtop { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.nowgallery .gnames { min-width: 0; line-height: 1.25; text-align: left; }
+.nowgallery .gacts { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.nowgallery .gacts img { width: 20px !important; height: 20px !important; cursor: pointer; margin: 0 !important; }
+
+.nowpager { display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 14px 0 6px; }
+.nowpager button.openbtn { font-size: 13px; padding: 6px 14px; }

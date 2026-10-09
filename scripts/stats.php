@@ -51,6 +51,7 @@ if (get_included_files()[0] === __FILE__) {
    </form>
 </div>
 <br>
+<?php if (isset($_GET['species'])) { // the gallery replaces the list while no species is chosen ?>
 <form action="views.php" method="GET">
 <input type="hidden" name="sort" value="<?php if(isset($_GET['sort'])){echo $_GET['sort'];}?>">
 <input type="hidden" name="view" value="Species Stats">
@@ -97,6 +98,7 @@ if (get_included_files()[0] === __FILE__) {
   ?>
 </table>
 </form>
+<?php } ?>
 </div>
 <dialog style="margin-top: 5px;max-height: 95vh;
   overflow-y: auto;overscroll-behavior:contain" id="attribution-dialog">
@@ -127,8 +129,23 @@ function setModalText(iter, title, text, authorlink) {
 </script>  
 <div class="column center">
 <?php if(!isset($_GET['species'])){
-?><p class="centered">Choose a species to see its best detection.</p>
-<?php
+  // Gallery (owner 2026-10-08): the best detection of every species side by side — names, links,
+  // detections, best confidence and its clip; sorted like the buttons above; a click opens the species page
+  $gallery = fetch_species_array($_GET['sort'] ?? 'alphabetical');
+  echo '<input type="search" placeholder="Filter species..." oninput="galFilter(this.value)" style="width:100%;max-width:360px;margin:4px 0">';
+  echo '<div class="spgallery" id="spgallery">';
+  while ($g = $gallery->fetchArray(SQLITE3_ASSOC)) {
+    $folder = str_replace("'", '', str_replace(' ', '_', $g['Com_Name']));
+    $clip = '/By_Date/' . $g['Date'] . '/' . $folder . '/' . $g['File_Name'];
+    $page = 'views.php?view=Bird&amp;sci=' . rawurlencode($g['Sci_Name']);
+    echo '<div class="gcard" data-q="' . htmlspecialchars(mb_strtolower($g['Com_Name'] . ' ' . $g['Sci_Name']), ENT_QUOTES) . '">'
+      . '<div class="gbody">' . species_title($g['Sci_Name'], '<a href="' . $page . '" title="Open the species page"><b>' . htmlspecialchars($g['Com_Name']) . '</b></a>', '', false, false)
+      . '<div class="gmeta">' . number_format(intval($g['Count'])) . (intval($g['Count']) == 1 ? ' detection' : ' detections') . ' · best ' . round($g['MaxConfidence'] * 100) . '% · ' . htmlspecialchars($g['Date'] . ' ' . $g['Time']) . '</div>'
+      . '<img class="gspec" loading="lazy" src="' . htmlspecialchars($clip) . '.png" alt="spectrogram" title="Play"'
+      . ' onclick="openSpectrogram(' . htmlspecialchars(json_encode($clip), ENT_QUOTES) . ', ' . htmlspecialchars(json_encode($g['Com_Name'] . ' · ' . $g['Date'] . ' ' . $g['Time'] . ' · ' . round($g['MaxConfidence'] * 100) . '%'), ENT_QUOTES) . ')"></div></div>';
+  }
+  echo '</div><script>function galFilter(q){q=q.toLowerCase();document.querySelectorAll("#spgallery .gcard").forEach(function(c){c.style.display=c.dataset.q.indexOf(q)<0?"none":"";});}'
+    . '</script><script src="static/spectro-dialog.js"></script>';
 };?>
 <?php if(isset($_GET['species'])){
   $species = $_GET['species'];
@@ -152,10 +169,9 @@ while($results=$result3->fetchArray(SQLITE3_ASSOC)){
   $info_url = get_info_url($results['Sci_Name']);
   $url = $info_url['URL'];
   $url_title = $info_url['TITLE'];
-  echo str_pad("<h3>" . species_icon($sciname, 22) . " $species</h3>
+  echo str_pad("<h3>" . species_title($sciname, $species) . "</h3>
     <table><tr>
-  <td class=\"relative\">" . detection_actions($date . '/' . $comname . '/' . $results['File_Name']) . "<i>$sciname</i>
-  " . species_links($sciname, 'width: unset !important; display: inline; height: 1em; cursor: pointer;', 20) . "<br>
+  <td class=\"relative\">" . detection_actions($date . '/' . $comname . '/' . $results['File_Name']) . "
   Occurrences: $count<br>
   Max Confidence: $maxconf<br>
   Best Detection: $date $time<br><br>
@@ -206,8 +222,7 @@ array_push($excludelines, $results['Date']."/".$comname."/".$results['File_Name'
 ?>
       <tr>
       <td class="relative"><?php echo detection_actions($results['Date'] . '/' . $comname . '/' . $results['File_Name']); ?>
-        <?php echo species_icon($results['Sci_Name']); ?><button type="submit" name="species" value="<?php echo $results['Com_Name'];?>"><?php echo $results['Com_Name'];?></button><br>
-        <i><?php echo $results['Sci_Name']; ?></i> <?php echo species_links($results['Sci_Name'], 'width: unset !important; display: inline; height: 1em; cursor: pointer;', 20); ?><br><b>Occurrences:</b> <?php echo $results['Count'];?><br>
+        <?php echo species_title($results['Sci_Name'], '<button type="submit" name="species" value="' . $results['Com_Name'] . '">' . $results['Com_Name'] . '</button>'); ?><b>Occurrences:</b> <?php echo $results['Count'];?><br>
       <b>Max Confidence:</b> <?php echo $percent = round((float)round($results['MaxConfidence'],2) * 100 ) . '%';?><br>
       <b>Best Detection:</b> <?php echo $results['Date']." ".$results['Time'];?><br><div class='custom-audio-player' data-audio-src="<?php echo $filename; ?>" data-image-src="<?php echo $filename.".png"; ?>"></div></td>
       </tr>
