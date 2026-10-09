@@ -145,8 +145,8 @@ $hours = array_fill(0, 24, 0);
 foreach ($q("SELECT CAST(substr(Time, 1, 2) AS INT) AS hh, COUNT(*) AS n FROM detections WHERE Sci_Name = :sci $nr GROUP BY hh") as $r) {
   $hours[intval($r['hh'])] = intval($r['n']);
 }
-$best = $q("SELECT Date, Time, Confidence, File_Name FROM detections WHERE Sci_Name = :sci $nr ORDER BY Confidence DESC, Date DESC LIMIT 6");
-$recent = $q("SELECT Date, Time, Confidence, Cutoff, Sens, Overlap, File_Name FROM detections WHERE Sci_Name = :sci ORDER BY Date DESC, Time DESC LIMIT 10");
+$best = $q("SELECT Date, Time, Confidence, Cutoff, Sens, Overlap, File_Name FROM detections WHERE Sci_Name = :sci $nr ORDER BY Confidence DESC, Date DESC LIMIT 6");
+$recent = $q("SELECT Date, Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, File_Name FROM detections WHERE Sci_Name = :sci ORDER BY Date DESC, Time DESC LIMIT 30");
 
 // review verdicts and the suggested threshold: ≥ 3 rejections in 90 days → just above the best rejected one
 $reviews = array('yes' => 0, 'no' => 0, 'unsure' => 0);
@@ -156,6 +156,31 @@ if ($nr !== '') {
   $rej = $q("SELECT COUNT(*) AS n, MAX(Confidence) AS maxc FROM detection_reviews WHERE Sci_Name = :sci AND Verdict = 'no'
              AND Date >= date('now', 'localtime', '-90 days')", true);
   if ($rej && intval($rej['n']) >= 3) $suggest = min(0.99, round(floatval($rej['maxc']) + 0.01, 2));
+}
+// Calibration (owner 2026-10-09): precision by confidence band from the yes / no reviews of this species, and the
+// lowest threshold whose detections above it are right at least 90 % of the time (5 reviews or more above it)
+$bands = array(array(0, 0.5, '< 50%'), array(0.5, 0.7, '50–70%'), array(0.7, 0.85, '70–85%'), array(0.85, 1.01, '≥ 85%'));
+$band_stats = array();
+$calib = null;
+$samples = array();
+if ($nr !== '') {
+  $rv = $q("SELECT Confidence, Verdict FROM detection_reviews WHERE Sci_Name = :sci AND Verdict IN ('yes', 'no') ORDER BY Confidence");
+  foreach ($bands as $b) {
+    $y = 0; $n = 0;
+    foreach ($rv as $r) if ($r['Confidence'] >= $b[0] && $r['Confidence'] < $b[1]) { if ($r['Verdict'] === 'yes') $y++; else $n++; }
+    $band_stats[] = array($b[2], $y, $n);
+  }
+  foreach ($rv as $i => $r) {
+    $above = array_slice($rv, $i);
+    $yes = count(array_filter($above, function ($x) { return $x['Verdict'] === 'yes'; }));
+    if (count($above) >= 5 && $yes / count($above) >= 0.9) { $calib = round(floatval($r['Confidence']), 2); break; }
+  }
+  // samples for a calibration round: up to 4 unreviewed detections per band, at random
+  foreach ($bands as $b) {
+    foreach ($q("SELECT Date, Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, File_Name FROM detections WHERE Sci_Name = :sci
+                 AND Confidence >= " . $b[0] . " AND Confidence < " . $b[1] . " AND File_Name NOT IN (SELECT File_Name FROM detection_reviews)
+                 ORDER BY RANDOM() LIMIT 4") as $r) $samples[] = $r;
+  }
 }
 
 // station settings for the species
@@ -244,6 +269,12 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
 .sp table.list td { text-align: left; vertical-align: middle; padding: 3px 4px; border-top: 1px solid rgba(128,128,128,.2); }
 .sp .clips { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
 .sp .clip { position: relative; padding-top: 32px; }
+.sp button.wipebtn { width: auto; padding: 3px 10px; border-radius: 12px; border: 1px solid #c62828; background: #fff; color: #c62828; font-weight: 600; cursor: pointer; }
+.sp button.wipebtn:hover { background: #c62828; color: #fff; }
+.sp button.restorebtn { width: auto; padding: 3px 10px; border-radius: 12px; border: 1px solid #2b5e22; background: #fff; color: #2b5e22; font-weight: 600; cursor: pointer; }
+.sp button.restorebtn:hover { background: #2b5e22; color: #fff; }
+.sp table.calib { border-collapse: collapse; margin: 6px 0; font-size: 12px; }
+.sp table.calib th, .sp table.calib td { padding: 1px 8px 1px 0; text-align: left; }
 .sp img.clipspec { display: block; width: 100%; border-radius: 6px; cursor: pointer; margin-top: 4px; transition: filter .15s; }
 .sp img.clipspec:hover { filter: brightness(1.15); outline: 2px solid #d97a00; }
 </style>
@@ -309,6 +340,25 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
       <?php } else { ?>
         <small>Use the <b>Review</b> button on a detection to review it.<br>Three rejections in 90 days suggest a species threshold.</small>
       <?php } ?>
+      <table class="calib">
+        <tr><th>Confidence</th><th>Yes</th><th>Not</th><th>Right</th></tr>
+        <?php foreach ($band_stats as $bs) {
+          $t = $bs[1] + $bs[2];
+          echo '<tr><td>' . $h($bs[0]) . '</td><td>' . $bs[1] . '</td><td>' . $bs[2] . '</td><td>' . ($t ? round(100 * $bs[1] / $t) . '%' : '—') . '</td></tr>';
+        } ?>
+      </table>
+      <?php if ($calib !== null) { ?>
+        <div>Calibrated threshold: <b><?php echo round($calib * 100); ?>%</b> <small>(≥ 90 % right above it)</small>
+          <button type="button" class="openbtn" onclick="applyThreshold(<?php echo $h(json_encode($sci)); ?>, <?php echo $calib; ?>, this)">Apply</button></div>
+      <?php } ?>
+      <?php if ($samples) { ?>
+        <button type="button" class="openbtn" style="margin-top:6px" onclick="openReviewPlayer(document.querySelector('#calibsamples [data-ri]'))"
+          title="Review a sample across the confidence bands; the threshold above is recalculated from the answers">&#127919; Calibrate: review <?php echo count($samples); ?> samples</button>
+        <div id="calibsamples" data-review-list="1" style="display:none"><?php foreach ($samples as $r) {
+          $f = $r['Date'] . '/' . $folder . '/' . $r['File_Name'];
+          echo '<div' . review_item_attrs($f, $r['Com_Name'] . ' · ' . $r['Date'] . ' ' . $r['Time'] . ' · ' . round($r['Confidence'] * 100) . '%', $sci, $r) . '>' . validate_button($f, '', false, 'openReviewPlayer(this)') . '</div>';
+        } ?></div>
+      <?php } ?>
     </div>
   </div>
   <div class="lists">
@@ -316,38 +366,33 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
     <label title="A curation marker: you have checked that the species occurs here"><input type="checkbox" <?php echo $in_confirmed ? 'checked' : ''; ?> onchange="spList(this, 'confirmed', <?php echo $h(json_encode($sci)); ?>)"> Confirmed</label>
     <label title="Accepted even when the location filter does not expect it here and now"><input type="checkbox" <?php echo $in_whitelist ? 'checked' : ''; ?> onchange="spList(this, 'whitelist', <?php echo $h(json_encode($identifier)); ?>)"> Whitelist</label>
     <label title="Never detected again"><input type="checkbox" <?php echo $in_exclude ? 'checked' : ''; ?> onchange="spList(this, 'exclude', <?php echo $h(json_encode($identifier)); ?>)"> Exclude</label>
+    <?php $ndel = deleted_count($sci); if ($ndel) { ?>
+      <span style="margin-left:auto">Excluded detections: <b><?php echo $ndel; ?></b>
+        <button type="button" class="restorebtn" onclick="restoreExcluded(<?php echo $h(json_encode($sci)); ?>, this)">Restore</button>
+        <button type="button" class="wipebtn" onclick="wipeDeleted(<?php echo $h(json_encode($sci)); ?>, this)">Delete excluded</button></span>
+    <?php } ?>
   </div>
   <h3 class="section">Best detections</h3>
-  <div class="clips">
+  <div class="clips" data-review-list="1">
   <?php foreach ($best as $b) {
     $file = $b['Date'] . '/' . $folder . '/' . $b['File_Name'];
     // the spectrogram picture; a click opens it playing, like "open" in Latest detections
     $label = $com . ' · ' . $b['Date'] . ' ' . $b['Time'] . ' · ' . round($b['Confidence'] * 100) . '%';
-    echo '<div class="clip">' . detection_actions($file) . '<b>' . $h($b['Date'] . ' ' . $b['Time']) . '</b> · ' . round($b['Confidence'] * 100) . '%'
-      . '<img class="clipspec" loading="lazy" src="/By_Date/' . $h($file) . '.png" alt="spectrogram" title="Play"'
-      . ' onclick="openSpectrogram(' . $h(json_encode('/By_Date/' . $file)) . ', ' . $h(json_encode($label)) . ')"></div>';
+    echo '<div class="clip"' . review_item_attrs($file, $label, $sci, $b + array('Com_Name' => $com)) . '>' . detection_actions($file) . '<b>' . $h($b['Date'] . ' ' . $b['Time']) . '</b> · ' . round($b['Confidence'] * 100) . '%'
+      . '<img class="clipspec" loading="lazy" src="/By_Date/' . $h($file) . '.png" alt="spectrogram" title="Listen and review" onclick="openReviewPlayer(this)"></div>';
   } ?>
   </div>
   <h3 class="section">Latest detections</h3>
-  <table class="list">
-  <tr><th>Date</th><th>Time</th><th class="num">Confidence</th><th class="num" title="Minimum confidence in force when it was detected">Min. confidence</th>
-    <th class="num" title="Sensitivity / overlap of the analysis">Sens. / overlap</th><th>Listen</th><th>Spectrogram</th><th style="text-align:right !important">Review</th></tr>
-  <?php foreach ($recent as $r) {
-    $file = $r['Date'] . '/' . $folder . '/' . $r['File_Name'];
-    echo '<tr><td>' . $h($r['Date']) . '</td><td>' . $h($r['Time']) . '</td><td class="num">' . round($r['Confidence'] * 100) . '%</td>'
-      . '<td class="num">' . ($r['Cutoff'] !== null ? round($r['Cutoff'] * 100) . '%' : '') . '</td>'
-      . '<td class="num">' . $h(($r['Sens'] ?? '') . ' / ' . ($r['Overlap'] ?? '')) . '</td>'
-      . '<td><audio controls preload="none" src="/By_Date/' . $h($file) . '"></audio></td>'
-      . '<td><button type="button" class="openbtn" onclick="openSpectrogram(' . $h(json_encode('/By_Date/' . $file)) . ', ' . $h(json_encode($com . ' · ' . $r['Date'] . ' ' . $r['Time'] . ' · ' . round($r['Confidence'] * 100) . '%')) . ')" title="Open the spectrogram and play">&#9654; Open</button></td>'
-      . '<td style="text-align:right !important">' . validate_button($file) . '</td></tr>';
-  } ?>
-  </table>
+  <?php // the standard detection list: a click on a row opens the review player, which goes on down the list
+  echo detection_review_table($recent, false); ?>
 </div>
 <script>document.querySelectorAll('.sp-cal').forEach(function (c) { c.scrollLeft = c.scrollWidth; });</script>
 <script src="static/custom-audio-player.js"></script>
 <script src="static/detection-actions.js"></script>
 <script src="static/species-modal.js"></script>
 <script src="static/spectro-dialog.js"></script>
+<script src="static/review-player.js"></script>
+<script src="static/wipe-deleted.js"></script>
 <script>
 // list switches: the same modal and texts as Species Management (static/species-modal.js); whitelist and exclude
 // default to No
@@ -366,6 +411,16 @@ function spList(box, list, species) {
     x.open('GET', 'scripts/species_tools.php?toggle=' + list + '&species=' + encodeURIComponent(species) + '&action=' + action, true);
     x.send();
   });
+}
+// calibrated threshold: saved as the species threshold (same endpoint as Species Management)
+function applyThreshold(sci, value, btn) {
+  var x = new XMLHttpRequest();
+  x.onload = function () {
+    if (this.status === 200 && this.responseText.trim() === 'OK') { btn.textContent = 'Applied'; btn.disabled = true; }
+    else alert('Not saved: ' + (this.status === 401 ? 'log in first' : this.responseText));
+  };
+  x.open('GET', 'scripts/species_tools.php?setconf=1&species=' + encodeURIComponent(sci) + '&value=' + value, true);
+  x.send();
 }
 // notification tier of the species (same file and endpoint as Species Management), saved at once
 function spTier(sel, sci) {

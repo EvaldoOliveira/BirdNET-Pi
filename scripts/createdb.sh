@@ -25,7 +25,10 @@ CREATE TABLE IF NOT EXISTS detection_reviews (
   Date DATE,
   Confidence FLOAT,
   Verdict TEXT NOT NULL CHECK (Verdict IN ('yes','no','unsure')),
-  Reviewed_At TEXT);
+  Reviewed_At TEXT,
+  Reason TEXT);
+CREATE TABLE IF NOT EXISTS deleted_detections (Date DATE, Time TIME, Sci_Name VARCHAR(100) NOT NULL, Com_Name VARCHAR(100) NOT NULL,
+  Confidence FLOAT, Lat FLOAT, Lon FLOAT, Cutoff FLOAT, Week INT, Sens FLOAT, Overlap FLOAT, File_Name VARCHAR(100) NOT NULL, Deleted_At TEXT);
 EOF
 chown $USER:$USER $HOME/BirdNET-Pi/scripts/birds.db
 chmod g+w $HOME/BirdNET-Pi/scripts/birds.db

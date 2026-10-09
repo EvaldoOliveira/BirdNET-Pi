@@ -22,7 +22,10 @@ def get_data(now=None):
     conn = sqlite3.connect(uri, uri=True)
     if now is None:
         now = datetime.now()
-    df = pd.read_sql_query(f"SELECT * from detections WHERE Date = DATE('{now.strftime('%Y-%m-%d')}')",
+    # detections reviewed "not this bird" are left out of the charts (owner 2026-10-09)
+    has_reviews = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='detection_reviews'").fetchone()
+    rejected = " AND File_Name NOT IN (SELECT File_Name FROM detection_reviews WHERE Verdict = 'no')" if has_reviews else ''
+    df = pd.read_sql_query(f"SELECT * from detections WHERE Date = DATE('{now.strftime('%Y-%m-%d')}'){rejected}",
                            conn)
 
     # Convert Date and Time Fields to Panda's format

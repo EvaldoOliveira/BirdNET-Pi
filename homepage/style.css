@@ -1207,3 +1207,27 @@ button.openbtn:hover { background: #d97a00; border-color: #d97a00; }
 
 .nowpager { display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 14px 0 6px; }
 .nowpager button.openbtn { font-size: 13px; padding: 6px 14px; }
+
+/* Now page: Spectrogram / List switch (owner 2026-10-09) */
+.nowmodes { display: inline-flex; gap: 6px; margin-left: 12px; vertical-align: middle; font-weight: normal; }
+.nowmodes button { font-size: 12px; padding: 4px 12px; border-radius: 12px; border: 1px solid #2b5e22; background: #fff; color: #2b5e22; cursor: pointer; width: auto; }
+.nowmodes button.active { background: #2b5e22; color: #fff; }
+.nowmodes button.nowdefault { border-style: dashed; }
+.nowlist { overflow-x: auto; }
+.nowlist table.list { width: 100%; border-collapse: collapse; background: rgba(255,255,255,.55); border-radius: 8px; }
+.nowlist th { text-align: left !important; padding: 5px; border-bottom: 2px solid rgba(128,128,128,.4); font-size: .9em; white-space: nowrap; }
+.nowlist td { text-align: left !important; padding: 4px 5px; border-top: 1px solid rgba(128,128,128,.2); vertical-align: middle; }
+.nowlist td.num, .nowlist th.num { text-align: right !important; }
+.nowlist audio { height: 28px; width: 200px; vertical-align: middle; }
+
+/* standard detection list + review player rows (owner 2026-10-09) */
+.reviewlist { overflow-x: auto; }
+.reviewlist table.list { width: 100%; border-collapse: collapse; background: rgba(255,255,255,.55); border-radius: 8px; }
+.reviewlist th { text-align: left !important; padding: 5px 6px; border-bottom: 2px solid rgba(128,128,128,.4); font-size: .9em; white-space: nowrap; }
+.reviewlist td { text-align: left !important; padding: 5px 6px; border-top: 1px solid rgba(128,128,128,.2); vertical-align: middle; }
+.reviewlist td.num, .reviewlist th.num { text-align: right !important; white-space: nowrap; }
+.reviewlist td.nw { white-space: nowrap; }
+.reviewlist td.rv, .reviewlist th.rv { text-align: right !important; }
+.reviewlist tr.rvrow { cursor: pointer; }
+.reviewlist tr.rvrow:hover td { background: rgba(217,122,0,.12); }
+.reviewlist .spen2 { font-size: .85em; opacity: .8; }

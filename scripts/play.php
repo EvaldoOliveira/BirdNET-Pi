@@ -14,28 +14,119 @@ $user = get_user();
 $db = new SQLite3('./scripts/birds.db', SQLITE3_OPEN_READONLY);
 $db->busyTimeout(1000);
 
+// Delete = exclude (owner 2026-10-09): the clip and its spectrogram move to ~/BirdSongs/Extracted/Excluded/<date>/<species>/,
+// the database line to deleted_detections; nothing is lost until Species › Delete Excluded (or the species page) deletes it
 if(isset($_GET['deletefile'])) {
   ensure_authenticated('You must be authenticated to delete files.');
-  if (preg_match('~^.*(\.\.\/).+$~', $_GET['deletefile'])) {
-    echo "Error";
+  $file = $_GET['deletefile'];
+  $parts = explode('/', $file);
+  if (strpos($file, '..') !== false || count($parts) !== 3) { echo "Error"; die(); }
+  $rw = new SQLite3('./scripts/birds.db', SQLITE3_OPEN_READWRITE);
+  $rw->busyTimeout(5000);
+  deleted_table($rw);
+  $ins = $rw->prepare("INSERT INTO deleted_detections (Date, Time, Sci_Name, Com_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name, Deleted_At)
+    SELECT Date, Time, Sci_Name, Com_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name, datetime('now', 'localtime') FROM detections WHERE File_Name = :f");
+  $ins->bindValue(':f', $parts[2]);
+  $del = $rw->prepare('DELETE FROM detections WHERE File_Name = :f');
+  $del->bindValue(':f', $parts[2]);
+  $src = $home . '/BirdSongs/Extracted/By_Date/' . $file;
+  $dst = deleted_dir() . '/' . $parts[0] . '/' . $parts[1];
+  $out = array();
+  $rc = 0;
+  exec('sudo -u ' . escapeshellarg($user) . ' mkdir -p ' . escapeshellarg($dst) . ' && sudo -u ' . escapeshellarg($user) . ' mv -f ' . escapeshellarg($src) . ' '
+    . escapeshellarg($src . '.png') . ' ' . escapeshellarg($dst . '/') . ' 2>&1; sudo rm -f ' . escapeshellarg($home . '/BirdSongs/Extracted/By_Date/shifted/' . $file) . ' 2>&1', $out, $rc);
+  if ($ins->execute() === false || $del->execute() === false || $rw->changes() === 0) {
+    echo "Error - database line not moved: " . $rw->lastErrorMsg();
+  } elseif ($rc !== 0 && is_file($src)) {
+    echo "Error - file not moved: " . implode(', ', $out);
+  } else {
+    echo "OK";
+  }
+  $rw->close();
+  die();
+}
+
+// Restore excluded detections (owner 2026-10-09): ?restore=1 [&sci=<scientific name>] moves the files back to By_Date
+// and the database lines back to detections; every species when sci is empty. Answers OK <count>.
+if (isset($_GET['restore'])) {
+  ensure_authenticated('You must be authenticated to restore detections.');
+  $rw = new SQLite3('./scripts/birds.db', SQLITE3_OPEN_READWRITE);
+  $rw->busyTimeout(5000);
+  deleted_table($rw);
+  $sci = html_entity_decode($_GET['sci'] ?? '', ENT_QUOTES);
+  $where = $sci !== '' ? ' WHERE Sci_Name = :s' : '';
+  $st = $rw->prepare("SELECT Date, Com_Name, File_Name FROM deleted_detections$where");
+  if ($sci !== '') $st->bindValue(':s', $sci);
+  $res = $st->execute();
+  $n = 0;
+  while ($res && ($r = $res->fetchArray(SQLITE3_ASSOC))) {
+    $rel = $r['Date'] . '/' . str_replace("'", '', str_replace(' ', '_', $r['Com_Name']));
+    $src = deleted_dir() . '/' . $rel . '/' . $r['File_Name'];
+    $dst = $home . '/BirdSongs/Extracted/By_Date/' . $rel;
+    exec('sudo -u ' . escapeshellarg($user) . ' mkdir -p ' . escapeshellarg($dst) . ' && sudo -u ' . escapeshellarg($user) . ' mv -f '
+      . escapeshellarg($src) . ' ' . escapeshellarg($src . '.png') . ' ' . escapeshellarg($dst . '/') . ' 2>&1');
+    $ins = $rw->prepare("INSERT INTO detections (Date, Time, Sci_Name, Com_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name)
+      SELECT Date, Time, Sci_Name, Com_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name FROM deleted_detections WHERE File_Name = :f
+      AND NOT EXISTS (SELECT 1 FROM detections WHERE File_Name = :f)");
+    $ins->bindValue(':f', $r['File_Name']);
+    $ins->execute();
+    $del = $rw->prepare('DELETE FROM deleted_detections WHERE File_Name = :f');
+    $del->bindValue(':f', $r['File_Name']);
+    $del->execute();
+    $n++;
+  }
+  exec('sudo -u ' . escapeshellarg($user) . ' find ' . escapeshellarg(deleted_dir()) . ' -mindepth 1 -type d -empty -delete 2>&1');
+  $rw->close();
+  echo 'OK ' . $n;
+  die();
+}
+
+// Delete the excluded detections for good (owner 2026-10-09): ?wipe=1 [&sci=<scientific name>] answers the files per species (JSON);
+// with &confirm=1 the files and their database lines are removed for good. Every species when sci is empty.
+if (isset($_GET['wipe'])) {
+  ensure_authenticated('You must be authenticated to wipe deleted detections.');
+  $rw = new SQLite3('./scripts/birds.db', SQLITE3_OPEN_READWRITE);
+  $rw->busyTimeout(5000);
+  deleted_table($rw);
+  $sci = html_entity_decode($_GET['sci'] ?? '', ENT_QUOTES);
+  $where = $sci !== '' ? ' WHERE Sci_Name = :s' : '';
+  if (!isset($_GET['confirm'])) {
+    header('Content-Type: application/json');
+    $st = $rw->prepare("SELECT Sci_Name, MAX(Com_Name) AS Com_Name, COUNT(*) AS n FROM deleted_detections$where GROUP BY Sci_Name ORDER BY n DESC");
+    if ($sci !== '') $st->bindValue(':s', $sci);
+    $res = $st->execute();
+    $rows = array();
+    while ($res && ($r = $res->fetchArray(SQLITE3_ASSOC))) $rows[] = $r;
+    echo json_encode($rows);
     die();
   }
-  $db_writable = new SQLite3('./scripts/birds.db', SQLITE3_OPEN_READWRITE);
-  $db->busyTimeout(1000);
-  $statement1 = $db_writable->prepare('DELETE FROM detections WHERE File_Name = :file_name LIMIT 1');
-  ensure_db_ok($statement1);
-  $statement1->bindValue(':file_name', explode("/", $_GET['deletefile'])[2]);
-  $file_pointer = $home."/BirdSongs/Extracted/By_Date/".$_GET['deletefile'];
-  if (!exec("sudo rm $file_pointer 2>&1 && sudo rm $file_pointer.png 2>&1", $output)) {
-    echo "OK";
-  } else {
-    echo "Error - file deletion failed : " . implode(", ", $output) . "<br>";
+  $st = $rw->prepare("SELECT Date, Com_Name, File_Name FROM deleted_detections$where");
+  if ($sci !== '') $st->bindValue(':s', $sci);
+  $res = $st->execute();
+  $paths = array();
+  $names = array();
+  while ($res && ($r = $res->fetchArray(SQLITE3_ASSOC))) {
+    $p = deleted_dir() . '/' . $r['Date'] . '/' . str_replace("'", '', str_replace(' ', '_', $r['Com_Name'])) . '/' . $r['File_Name'];
+    $paths[] = $p;
+    $paths[] = $p . '.png';
+    $names[] = $r['File_Name'];
   }
-  $result1 = $statement1->execute();
-  if ($result1 === false || $db_writable->changes() === 0) {
-    echo "Error - database line deletion failed : " . $db_writable->lastErrorMsg();
+  foreach (array_chunk($paths, 200) as $chunk) {
+    exec('sudo -u ' . escapeshellarg($user) . ' rm -f ' . implode(' ', array_map('escapeshellarg', $chunk)) . ' 2>&1');
   }
-  $db_writable->close();
+  exec('sudo -u ' . escapeshellarg($user) . ' find ' . escapeshellarg(deleted_dir()) . ' -mindepth 1 -type d -empty -delete 2>&1');
+  $d = $rw->prepare("DELETE FROM deleted_detections$where");
+  if ($sci !== '') $d->bindValue(':s', $sci);
+  $d->execute();
+  $wiped = $rw->changes();
+  // their reviews go too (the detections no longer exist)
+  if ($names && $rw->querySingle("SELECT 1 FROM sqlite_master WHERE type='table' AND name='detection_reviews'")) {
+    foreach (array_chunk($names, 400) as $chunk) {
+      $rw->exec("DELETE FROM detection_reviews WHERE File_Name IN ('" . implode("','", array_map('SQLite3::escapeString', $chunk)) . "')");
+    }
+  }
+  $rw->close();
+  echo 'OK ' . $wiped;
   die();
 }
 
@@ -80,15 +171,18 @@ if(isset($_GET['review']) && isset($_GET['verdict'])) {
   if (!in_array($verdict, array('yes', 'no', 'unsure', 'clear'), true)) { echo "Error"; die(); }
   $rw = new SQLite3('./scripts/birds.db', SQLITE3_OPEN_READWRITE);
   $rw->busyTimeout(5000);
-  $rw->exec("CREATE TABLE IF NOT EXISTS detection_reviews (File_Name VARCHAR(100) PRIMARY KEY, Sci_Name VARCHAR(100), Com_Name VARCHAR(100), Date DATE, Confidence FLOAT, Verdict TEXT NOT NULL CHECK (Verdict IN ('yes','no','unsure')), Reviewed_At TEXT)");
+  review_table($rw);
+  // why a detection is "not this bird" (owner 2026-10-09): insect, frog, rain, human, mechanical, other bird, unknown
+  $reason = preg_match('/^[a-z ]{0,20}$/', $_GET['reason'] ?? '') ? ($_GET['reason'] ?? '') : '';
   if ($verdict === 'clear') {
     $st = $rw->prepare('DELETE FROM detection_reviews WHERE File_Name = :f');
     $st->bindValue(':f', $file_name);
   } else {
-    $st = $rw->prepare("INSERT OR REPLACE INTO detection_reviews (File_Name, Sci_Name, Com_Name, Date, Confidence, Verdict, Reviewed_At)
-      SELECT File_Name, Sci_Name, Com_Name, Date, Confidence, :v, datetime('now', 'localtime') FROM detections WHERE File_Name = :f LIMIT 1");
+    $st = $rw->prepare("INSERT OR REPLACE INTO detection_reviews (File_Name, Sci_Name, Com_Name, Date, Confidence, Verdict, Reviewed_At, Reason)
+      SELECT File_Name, Sci_Name, Com_Name, Date, Confidence, :v, datetime('now', 'localtime'), :r FROM detections WHERE File_Name = :f LIMIT 1");
     $st->bindValue(':f', $file_name);
     $st->bindValue(':v', $verdict);
+    $st->bindValue(':r', $verdict === 'no' ? $reason : '');
   }
   $ok = $st->execute() !== false && ($verdict === 'clear' || $rw->changes() > 0);
   // a positive review also confirms the species (Confirmed list of Species Management), owner 2026-10-08
@@ -104,6 +198,44 @@ if(isset($_GET['review']) && isset($_GET['verdict'])) {
   }
   $rw->close();
   echo $ok ? "OK" : "Error - detection not found";
+  die();
+}
+
+// Rejection in a batch (owner 2026-10-09): every detection of a species in one hour of one day that has no review
+// yet becomes "not this bird" with the same reason (rain, frogs, insects...). Answers how many were marked.
+if (isset($_GET['review_batch'], $_GET['sci'], $_GET['date'], $_GET['hour'])) {
+  ensure_authenticated('You must be authenticated to review detections.');
+  $hour = intval($_GET['hour']);
+  if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date']) || $hour < 0 || $hour > 23) { echo "Error"; die(); }
+  $reason = preg_match('/^[a-z ]{0,20}$/', $_GET['reason'] ?? '') ? ($_GET['reason'] ?? '') : '';
+  $rw = new SQLite3('./scripts/birds.db', SQLITE3_OPEN_READWRITE);
+  $rw->busyTimeout(5000);
+  review_table($rw);
+  $st = $rw->prepare("INSERT OR IGNORE INTO detection_reviews (File_Name, Sci_Name, Com_Name, Date, Confidence, Verdict, Reviewed_At, Reason)
+    SELECT File_Name, Sci_Name, Com_Name, Date, Confidence, 'no', datetime('now', 'localtime'), :r FROM detections
+    WHERE Sci_Name = :s AND Date = :d AND CAST(substr(Time, 1, 2) AS INT) = :h");
+  $st->bindValue(':s', html_entity_decode($_GET['sci'], ENT_QUOTES));
+  $st->bindValue(':d', $_GET['date']);
+  $st->bindValue(':h', $hour);
+  $st->bindValue(':r', $reason);
+  $ok = $st->execute() !== false;
+  echo $ok ? 'OK ' . $rw->changes() : 'Error';
+  $rw->close();
+  die();
+}
+
+// Which bird was it? The station's model re-analyses the clip (scripts/clip_alternatives.py, a few seconds)
+if (isset($_GET['alternatives'])) {
+  ensure_authenticated('You must be authenticated to review detections.');
+  header('Content-Type: application/json');
+  $f = $_GET['alternatives'];
+  if (strpos($f, '..') !== false) { echo '[]'; die(); }
+  $clip = $home . '/BirdSongs/Extracted/By_Date/' . $f;
+  $sci = $db->querySingle("SELECT Sci_Name FROM detections WHERE File_Name = '" . SQLite3::escapeString(basename($f)) . "' LIMIT 1");
+  if (!is_file($clip) || !$sci) { echo '[]'; die(); }
+  $out = shell_exec('sudo -u ' . escapeshellarg($user) . ' ' . escapeshellarg($home . '/BirdNET-Pi/birdnet/bin/python3') . ' '
+    . escapeshellarg($home . '/BirdNET-Pi/scripts/clip_alternatives.py') . ' ' . escapeshellarg($clip) . ' ' . escapeshellarg($sci) . ' 6 2>/dev/null');
+  echo trim((string)$out) !== '' ? trim($out) : '[]';
   die();
 }
 
@@ -210,6 +342,7 @@ if (get_included_files()[0] === __FILE__) {
 ?>
 <script src="static/custom-audio-player.js"></script>
 <script src="static/detection-actions.js"></script>
+<script src="static/review-player.js"></script>
 
 <?php
 #If no specific species
@@ -445,12 +578,7 @@ echo "<table>
       }
 
       echo "<tr>
-  <td class=\"relative\"> 
-
-<img style='cursor:pointer;right:120px' src='images/delete.svg' onclick='deleteDetection(\"".$filename_formatted."\")' class=\"copyimage\" width=25 title='Delete Detection'> 
-<img style='cursor:pointer;right:85px' src='images/bird.svg' onclick='changeDetection(\"".$filename_formatted."\")' class=\"copyimage\" width=25 title='Change Detection'> 
-<img style='cursor:pointer;right:45px' onclick='toggleLock(\"".$filename_formatted."\",\"".$type."\", this)' class=\"copyimage\" width=25 title=\"".$title."\" src=\"".$imageicon."\"> 
-<img style='cursor:pointer' onclick='toggleShiftFreq(\"".$filename_formatted."\",\"".$shiftAction."\", this)' class=\"copyimage\" width=25 title=\"".$shiftTitle."\" src=\"".$shiftImageIcon."\"> $date $time<br>$values<br>
+  <td class=\"relative\"" . review_item_attrs($filename_formatted, $date . ' ' . $time, $sciname ?? '') . "> " . detection_actions($filename_formatted) . "$date $time<br>$values<br>
 
         ".$imageelem."
         </td>
@@ -534,12 +662,7 @@ echo "<table>
       }
 
           echo "<tr>
-      <td class=\"relative\"> 
-
-<img style='cursor:pointer;right:120px' src='images/delete.svg' onclick='deleteDetection(\"".$filename_formatted."\", true)' class=\"copyimage\" width=25 title='Delete Detection'> 
-<img style='cursor:pointer;right:85px' src='images/bird.svg' onclick='changeDetection(\"".$filename_formatted."\")' class=\"copyimage\" width=25 title='Change Detection'> 
-<img style='cursor:pointer;right:45px' onclick='toggleLock(\"".$filename_formatted."\",\"".$type."\", this)' class=\"copyimage\" width=25 title=\"".$title."\" src=\"".$imageicon."\"> 
-<img style='cursor:pointer' onclick='toggleShiftFreq(\"".$filename_formatted."\",\"".$shiftAction."\", this)' class=\"copyimage\" width=25 title=\"".$shiftTitle."\" src=\"".$shiftImageIcon."\">$date $time<br>$values<br>
+      <td class=\"relative\"" . review_item_attrs($filename_formatted, $date . ' ' . $time, $sciname ?? '') . "> " . detection_actions($filename_formatted) . "$date $time<br>$values<br>
 
 <div class='custom-audio-player' data-audio-src='$filename' data-image-src='$filename_png'></div>
 </td></tr>";

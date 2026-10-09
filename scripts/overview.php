@@ -39,6 +39,30 @@ if(isset($_GET['blacklistimage'])) {
   die("OK");
 }
 
+// "Set as default" of Currently Analyzing: NOW_ANALYZING = show | hide
+if (isset($_GET['set_now_analyzing'])) {
+  ensure_authenticated('You must be authenticated to change the settings.');
+  $v = $_GET['set_now_analyzing'] === 'hide' ? 'hide' : 'show';
+  $f = '/etc/birdnet/birdnet.conf';
+  $c = file_get_contents($f);
+  $c = preg_match('/^NOW_ANALYZING=/m', $c) ? preg_replace('/^NOW_ANALYZING=.*/m', "NOW_ANALYZING=$v", $c)
+    : $c . "\n## NOW_ANALYZING: the Now page opens with the Currently Analyzing spectrogram shown (show) or hidden (hide)\nNOW_ANALYZING=$v\n";
+  echo (file_put_contents($f, $c) !== false) ? 'OK' : 'Error writing the settings';
+  die();
+}
+
+// "Set as default" of the Now page: NOW_VIEW = spectrogram | list
+if (isset($_GET['set_now_view'])) {
+  ensure_authenticated('You must be authenticated to change the settings.');
+  $v = $_GET['set_now_view'] === 'list' ? 'list' : 'spectrogram';
+  $f = '/etc/birdnet/birdnet.conf';
+  $c = file_get_contents($f);
+  $c = preg_match('/^NOW_VIEW=/m', $c) ? preg_replace('/^NOW_VIEW=.*/m', "NOW_VIEW=$v", $c)
+    : $c . "\n## NOW_VIEW: how the Now page shows the most recent detections: spectrogram (cards) or list\nNOW_VIEW=$v\n";
+  echo (file_put_contents($f, $c) !== false) ? 'OK' : 'Error writing the settings';
+  die();
+}
+
 if(isset($_GET['fetch_chart_string']) && $_GET['fetch_chart_string'] == "true") {
   $myDate = date('Y-m-d');
   $chart = "Combo-$myDate.png";
@@ -447,7 +471,9 @@ if (file_exists('./Charts/'.$chart)) {
 <!-- Now page (owner 2026-10-08): Currently Analyzing first, then the 30 most recent detections as cards. The most recent
      detection card is no longer shown; it is still loaded (hidden) because the page watches it to notice a new
      detection and refresh the cards (30, like Best Detections). -->
-<h3 class="now-only">Currently Analyzing</h3>
+<h3 class="now-only">Currently Analyzing
+  <span class="nowmodes"><button type="button" id="analyzing_toggle" onclick="toggleAnalyzing()">Hide spectrogram</button>
+  <button type="button" class="nowdefault" id="analyzing_default" onclick="analyzingSetDefault()" title="Keep it like this when the page opens (Basic Settings › Spectrogram and colours)">Set as default</button></span></h3>
 <?php
 $refresh = $config['RECORDING_LENGTH'];
 $time = time();
@@ -456,7 +482,9 @@ echo "<img id=\"spectrogramimage\" src=\"spectrogram.png?nocache=$time\">";
 ?>
 <div id="most_recent_detection" style="display:none"></div>
 <br>
-<h3 class="now-only now-cards">Most Recent Detections</h3>
+<h3 class="now-only now-cards">Most Recent Detections
+  <span class="nowmodes"><button type="button" data-mode="spectrogram" onclick="nowMode('spectrogram')">Spectrogram</button><button type="button" data-mode="list" onclick="nowMode('list')">List</button>
+  <button type="button" class="nowdefault" id="nowview_default" onclick="nowSetDefault()" title="Show this view first (Basic Settings › Spectrogram and colours)">Set as default</button></span></h3>
 <div style="padding-bottom:10px;" id="detections_table"><h3>Loading...</h3></div>
 
 <div id="customimage"></div>
@@ -533,6 +561,8 @@ function refreshDetection() {
         isPlaying = true;
       }
     });
+    // nor an audio of the Now list
+    document.querySelectorAll('#detections_table audio').forEach(function (a) { if (!a.paused && !a.ended) isPlaying = true; });
     // If none are playing, refresh detections
     if (!isPlaying) {
       const currentIdentifier = audioPlayers[0]?.dataset.audioSrc || undefined;
@@ -540,8 +570,52 @@ function refreshDetection() {
     }
   }
 }
+// Currently Analyzing: hide / show the live spectrogram; NOW_ANALYZING of Basic Settings (show | hide) is how the page
+// opens, "Set as default" saves the current state there (owner 2026-10-09)
+var analyzingDefaultHidden = <?php echo json_encode(($config['NOW_ANALYZING'] ?? 'show') === 'hide'); ?>;
+function applyAnalyzing(hidden) {
+  var img = document.getElementById('spectrogramimage'), b = document.getElementById('analyzing_toggle'), d = document.getElementById('analyzing_default');
+  if (img) img.style.display = hidden ? 'none' : '';
+  if (b) b.textContent = hidden ? 'Show spectrogram' : 'Hide spectrogram';
+  if (d) d.style.visibility = (hidden === analyzingDefaultHidden) ? 'hidden' : 'visible';
+}
+function toggleAnalyzing() {
+  var hidden = document.getElementById('spectrogramimage').style.display !== 'none';
+  applyAnalyzing(hidden);
+  if (!hidden) document.getElementById('spectrogramimage').src = 'spectrogram.png?nocache=' + Date.now();
+}
+function analyzingSetDefault() {
+  var hidden = document.getElementById('spectrogramimage').style.display === 'none';
+  var x = new XMLHttpRequest();
+  x.onload = function () {
+    if (this.status === 200 && this.responseText.trim() === 'OK') { analyzingDefaultHidden = hidden; applyAnalyzing(hidden); }
+    else alert('Not saved: ' + (this.status === 401 ? 'log in first' : this.responseText));
+  };
+  x.open('GET', 'overview.php?set_now_analyzing=' + (hidden ? 'hide' : 'show'), true);
+  x.send();
+}
+document.addEventListener('DOMContentLoaded', function () { applyAnalyzing(analyzingDefaultHidden); });
 // the Now cards page through the detections 30 at a time; only the newest page follows new detections
 var nowOffset = 0;
+// spectrogram cards or list (owner 2026-10-09): NOW_VIEW of Basic Settings is the default, the buttons switch it
+var nowView = <?php echo json_encode(($config['NOW_VIEW'] ?? 'spectrogram') === 'list' ? 'list' : 'spectrogram'); ?>;
+var nowDefault = nowView;
+function nowModeButtons() {
+  document.querySelectorAll('.nowmodes button[data-mode]').forEach(function (b) { b.classList.toggle('active', b.dataset.mode === nowView); });
+  var d = document.getElementById('nowview_default');
+  if (d) d.style.visibility = (nowView === nowDefault) ? 'hidden' : 'visible';
+}
+function nowMode(mode) { nowView = mode; nowModeButtons(); loadFiveMostRecentDetections(); }
+function nowSetDefault() {
+  var x = new XMLHttpRequest();
+  x.onload = function () {
+    if (this.status === 200 && this.responseText.trim() === 'OK') { nowDefault = nowView; nowModeButtons(); }
+    else alert('Not saved: ' + (this.status === 401 ? 'log in first' : this.responseText));
+  };
+  x.open('GET', 'overview.php?set_now_view=' + nowView, true);
+  x.send();
+}
+document.addEventListener('DOMContentLoaded', nowModeButtons);
 function nowPage(offset) {
   nowOffset = offset;
   loadFiveMostRecentDetections();
@@ -556,9 +630,9 @@ function loadFiveMostRecentDetections() {
     }
   }
   if (window.innerWidth > 500) {
-    xhttp.open("GET", "todays_detections.php?ajax_detections=true&display_limit=undefined&hard_limit=30&gallery=1&offset=" + nowOffset, true);
+    xhttp.open("GET", "todays_detections.php?ajax_detections=true&display_limit=undefined&hard_limit=30&gallery=1&mode=" + nowView + "&offset=" + nowOffset, true);
   } else {
-    xhttp.open("GET", "todays_detections.php?ajax_detections=true&display_limit=undefined&hard_limit=30&gallery=1&mobile=true&offset=" + nowOffset, true);
+    xhttp.open("GET", "todays_detections.php?ajax_detections=true&display_limit=undefined&hard_limit=30&gallery=1&mobile=true&mode=" + nowView + "&offset=" + nowOffset, true);
   }
   xhttp.send();
 }
@@ -578,6 +652,8 @@ function refreshCustomImage(){
 }
 function startAutoRefresh() {
     i_fn1 = window.setInterval(function(){
+                    // a hidden spectrogram is not downloaded again
+                    if (document.getElementById("spectrogramimage").style.display === "none") return;
                     document.getElementById("spectrogramimage").src = "spectrogram.png?nocache="+Date.now();
                     }, <?php echo $refresh; ?>*1000);
     i_fn2 = window.setInterval(refreshDetection, <?php echo intval($dividedrefresh); ?>*1000);
@@ -617,6 +693,7 @@ startAutoRefresh();
 </style>
 <script src="static/custom-audio-player.js"></script>
 <script src="static/spectro-dialog.js"></script>
+<script src="static/review-player.js"></script>
 <script src="static/detection-actions.js"></script>
 <script src="static/generateMiniGraph.js"></script>
 <script>

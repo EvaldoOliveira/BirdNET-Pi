@@ -167,7 +167,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
     $searchquery = "";
   }
   if(isset($_GET['display_limit']) && is_numeric($_GET['display_limit'])){
-    $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, File_Name FROM detections WHERE Date == Date(\'now\', \'localtime\') '.$searchquery.' ORDER BY Time DESC LIMIT '.(intval($_GET['display_limit'])-40).',40');
+    $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, File_Name FROM detections WHERE Date == Date(\'now\', \'localtime\') '.$searchquery.' ORDER BY Time DESC LIMIT '.(intval($_GET['display_limit'])-40).',40');
   } else {
     // legacy mode
     if(isset($_GET['hard_limit']) && is_numeric($_GET['hard_limit'])) {
@@ -175,7 +175,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
       // gallery pages: offset = how many newer detections are skipped; one extra row tells whether older ones exist
       $g_offset = max(0, intval($_GET['offset'] ?? 0));
       $g_limit = intval($_GET['hard_limit']) + (isset($_GET['gallery']) ? 1 : 0);
-      $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, File_Name FROM detections WHERE 1 '.$searchquery.' ORDER BY Date DESC, Time DESC LIMIT '.$g_limit.' OFFSET '.$g_offset);
+      $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, File_Name FROM detections WHERE 1 '.$searchquery.' ORDER BY Date DESC, Time DESC LIMIT '.$g_limit.' OFFSET '.$g_offset);
     } else {
       $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, File_Name FROM detections WHERE Date == Date(\'now\', \'localtime\') '.$searchquery.' ORDER BY Time DESC');
     }
@@ -188,26 +188,29 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
   // species page), time and confidence, delete + Review top right, and the spectrogram picture that opens big and
   // playing (static/spectro-dialog.js)
   if (isset($_GET['gallery'])) {
-    echo '<div class="spgallery nowgallery">';
+    $as_list = (($_GET['mode'] ?? '') === 'list');
+    // list view = the standard detection list (rows collected first); cards = the gallery
+    $list_rows = array();
+    if (!$as_list) echo '<div class="spgallery nowgallery" data-review-list="1">';
     $n = 0;
     $page = intval($_GET['hard_limit']);
     $more = false;
     while ($g = $result0->fetchArray(SQLITE3_ASSOC)) {
       if ($n >= $page) { $more = true; break; }
       $n++;
+      if ($as_list) { $list_rows[] = $g; continue; }
       $folder = str_replace("'", '', str_replace(' ', '_', $g['Com_Name']));
       $file = $g['Date'] . '/' . $folder . '/' . $g['File_Name'];
       $clip = '/By_Date/' . $file;
       $when = ($g['Date'] !== date('Y-m-d') ? substr($g['Date'], 5) . ' ' : '') . $g['Time'];
       $fj = htmlspecialchars(json_encode($file), ENT_QUOTES);
-      echo '<div class="gcard"><div class="gbody"><div class="gtop">'
+      echo '<div class="gcard"' . review_item_attrs($file, $g['Com_Name'] . ' · ' . $when . ' · ' . round($g['Confidence'] * 100) . '%', $g['Sci_Name'], $g) . '><div class="gbody"><div class="gtop">'
         . '<div class="gnames"><a href="views.php?view=Bird&amp;sci=' . rawurlencode($g['Sci_Name']) . '" title="Open the species page"><b>' . htmlspecialchars($g['Com_Name']) . '</b></a><br><i>' . htmlspecialchars($g['Sci_Name']) . '</i></div>'
-        . '<div class="gacts"><img src="images/delete.svg" title="Delete Detection" onclick="deleteDetection(' . $fj . ')">' . validate_button($file) . '</div></div>'
+        . '<div class="gacts"><img src="images/delete.svg" title="Delete Detection" onclick="deleteDetection(' . $fj . ')">' . validate_button($file, null, false, 'openReviewPlayer(this)') . '</div></div>'
         . '<div class="gmeta">' . htmlspecialchars($when) . ' · ' . round($g['Confidence'] * 100) . '%</div>'
-        . '<img class="gspec" loading="lazy" src="' . htmlspecialchars($clip) . '.png" alt="spectrogram" title="Play"'
-        . ' onclick="openSpectrogram(' . htmlspecialchars(json_encode($clip), ENT_QUOTES) . ', ' . htmlspecialchars(json_encode($g['Com_Name'] . ' · ' . $when . ' · ' . round($g['Confidence'] * 100) . '%'), ENT_QUOTES) . ')"></div></div>';
+        . '<img class="gspec" loading="lazy" src="' . htmlspecialchars($clip) . '.png" alt="spectrogram" title="Listen and review" onclick="openReviewPlayer(this)"></div></div>';
     }
-    echo '</div>';
+    echo $as_list ? detection_review_table($list_rows) : '</div>';
     if ($n == 0) echo '<h3>No detections yet.</h3>';
     // newer / older pages of 30
     if ($g_offset > 0 || $more) {
@@ -267,7 +270,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
   ?>
         <?php if(isset($_GET['display_limit']) && is_numeric($_GET['display_limit'])){ ?>
           <tr class="relative" id="<?php echo $iterations; ?>">
-          <td class="relative">
+          <td class="relative"<?php echo review_item_attrs($filename_formatted, $todaytable['Com_Name'] . ' · ' . $todaytable['Time'] . ' · ' . round($todaytable['Confidence'] * 100) . '%', $todaytable['Sci_Name'], $todaytable); ?>>
             <?php echo detection_actions($filename_formatted); ?>
         
             
@@ -364,6 +367,7 @@ if (get_included_files()[0] === __FILE__) {
   </dialog>
   <script src="static/dialog-polyfill.js"></script>
   <script src="static/detection-actions.js"></script>
+  <script src="static/review-player.js"></script>
   <script src="static/Chart.bundle.js"></script>
   <script src="static/chartjs-plugin-trendline.min.js"></script>
   

@@ -188,7 +188,8 @@ if ! grep -E '^PURGE_PROTECT_TOP_N=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "PURGE_PROTECT_TOP_N=3" >> /etc/birdnet/birdnet.conf
 fi
 # Review loop: one verdict per detection (yes / no / unsure), additive table
-sqlite3 $HOME/BirdNET-Pi/scripts/birds.db "CREATE TABLE IF NOT EXISTS detection_reviews (File_Name VARCHAR(100) PRIMARY KEY, Sci_Name VARCHAR(100), Com_Name VARCHAR(100), Date DATE, Confidence FLOAT, Verdict TEXT NOT NULL CHECK (Verdict IN ('yes','no','unsure')), Reviewed_At TEXT);" 2>/dev/null || true
+sqlite3 $HOME/BirdNET-Pi/scripts/birds.db "CREATE TABLE IF NOT EXISTS detection_reviews (File_Name VARCHAR(100) PRIMARY KEY, Sci_Name VARCHAR(100), Com_Name VARCHAR(100), Date DATE, Confidence FLOAT, Verdict TEXT NOT NULL CHECK (Verdict IN ('yes','no','unsure')), Reviewed_At TEXT, Reason TEXT);" 2>/dev/null || true
+sqlite3 $HOME/BirdNET-Pi/scripts/birds.db "PRAGMA table_info(detection_reviews)" 2>/dev/null | grep -q '|Reason|' || sqlite3 $HOME/BirdNET-Pi/scripts/birds.db "ALTER TABLE detection_reviews ADD COLUMN Reason TEXT;" 2>/dev/null || true
 
 if ! grep -E '^APPRISE_NOTIFY_REGION_RARE=' /etc/birdnet/birdnet.conf &>/dev/null;then
   echo "## APPRISE_NOTIFY_REGION_RARE: 1 = species the location model does not expect here go to the Rare notification channel" >> /etc/birdnet/birdnet.conf

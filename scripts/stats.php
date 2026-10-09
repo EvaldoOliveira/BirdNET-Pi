@@ -109,6 +109,7 @@ if (get_included_files()[0] === __FILE__) {
 <script src="static/dialog-polyfill.js"></script>
 <script src="static/custom-audio-player.js"></script>
 <script src="static/detection-actions.js"></script>
+<script src="static/review-player.js"></script>
 <script>
 var dialog = document.querySelector('dialog');
 dialogPolyfill.registerDialog(dialog);
@@ -138,11 +139,10 @@ function setModalText(iter, title, text, authorlink) {
     $folder = str_replace("'", '', str_replace(' ', '_', $g['Com_Name']));
     $clip = '/By_Date/' . $g['Date'] . '/' . $folder . '/' . $g['File_Name'];
     $page = 'views.php?view=Bird&amp;sci=' . rawurlencode($g['Sci_Name']);
-    echo '<div class="gcard" data-q="' . htmlspecialchars(mb_strtolower($g['Com_Name'] . ' ' . $g['Sci_Name']), ENT_QUOTES) . '">'
+    echo '<div class="gcard"' . review_item_attrs($g['Date'] . '/' . $folder . '/' . $g['File_Name'], $g['Com_Name'] . ' · ' . $g['Date'] . ' ' . $g['Time'] . ' · ' . round($g['MaxConfidence'] * 100) . '%', $g['Sci_Name'], array('Date' => $g['Date'], 'Time' => $g['Time'], 'Com_Name' => $g['Com_Name'], 'Confidence' => $g['MaxConfidence'])) . ' data-q="' . htmlspecialchars(mb_strtolower($g['Com_Name'] . ' ' . $g['Sci_Name']), ENT_QUOTES) . '">'
       . '<div class="gbody">' . species_title($g['Sci_Name'], '<a href="' . $page . '" title="Open the species page"><b>' . htmlspecialchars($g['Com_Name']) . '</b></a>', '', false, false)
       . '<div class="gmeta">' . number_format(intval($g['Count'])) . (intval($g['Count']) == 1 ? ' detection' : ' detections') . ' · best ' . round($g['MaxConfidence'] * 100) . '% · ' . htmlspecialchars($g['Date'] . ' ' . $g['Time']) . '</div>'
-      . '<img class="gspec" loading="lazy" src="' . htmlspecialchars($clip) . '.png" alt="spectrogram" title="Play"'
-      . ' onclick="openSpectrogram(' . htmlspecialchars(json_encode($clip), ENT_QUOTES) . ', ' . htmlspecialchars(json_encode($g['Com_Name'] . ' · ' . $g['Date'] . ' ' . $g['Time'] . ' · ' . round($g['MaxConfidence'] * 100) . '%'), ENT_QUOTES) . ')"></div></div>';
+      . '<img class="gspec" loading="lazy" src="' . htmlspecialchars($clip) . '.png" alt="spectrogram" title="Listen and review" onclick="openReviewPlayer(this)"></div></div>';
   }
   echo '</div><script>function galFilter(q){q=q.toLowerCase();document.querySelectorAll("#spgallery .gcard").forEach(function(c){c.style.display=c.dataset.q.indexOf(q)<0?"none":"";});}'
     . '</script><script src="static/spectro-dialog.js"></script>';

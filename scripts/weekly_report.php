@@ -25,7 +25,7 @@ function safe_percentage($count, $prior_count) {
 $db = new SQLite3('./scripts/birds.db', SQLITE3_OPEN_READONLY);
 $db->busyTimeout(1000);
 
-$statement1 = $db->prepare('SELECT Sci_Name, Com_Name, COUNT(*) FROM detections WHERE Date BETWEEN "' . date("Y-m-d", $startdate) . '" AND "' . date("Y-m-d", $enddate) . '" GROUP By Sci_Name ORDER BY COUNT(*) DESC');
+$statement1 = $db->prepare('SELECT Sci_Name, Com_Name, COUNT(*) FROM detections WHERE Date BETWEEN "' . date("Y-m-d", $startdate) . '" AND "' . date("Y-m-d", $enddate) . '"' . not_rejected_sql() . ' GROUP By Sci_Name ORDER BY COUNT(*) DESC');
 ensure_db_ok($statement1);
 $result1 = $statement1->execute();
 $detections = [];
@@ -35,14 +35,14 @@ while ($detection = $result1->fetchArray(SQLITE3_ASSOC)) {
   $scount = $detection["COUNT(*)"];
 
   # previous week
-  $statement2 = $db->prepare('SELECT COUNT(*) FROM detections WHERE Sci_Name == "' . $detection["Sci_Name"] . '" AND Date BETWEEN "' . date("Y-m-d", $startdate - (7 * 86400)) . '" AND "' . date("Y-m-d", $enddate - (7 * 86400)) . '"');
+  $statement2 = $db->prepare('SELECT COUNT(*) FROM detections WHERE Sci_Name == "' . $detection["Sci_Name"] . '" AND Date BETWEEN "' . date("Y-m-d", $startdate - (7 * 86400)) . '" AND "' . date("Y-m-d", $enddate - (7 * 86400)) . '"' . not_rejected_sql());
   ensure_db_ok($statement2);
   $result2 = $statement2->execute();
   $priorweekcount = $result2->fetchArray(SQLITE3_ASSOC)['COUNT(*)'];
   $percentagediff = safe_percentage($scount, $priorweekcount);
 
   # is_first_seen?
-  $statement3 = $db->prepare('SELECT COUNT(*) FROM detections WHERE Sci_Name == "'.$sci_name.'" AND Date NOT BETWEEN "'.date("Y-m-d",$startdate).'" AND "'.date("Y-m-d",$enddate).'"');
+  $statement3 = $db->prepare('SELECT COUNT(*) FROM detections WHERE Sci_Name == "'.$sci_name.'" AND Date NOT BETWEEN "'.date("Y-m-d",$startdate).'" AND "'.date("Y-m-d",$enddate).'"' . not_rejected_sql());
   ensure_db_ok($statement3);
   $result3 = $statement3->execute();
   $totalcount = $result3->fetchArray(SQLITE3_ASSOC)['COUNT(*)'];
@@ -51,22 +51,22 @@ while ($detection = $result1->fetchArray(SQLITE3_ASSOC)) {
   $detections[$com_name] = ["count" => $scount, "percentagediff" => $percentagediff, "is_first_seen" => $is_first_seen];
 }
 
-$statement4 = $db->prepare('SELECT COUNT(*) FROM detections WHERE Date BETWEEN "'.date("Y-m-d",$startdate).'" AND "'.date("Y-m-d",$enddate).'"');
+$statement4 = $db->prepare('SELECT COUNT(*) FROM detections WHERE Date BETWEEN "'.date("Y-m-d",$startdate).'" AND "'.date("Y-m-d",$enddate).'"' . not_rejected_sql());
 ensure_db_ok($statement4);
 $result4 = $statement4->execute();
 $totalcount = $result4->fetchArray(SQLITE3_ASSOC)['COUNT(*)'];
 
-$statement5 = $db->prepare('SELECT COUNT(*) FROM detections WHERE Date BETWEEN "'.date("Y-m-d",$startdate- (7*86400)).'" AND "'.date("Y-m-d",$enddate- (7*86400)).'"');
+$statement5 = $db->prepare('SELECT COUNT(*) FROM detections WHERE Date BETWEEN "'.date("Y-m-d",$startdate- (7*86400)).'" AND "'.date("Y-m-d",$enddate- (7*86400)).'"' . not_rejected_sql());
 ensure_db_ok($statement5);
 $result5 = $statement5->execute();
 $priortotalcount = $result5->fetchArray(SQLITE3_ASSOC)['COUNT(*)'];
 
-$statement6 = $db->prepare('SELECT COUNT(DISTINCT(Sci_Name)) FROM detections WHERE Date BETWEEN "'.date("Y-m-d",$startdate).'" AND "'.date("Y-m-d",$enddate).'"');
+$statement6 = $db->prepare('SELECT COUNT(DISTINCT(Sci_Name)) FROM detections WHERE Date BETWEEN "'.date("Y-m-d",$startdate).'" AND "'.date("Y-m-d",$enddate).'"' . not_rejected_sql());
 ensure_db_ok($statement6);
 $result6 = $statement6->execute();
 $totalspeciestally = $result6->fetchArray(SQLITE3_ASSOC)['COUNT(DISTINCT(Sci_Name))'];
 
-$statement7 = $db->prepare('SELECT COUNT(DISTINCT(Sci_Name)) FROM detections WHERE Date BETWEEN "'.date("Y-m-d",$startdate- (7*86400)).'" AND "'.date("Y-m-d",$enddate- (7*86400)).'"');
+$statement7 = $db->prepare('SELECT COUNT(DISTINCT(Sci_Name)) FROM detections WHERE Date BETWEEN "'.date("Y-m-d",$startdate- (7*86400)).'" AND "'.date("Y-m-d",$enddate- (7*86400)).'"' . not_rejected_sql());
 ensure_db_ok($statement7);
 $result7= $statement7->execute();
 $priortotalspeciestally = $result7->fetchArray(SQLITE3_ASSOC)['COUNT(DISTINCT(Sci_Name))'];

@@ -94,6 +94,9 @@ if(isset($_GET["latitude"])){
   $color_scheme = $_GET["color_scheme"];
   // US-41 follow-up (owner 2026-09-17): spectrogram height + palette live here, under "Spectrogram and colours"
   $spectrogram_height = isset($_GET['spectrogram_height']) && is_numeric($_GET['spectrogram_height']) ? max(20, min(100, intval($_GET['spectrogram_height']))) : null;
+  // Now page: the most recent detections as spectrogram cards or as a list (owner 2026-10-09)
+  $now_view = isset($_GET['now_view']) && in_array($_GET['now_view'], array('spectrogram', 'list'), true) ? $_GET['now_view'] : null;
+  $now_analyzing = isset($_GET['now_analyzing']) && in_array($_GET['now_analyzing'], array('show', 'hide'), true) ? $_GET['now_analyzing'] : null;
   $spectrogram_palette = isset($_GET['spectrogram_palette']) && in_array($_GET['spectrogram_palette'], array('birdnet','viridis','inferno','ocean','grayscale','soxheat'), true) ? $_GET['spectrogram_palette'] : null;
   // US-42: colour sensitivity
   $spectrogram_floor_db = isset($_GET['spectrogram_floor_db']) && is_numeric($_GET['spectrogram_floor_db']) ? max(-120, min(-40, intval($_GET['spectrogram_floor_db']))) : null;
@@ -256,6 +259,20 @@ if(isset($_GET["latitude"])){
       $contents = preg_replace("/SPECTROGRAM_HEIGHT=.*/", "SPECTROGRAM_HEIGHT=$spectrogram_height", $contents);
     } else {
       $contents .= "\n## SPECTROGRAM_HEIGHT is the height of the live spectrogram in percent of the page height (vh)\nSPECTROGRAM_HEIGHT=$spectrogram_height\n";
+    }
+  }
+  if($now_analyzing !== null) {
+    if(preg_match("/^NOW_ANALYZING=/m", $contents)) {
+      $contents = preg_replace("/^NOW_ANALYZING=.*/m", "NOW_ANALYZING=$now_analyzing", $contents);
+    } else {
+      $contents .= "\n## NOW_ANALYZING: the Now page opens with the Currently Analyzing spectrogram shown (show) or hidden (hide)\nNOW_ANALYZING=$now_analyzing\n";
+    }
+  }
+  if($now_view !== null) {
+    if(preg_match("/^NOW_VIEW=/m", $contents)) {
+      $contents = preg_replace("/^NOW_VIEW=.*/m", "NOW_VIEW=$now_view", $contents);
+    } else {
+      $contents .= "\n## NOW_VIEW: how the Now page shows the most recent detections: spectrogram (cards) or list\nNOW_VIEW=$now_view\n";
     }
   }
   if($spectrogram_palette !== null) {
@@ -994,6 +1011,18 @@ mailto://{user}:{password}@gmail.com
           echo "<option value='{$color_scheme}' $isSelected>$color_scheme</option>";
         }
       ?>
+      </select><br><br>
+      <label for="now_view">Now page — most recent detections shown as: </label>
+      <select name="now_view" class="testbtn">
+        <?php foreach (array('spectrogram' => 'Spectrogram cards', 'list' => 'List') as $nv => $nl) {
+          echo "<option value='$nv'" . (($config['NOW_VIEW'] ?? 'spectrogram') === $nv ? " selected" : "") . ">$nl</option>";
+        } ?>
+      </select><br><br>
+      <label for="now_analyzing">Now page — Currently Analyzing spectrogram: </label>
+      <select name="now_analyzing" class="testbtn">
+        <?php foreach (array('show' => 'Shown', 'hide' => 'Hidden') as $nv => $nl) {
+          echo "<option value='$nv'" . (($config['NOW_ANALYZING'] ?? 'show') === $nv ? " selected" : "") . ">$nl</option>";
+        } ?>
       </select><br><br>
       <label for="spectrogram_palette">Spectrogram palette: </label>
       <select name="spectrogram_palette" class="testbtn">

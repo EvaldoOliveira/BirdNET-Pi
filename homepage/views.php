@@ -82,7 +82,7 @@ $menu = array(
   array('Spectrogram', 'Spectrogram'),
   array('Detections', array('Todays Detections' => "Today's Detections", 'Bird' => 'Species Pages', 'All Detections' => 'All Detections', 'Recordings' => 'Detections by...', 'Species Stats' => 'Best Detections')),
   array('Statistics', array('Daily Charts' => 'Daily Charts', 'Streamlit' => 'Species Stats', 'Weekly Report' => 'Weekly Report')),
-  array('Species', array('Species Management' => 'Species Management', 'Included' => 'Custom Species List', 'Excluded' => 'Excluded Species', 'Whitelisted' => 'Whitelist')),
+  array('Species', array('Species Management' => 'Species Management', 'Curation' => 'Curation', 'Wipe' => 'Delete Excluded', 'Included' => 'Custom Species List', 'Excluded' => 'Excluded Species', 'Whitelisted' => 'Whitelist')),
   array('Scheduling', array('Raw Recording' => 'Raw Recording')),
   // Station Setup only while the first-run questions are unanswered; afterwards everything is in Settings
   array('Settings', array('Settings' => 'Basic Settings', 'Advanced' => 'Advanced Settings')
@@ -225,6 +225,8 @@ if(isset($_GET['view'])){
   if($_GET['view'] == "Spectrogram"){include('spectrogram.php');}
   if($_GET['view'] == "Raw Recording"){include('scripts/raw_recording.php');}
   if($_GET['view'] == "Bird"){include('scripts/species_page.php');}
+  if($_GET['view'] == "Curation"){include('scripts/curation.php');}
+  if($_GET['view'] == "Wipe"){ensure_authenticated(); include('scripts/wipe_deleted.php');}
   if($_GET['view'] == "Doctor"){ensure_authenticated(); include('scripts/doctor.php');}
   if($_GET['view'] == "View Log"){echo "<body style=\"scroll:no;overflow-x:hidden;\"><iframe style=\"width:calc( 100% + 1em);\" src=\"log\"></iframe></body>";}
   // the Overview is split in two pages (owner 2026-10-08): Now (default) = most recent detection, 5 most

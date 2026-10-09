@@ -173,27 +173,29 @@ function fetch_all_detections($sci_name, $sort_by, $date=null) {
 
 function get_summary() {
   $db = get_db();
-  $statement = $db->prepare('SELECT COUNT(*) FROM detections');
+  // detections reviewed "not this bird" are left out of every total (owner 2026-10-09)
+  $nr = not_rejected_sql();
+  $statement = $db->prepare('SELECT COUNT(*) FROM detections WHERE 1' . $nr);
   ensure_db_ok($statement);
   $result = $statement->execute();
   $totalcount = $result->fetchArray(SQLITE3_ASSOC);
 
-  $statement2 = $db->prepare('SELECT COUNT(*) FROM detections WHERE Date == DATE(\'now\', \'localtime\')');
+  $statement2 = $db->prepare('SELECT COUNT(*) FROM detections WHERE Date == DATE(\'now\', \'localtime\')' . $nr);
   ensure_db_ok($statement2);
   $result2 = $statement2->execute();
   $todaycount = $result2->fetchArray(SQLITE3_ASSOC);
 
-  $statement3 = $db->prepare('SELECT COUNT(*) FROM detections WHERE Date == Date(\'now\', \'localtime\') AND TIME >= TIME(\'now\', \'localtime\', \'-1 hour\')');
+  $statement3 = $db->prepare('SELECT COUNT(*) FROM detections WHERE Date == Date(\'now\', \'localtime\') AND TIME >= TIME(\'now\', \'localtime\', \'-1 hour\')' . $nr);
   ensure_db_ok($statement3);
   $result3 = $statement3->execute();
   $hourcount = $result3->fetchArray(SQLITE3_ASSOC);
 
-  $statement5 = $db->prepare('SELECT COUNT(DISTINCT(Sci_Name)) FROM detections WHERE Date == Date(\'now\',\'localtime\')');
+  $statement5 = $db->prepare('SELECT COUNT(DISTINCT(Sci_Name)) FROM detections WHERE Date == Date(\'now\',\'localtime\')' . $nr);
   ensure_db_ok($statement5);
   $result5 = $statement5->execute();
   $todayspeciestally = $result5->fetchArray(SQLITE3_ASSOC);
 
-  $statement6 = $db->prepare('SELECT COUNT(DISTINCT(Sci_Name)) FROM detections');
+  $statement6 = $db->prepare('SELECT COUNT(DISTINCT(Sci_Name)) FROM detections WHERE 1' . $nr);
   ensure_db_ok($statement6);
   $result6 = $statement6->execute();
   $totalspeciestally = $result6->fetchArray(SQLITE3_ASSOC);
@@ -520,14 +522,137 @@ function review_verdicts() {
   }
   return $verdicts;
 }
-function validate_button($file, $verdict = null, $positioned = false) {
+// $onclick: JavaScript instead of the review modal (the standard list opens the review player)
+function validate_button($file, $verdict = null, $positioned = false, $onclick = null) {
   if ($verdict === null) $verdict = review_verdict(basename($file));
   $labels = array('' => 'Review', 'yes' => '&#10003; Valid', 'no' => '&#10007; Not this bird', 'unsure' => "? Can't tell");
   $titles = array('' => 'Is this the bird? Review this detection', 'yes' => 'Reviewed: yes, this bird (species confirmed, clip protected from purge)',
                   'no' => 'Reviewed: not this bird', 'unsure' => "Reviewed: can't tell");
   return '<button type="button" class="validatebtn v-' . ($verdict ?: 'none') . ($positioned ? ' positioned' : '') . '" title="' . $titles[$verdict]
-    . '" onclick="reviewDetection(' . htmlspecialchars(json_encode($file), ENT_QUOTES) . ', this)">' . $labels[$verdict] . '</button>';
+    . '" onclick="' . ($onclick !== null ? htmlspecialchars($onclick, ENT_QUOTES) : 'reviewDetection(' . htmlspecialchars(json_encode($file), ENT_QUOTES) . ', this)') . '">' . $labels[$verdict] . '</button>';
 }
+// Excluded detections ("Exclude this detection", owner 2026-10-09): files in ~/BirdSongs/Extracted/Excluded/<date>/<species>/,
+// lines in deleted_detections, until Species › Delete Excluded removes them for good
+function deleted_dir() {
+  return get_home() . '/BirdSongs/Extracted/Excluded';
+}
+function deleted_table($rw) {
+  $rw->exec("CREATE TABLE IF NOT EXISTS deleted_detections (Date DATE, Time TIME, Sci_Name VARCHAR(100) NOT NULL, Com_Name VARCHAR(100) NOT NULL,
+    Confidence FLOAT, Lat FLOAT, Lon FLOAT, Cutoff FLOAT, Week INT, Sens FLOAT, Overlap FLOAT, File_Name VARCHAR(100) NOT NULL, Deleted_At TEXT)");
+}
+// how many deleted detections wait for a wipe: one species, or every species when $sci is null
+function deleted_count($sci = null) {
+  $db = get_db();
+  if (!$db->querySingle("SELECT 1 FROM sqlite_master WHERE type='table' AND name='deleted_detections'")) return 0;
+  if ($sci === null) return intval($db->querySingle('SELECT COUNT(*) FROM deleted_detections'));
+  $st = $db->prepare('SELECT COUNT(*) FROM deleted_detections WHERE Sci_Name = :s');
+  $st->bindValue(':s', $sci);
+  $r = $st->execute()->fetchArray(SQLITE3_NUM);
+  return intval($r[0]);
+}
+
+// The reviews table (created on first use; Reason added 2026-10-09 for the "not this bird" causes)
+function review_table($rw) {
+  $rw->exec("CREATE TABLE IF NOT EXISTS detection_reviews (File_Name VARCHAR(100) PRIMARY KEY, Sci_Name VARCHAR(100), Com_Name VARCHAR(100), Date DATE, Confidence FLOAT, Verdict TEXT NOT NULL CHECK (Verdict IN ('yes','no','unsure')), Reviewed_At TEXT, Reason TEXT)");
+  $has = false;
+  $res = $rw->query("PRAGMA table_info(detection_reviews)");
+  while ($res && ($c = $res->fetchArray(SQLITE3_ASSOC))) if ($c['name'] === 'Reason') $has = true;
+  if (!$has) $rw->exec("ALTER TABLE detection_reviews ADD COLUMN Reason TEXT");
+}
+
+// Attributes of one item of a review list (review player, static/review-player.js)
+// $sci: the scientific name; the player shows "Scientific - English (eBird / Clements)" under the title
+// $row: the detection (Confidence, Cutoff, Sens, Overlap, Date): the player lists the analysis settings at the bottom
+function review_item_attrs($file, $label, $sci = '', $row = null) {
+  static $locked = null;
+  $home = get_home();
+  if ($locked === null) {
+    $list = $home . '/BirdNET-Pi/scripts/disk_check_exclude.txt';
+    $locked = is_file($list) ? array_flip(file($list, FILE_IGNORE_NEW_LINES)) : array();
+  }
+  $shifted = file_exists($home . '/BirdSongs/Extracted/By_Date/shifted/' . $file);
+  // the clip's folder for the station File Manager (its root is /home): <user>/BirdSongs/Extracted/By_Date/<date>/<species>
+  $dir = basename($home) . '/BirdSongs/Extracted/By_Date/' . dirname($file);
+  return ' data-ri="1" data-file="' . htmlspecialchars($file, ENT_QUOTES) . '" data-clip="' . htmlspecialchars('/By_Date/' . ($shifted ? 'shifted/' : '') . $file, ENT_QUOTES)
+    . '" data-label="' . htmlspecialchars($label, ENT_QUOTES) . '" data-dir="' . htmlspecialchars($dir, ENT_QUOTES) . '"'
+    . ($sci !== '' ? ' data-sci="' . htmlspecialchars($sci, ENT_QUOTES) . '" data-en="' . htmlspecialchars(get_english_name($sci), ENT_QUOTES) . '"' : '')
+    . ($row !== null && isset($row['Date']) ? ' data-when="' . htmlspecialchars($row['Date'] . (isset($row['Time']) ? ' ' . $row['Time'] : ''), ENT_QUOTES) . '"' : '')
+    . ($row !== null && isset($row['Com_Name']) ? ' data-com="' . htmlspecialchars($row['Com_Name'], ENT_QUOTES) . '"' : '')
+    . ($row !== null ? ' data-params="' . htmlspecialchars(json_encode(review_params($sci, $row)), ENT_QUOTES) . '"' : '')
+    . ' data-locked="' . (isset($locked[$file]) ? 1 : 0) . '" data-shifted="' . ($shifted ? 1 : 0) . '"';
+}
+
+// The standard detection list (owner 2026-10-09): Now (list view) and the species page. $rows: detections with Date,
+// Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, File_Name. A click on a row (or its Review button)
+// opens the review player there; it goes on down the list. $with_species = false on a species' own page.
+function detection_review_table($rows, $with_species = true) {
+  static $profile = null;
+  if ($profile === null) {
+    $pj = is_file(__DIR__ . '/region_profile.json') ? json_decode(file_get_contents(__DIR__ . '/region_profile.json'), true) : null;
+    $profile = $pj['data'] ?? array();
+  }
+  $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
+  $lang_en = (get_config()['DATABASE_LANG'] ?? 'en') === 'en';
+  $out = '<div class="reviewlist" data-review-list="1"><table class="list"><tr><th>Date</th><th>Time</th>'
+    . ($with_species ? '<th>Species</th><th>Scientific name</th>' . ($lang_en ? '' : '<th>English name</th>') : '')
+    . '<th class="num">Confidence</th><th class="num" title="Minimum confidence in force when it was detected">Min. confidence</th>'
+    . '<th class="num" title="Location model probability of the species in that week">Model probability</th>'
+    . '<th class="num">Sens. / overlap</th><th class="rv">Review</th></tr>';
+  foreach ($rows as $g) {
+    $folder = str_replace("'", '', str_replace(' ', '_', $g['Com_Name']));
+    $file = $g['Date'] . '/' . $folder . '/' . $g['File_Name'];
+    $t = strtotime($g['Date']);
+    $w = min(48, (intval(date('n', $t)) - 1) * 4 + min(4, intdiv(intval(date('j', $t)) - 1, 7) + 1));
+    $prob = isset($profile[$g['Sci_Name']]) ? number_format($profile[$g['Sci_Name']][$w - 1] * 100, 1) . '%' : '—';
+    $label = $g['Com_Name'] . ' · ' . $g['Date'] . ' ' . $g['Time'] . ' · ' . round($g['Confidence'] * 100) . '%';
+    $species = '';
+    if ($with_species) {
+      $en = $lang_en ? '' : get_english_name($g['Sci_Name']);
+      $species = '<td><a href="views.php?view=Bird&amp;sci=' . rawurlencode($g['Sci_Name']) . '" title="Open the species page">' . $h($g['Com_Name']) . '</a></td>'
+        . '<td><i>' . $h($g['Sci_Name']) . '</i></td>' . ($lang_en ? '' : '<td>' . $h($en) . '</td>');
+    }
+    $out .= '<tr class="rvrow"' . review_item_attrs($file, $label, $g['Sci_Name'], $g) . ' onclick="if (!event.target.closest(\'a,button\')) openReviewPlayer(this)" title="Listen and review">'
+      . '<td class="nw">' . $h($g['Date']) . '</td><td class="nw">' . $h($g['Time']) . '</td>' . $species
+      . '<td class="num">' . round($g['Confidence'] * 100) . '%</td>'
+      . '<td class="num">' . ($g['Cutoff'] !== null ? round($g['Cutoff'] * 100) . '%' : '') . '</td>'
+      . '<td class="num">' . $prob . '</td>'
+      . '<td class="num">' . $h(($g['Sens'] ?? '') . ' / ' . ($g['Overlap'] ?? '')) . '</td>'
+      . '<td class="rv">' . validate_button($file, null, false, 'openReviewPlayer(this)') . '</td></tr>';
+  }
+  return $out . '</table></div>';
+}
+
+// Analysis settings of one detection for the review player: confidence, the minimum confidence it was detected
+// with, the species override (US-48), sigmoid sensitivity, overlap, the location threshold (station setting, current)
+// and the location model probability of the species in that week
+function review_params($sci, $row) {
+  static $over = null, $profile = null;
+  if ($over === null) {
+    $over = array();
+    foreach (@file(get_home() . '/BirdNET-Pi/species_confidence.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: array() as $l) {
+      $p = explode('=', trim($l), 2);
+      if (count($p) === 2) $over[$p[0]] = $p[1];
+    }
+    $pj = is_file(__DIR__ . '/region_profile.json') ? json_decode(file_get_contents(__DIR__ . '/region_profile.json'), true) : null;
+    $profile = $pj['data'] ?? array();
+  }
+  $pct = function ($v) { return ($v === null || $v === '') ? '—' : round(floatval($v) * 100) . '%'; };
+  $t = strtotime($row['Date'] ?? date('Y-m-d'));
+  $w = min(48, (intval(date('n', $t)) - 1) * 4 + min(4, intdiv(intval(date('j', $t)) - 1, 7) + 1));
+  $sf = get_config()['SF_THRESH'] ?? '';
+  // in the order the decision is made: the score and the confidence thresholds it had to pass, then the location
+  // filter (model probability vs threshold), then the analysis settings that produced the score
+  return array(
+    'Confidence' => $pct($row['Confidence'] ?? null),
+    'Min. confidence' => $pct($row['Cutoff'] ?? null),
+    'Species override' => isset($over[$sci]) ? $pct($over[$sci]) : 'none',
+    'Model probability' => isset($profile[$sci]) ? number_format($profile[$sci][$w - 1] * 100, 1) . '%' : '—',
+    'Location threshold' => $sf === '' ? '—' : round(floatval($sf) * 100) . '%',
+    'Sigmoid sensitivity' => (string)($row['Sens'] ?? '—'),
+    'Overlap' => ($row['Overlap'] ?? '') === '' ? '—' : $row['Overlap'] . ' s',
+  );
+}
+
 function review_verdict($file_name) {
   return review_verdicts()[$file_name] ?? '';
 }
