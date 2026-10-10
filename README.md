@@ -195,7 +195,8 @@ curl -fsSL https://raw.githubusercontent.com/EvaldoOliveira/BirdnetPiPlusPlus/st
 The installer asks your password once, then a few questions. Press **Enter** to accept each suggested answer:
 station name, location (check the latitude/longitude — get yours at [latlong.net](https://www.latlong.net)),
 time zone, model (**V3** recommended), language of the bird names, web password, and optionally a BirdWeather ID
-and a notification address. The microphone is set up automatically. At the end the Pi restarts by itself.
+(uploads stay off until you turn them on in *Settings*). Notifications (Telegram, e-mail…) are set up later in
+*Settings › Notifications*. The Now page opens on the detection list. The microphone is set up automatically. At the end the Pi restarts by itself.
 
 **4. Open the station.** After the restart, open the web browser on the Pi and go to **`http://localhost`**.
 From a phone, tablet or computer on the same network, use **`http://birdnetpi.local`** (or the Pi's IP address).

@@ -1064,7 +1064,7 @@ mailto://{user}:{password}@gmail.com
       <label for="now_view">Now page — most recent detections shown as: </label>
       <select name="now_view" class="testbtn">
         <?php foreach (array('spectrogram' => 'Spectrogram cards', 'list' => 'List') as $nv => $nl) {
-          echo "<option value='$nv'" . (($config['NOW_VIEW'] ?? 'spectrogram') === $nv ? " selected" : "") . ">$nl</option>";
+          echo "<option value='$nv'" . (($config['NOW_VIEW'] ?? 'list') === $nv ? " selected" : "") . ">$nl</option>";
         } ?>
       </select><br><br>
       <label for="now_analyzing">Now page — Currently Analyzing spectrogram: </label>

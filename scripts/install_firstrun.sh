@@ -156,7 +156,9 @@ fr_ask FR_CADDY_PWD "Web password for Tools / Settings (empty = no password)" ""
 fr_ask FR_ICE_PWD "Live stream (icecast) password (empty = random)" "" secret STREAM_PASSWORD
 [ -z "$FR_ICE_PWD" ] && FR_ICE_PWD=$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')
 fr_ask FR_BIRDWEATHER_ID "BirdWeather ID (empty = none)" "" "" BIRDWEATHER_ID
-fr_ask FR_APPRISE_URL "Notification URL for Apprise, e.g. tgram://token/chat (empty = none)" "" "" APPRISE_URL
+# notifications (Telegram etc.) are not asked on the terminal (owner 2026-10-10): set them later in Settings ›
+# Notifications; a seed file can still carry APPRISE_URL
+FR_APPRISE_URL="${fr_seed[APPRISE_URL]:-}"
 
 echo "First-run settings: site '${FR_SITE_NAME}', ${FR_LATITUDE}/${FR_LONGITUDE}, timezone ${FR_TIMEZONE:-unchanged}, info ${FR_INFO_SITE}, model ${FR_MODEL}, language ${FR_LANGUAGE}, state list ${FR_REGION:-none}, web password $([ -n "$FR_CADDY_PWD" ] && echo set || echo none), BirdWeather $([ -n "$FR_BIRDWEATHER_ID" ] && echo set || echo none), notifications $([ -n "$FR_APPRISE_URL" ] && echo set || echo none)"
 

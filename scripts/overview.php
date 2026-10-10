@@ -890,8 +890,9 @@ function refreshTodayStats() {
   x.send();
 }
 document.addEventListener('DOMContentLoaded', refreshTodayStats);
-// spectrogram cards or list (owner 2026-10-09): NOW_VIEW of Basic Settings is the default, the buttons switch it
-var nowView = <?php echo json_encode(($config['NOW_VIEW'] ?? 'spectrogram') === 'list' ? 'list' : 'spectrogram'); ?>;
+// spectrogram cards or list (owner 2026-10-09): NOW_VIEW of Basic Settings is the default (list when unset, owner
+// 2026-10-10), the buttons switch it
+var nowView = <?php echo json_encode(($config['NOW_VIEW'] ?? 'list') === 'spectrogram' ? 'spectrogram' : 'list'); ?>;
 var nowDefault = nowView;
 function nowModeButtons() {
   document.querySelectorAll('.nowmodes button[data-mode]').forEach(function (b) { b.classList.toggle('active', b.dataset.mode === nowView); });
