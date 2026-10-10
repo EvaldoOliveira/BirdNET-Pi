@@ -283,6 +283,10 @@ PRIVACY_THRESHOLD=0
 
 RECORDING_LENGTH=15
 
+## LOCATION_CHECK: 1 = at boot, compare the network position (public IP geolocation) with LATITUDE/LONGITUDE and ask
+## on the Now page when the station moved more than 100 km; 0 = off
+LOCATION_CHECK=1
+
 ## EXTRACTION_LENGTH sets the length of the audio extractions that will be made
 ## from each BirdNET-Lite detection. An empty value will use the default of 6
 ## seconds.

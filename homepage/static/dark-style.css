@@ -1329,3 +1329,6 @@ h3.nowsec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margi
 .nowanalysis .nagroup { display: flex; gap: 8px; padding: 3px 8px; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; }
 .nowanalysis #na_apply { min-width: 64px; }
 .nowstatus { font-size: 12px; font-weight: normal; margin-left: 10px; opacity: .85; } .nowstatus.late { color: #b71c1c; font-weight: 600; opacity: 1; }
+.locmoved { margin: 6px 0 8px; padding: 8px 12px; border-radius: 8px; background: #fff3cd; color: #5d4300; font-size: 14px; text-align: left; }
+.locmoved button { width: auto; margin-left: 8px; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: var(--accent,#2b5e22); color: #fff; cursor: pointer; font-weight: 600; }
+.locmoved button.keep { background: #fff; color: var(--accent,#2b5e22); }

@@ -422,6 +422,26 @@ EOF
   udevadm control --reload-rules
 }
 
+install_location_check() {
+  # at every boot: compare the network position with the coordinates; the Now page asks when the station moved
+  # more than 100 km (scripts/location_check.py, owner 2026-10-10)
+  cat << EOF > $HOME/BirdNET-Pi/templates/birdnet_location_check.service
+[Unit]
+Description=BirdnetPi++ location check (did the station move more than 100 km?)
+Wants=network-online.target
+After=network-online.target
+[Service]
+Type=oneshot
+User=$USER
+ExecStart=/usr/bin/python3 $HOME/BirdNET-Pi/scripts/location_check.py
+[Install]
+WantedBy=multi-user.target
+EOF
+  ln -sf $HOME/BirdNET-Pi/templates/birdnet_location_check.service /usr/lib/systemd/system
+  systemctl daemon-reload
+  systemctl enable birdnet_location_check.service
+}
+
 chown_things() {
   chown -R $USER:$USER $HOME/Bird*
 }
@@ -457,6 +477,7 @@ install_services() {
   install_birdnet_mount
   install_sound_repo_upload_service
   install_mic_hotplug
+  install_location_check
   install_cleanup_cron
   install_automatic_update_cron
   increase_caddy_timeout

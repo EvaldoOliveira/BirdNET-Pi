@@ -96,6 +96,8 @@ if(isset($_GET["latitude"])){
   $spectrogram_height = isset($_GET['spectrogram_height']) && is_numeric($_GET['spectrogram_height']) ? max(20, min(100, intval($_GET['spectrogram_height']))) : null;
   // Now page: the most recent detections as spectrogram cards or as a list (owner 2026-10-09)
   $now_view = isset($_GET['now_view']) && in_array($_GET['now_view'], array('spectrogram', 'list'), true) ? $_GET['now_view'] : null;
+  // boot check of the network position (owner 2026-10-10, scripts/location_check.py): 1 = on (default), 0 = off
+  $location_check = isset($_GET['submit']) && ($_GET['submit'] ?? '') === 'settings' ? (isset($_GET['location_check']) ? '1' : '0') : null;
   $now_analyzing = isset($_GET['now_analyzing']) && in_array($_GET['now_analyzing'], array('show', 'hide'), true) ? $_GET['now_analyzing'] : null;
   $spectrogram_palette = isset($_GET['spectrogram_palette']) && in_array($_GET['spectrogram_palette'], array('birdnet','viridis','inferno','ocean','grayscale','soxheat'), true) ? $_GET['spectrogram_palette'] : null;
   // US-42: colour sensitivity
@@ -323,6 +325,10 @@ if(isset($_GET["latitude"])){
       // Config written before this setting existed - append the new key
       $contents .= "\nNOTIFICATION_EMAIL=\"$notification_email\"\n";
     }
+  }
+  if(isset($location_check)) {
+    $contents = preg_match('/^LOCATION_CHECK=/m', $contents) ? preg_replace('/^LOCATION_CHECK=.*/m', "LOCATION_CHECK=$location_check", $contents)
+      : $contents . "\n## LOCATION_CHECK: 1 = at boot, compare the network position with the coordinates and ask when the station moved more than 100 km\nLOCATION_CHECK=$location_check\n";
   }
   if(isset($species_list)) {
     if(preg_match("/^SPECIES_LIST=/m", $contents)) {
@@ -726,6 +732,8 @@ function runProcess() {
         </tr>
       </table>
       <p>Set your Latitude and Longitude to 4 decimal places. Get your coordinates <a href="https://latlong.net" target="_blank">here</a>.</p>
+      <label title="At every boot the station compares its approximate network position (geolocation of the public IP: ipapi.co / ip-api.com) with these coordinates; when it moved more than 100 km the Now page asks whether to use the new location (coordinates, Brazilian state species list, timezone). Nothing changes without your answer.">
+        <input type="checkbox" name="location_check" <?php echo ($config['LOCATION_CHECK'] ?? '1') !== '0' ? 'checked' : ''; ?>> Check at boot whether the station moved (more than 100 km, network position)</label>
       </td></tr></table><br>
       <table class="settingstable" style="width:100%"><tr><td>
       <h2>Notifications - Global</h2>

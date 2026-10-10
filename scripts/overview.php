@@ -68,6 +68,47 @@ if (isset($_GET['set_analysis'])) {
   die();
 }
 
+// The station moved? (owner 2026-10-10) scripts/location_check.py compares the network position with the coordinates
+// at boot and writes location_check.json; the Now page asks. location=use: the detected coordinates (4 decimals), the
+// Brazilian state species list when the current filter is a state, the detected timezone; location=keep: remembered,
+// asked again only after another move of more than 100 km
+if (isset($_GET['location'])) {
+  ensure_authenticated('You must be authenticated to change the settings.');
+  $f = $home . '/BirdNET-Pi/location_check.json';
+  $st = json_decode((string)@file_get_contents($f), true);
+  if (!is_array($st) || empty($st['moved'])) { echo 'Nothing to do'; die(); }
+  $user = get_user();
+  if ($_GET['location'] === 'use') {
+    $lat = round(floatval($st['lat']), 4); $lon = round(floatval($st['lon']), 4);
+    $cf = '/etc/birdnet/birdnet.conf';
+    $c = file_get_contents($cf);
+    $c = preg_replace('/^LATITUDE=.*/m', "LATITUDE=$lat", $c);
+    $c = preg_replace('/^LONGITUDE=.*/m', "LONGITUDE=$lon", $c);
+    $new_list = null;
+    if (preg_match('/^BR-[A-Z]{2}$/', $config['SPECIES_LIST'] ?? '')) {
+      $uf = trim((string)shell_exec('python3 ' . escapeshellarg($home . '/BirdNET-Pi/scripts/locate_state.py') . ' ' . escapeshellarg((string)$lat) . ' ' . escapeshellarg((string)$lon) . ' 2>/dev/null'));
+      if (preg_match('/^[A-Z]{2}$/', $uf) && is_file($home . "/BirdNET-Pi/model/include_lists/BR-$uf.txt")) {
+        $new_list = "BR-$uf";
+        $c = preg_replace('/^SPECIES_LIST=.*/m', "SPECIES_LIST=$new_list", $c);
+      }
+    }
+    if (file_put_contents($cf, $c) === false) { echo 'Error writing the settings'; die(); }
+    if ($new_list !== null && $new_list !== ($config['SPECIES_LIST'] ?? '')) {
+      shell_exec('sudo -u ' . escapeshellarg($user) . ' python3 ' . escapeshellarg($home . '/BirdNET-Pi/scripts/select_species_list.py') . ' > /dev/null 2>&1');
+    }
+    $tz = (string)($st['timezone'] ?? '');
+    if ($tz !== '' && in_array($tz, DateTimeZone::listIdentifiers(), true)) {
+      shell_exec('sudo timedatectl set-timezone ' . escapeshellarg($tz));
+      if (file_exists('/etc/timezone')) shell_exec('echo ' . escapeshellarg($tz) . ' | sudo tee /etc/timezone > /dev/null');
+    }
+    $st['moved'] = false; $st['configured'] = array('lat' => $lat, 'lon' => $lon); $st['distance_km'] = 0; $st['applied'] = date('Y-m-d H:i:s');
+  } else {
+    $st['moved'] = false; $st['dismissed'] = array('lat' => $st['lat'], 'lon' => $st['lon']);
+  }
+  echo file_put_contents($f, json_encode($st, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)) !== false ? 'OK' : 'Error';
+  die();
+}
+
 // Currently Analyzing status (owner 2026-10-09): recordings waiting for the analysis (StreamData *.wav minus the one
 // being recorded), how far behind real time that is, and the recording the spectrogram shows (analyzing_now.txt)
 if (isset($_GET['analysis_status'])) {
@@ -512,6 +553,26 @@ if (file_exists('./Charts/'.$chart)) {
 </div>
 
 <!-- today's totals and the search, formerly the top of Today's Detections (owner 2026-10-09) -->
+<?php $loc = json_decode((string)@file_get_contents($home . '/BirdNET-Pi/location_check.json'), true);
+if (is_array($loc) && !empty($loc['moved'])) {
+  $where = htmlspecialchars(implode(', ', array_filter(array($loc['city'] ?? '', $loc['region'] ?? '', $loc['country'] ?? ''))));
+  $list_note = preg_match('/^BR-[A-Z]{2}$/', $config['SPECIES_LIST'] ?? '') ? ', the species list of that state' : ''; ?>
+<div class="now-only locmoved" id="locmoved">&#128205; The station seems to be in <b><?php echo $where; ?></b> — about <?php echo intval($loc['distance_km']); ?> km from its configured location
+  (network position at boot, <?php echo htmlspecialchars($loc['checked'] ?? ''); ?>).
+  <button type="button" onclick="locAnswer('use')" title="Coordinates <?php echo round($loc['lat'], 4) . ', ' . round($loc['lon'], 4); ?><?php echo $list_note; ?> and timezone <?php echo htmlspecialchars($loc['timezone'] ?? ''); ?>">Use this location</button>
+  <button type="button" class="keep" onclick="locAnswer('keep')">Not moved</button></div>
+<script>
+function locAnswer(a) {
+  var x = new XMLHttpRequest();
+  x.onload = function () {
+    if (this.responseText.trim() === 'OK') { document.getElementById('locmoved').remove(); if (a === 'use') location.reload(); }
+    else alert(this.status === 401 ? 'Log in first.' : this.responseText);
+  };
+  x.open('GET', 'overview.php?location=' + a, true);
+  x.send();
+}
+</script>
+<?php } ?>
 <div class="now-only nowtoday"><div id="todaystats" class="overview"></div>
   <!-- analysis settings, applied from the next recording (owner 2026-10-09) -->
   <form class="nowanalysis" onsubmit="saveAnalysis(event)" title="Applied from the next recording (about <?php echo intval($config['RECORDING_LENGTH'] ?? 15); ?> s), no restart">

@@ -445,6 +445,27 @@ if [ -n "${STATION_LAYER}" ] && [ -d "$HOME/BirdNET-Pi/custom/${STATION_LAYER}/m
   done
 fi
 
+# boot location check (owner 2026-10-10): the setting and the service on stations installed before it
+grep -q '^LOCATION_CHECK=' /etc/birdnet/birdnet.conf || printf '\n## LOCATION_CHECK: 1 = at boot, compare the network position with the coordinates and ask when the station moved more than 100 km\nLOCATION_CHECK=1\n' >> /etc/birdnet/birdnet.conf
+if [ ! -f "$HOME/BirdNET-Pi/templates/birdnet_location_check.service" ]; then
+  cat << EOF > "$HOME/BirdNET-Pi/templates/birdnet_location_check.service"
+[Unit]
+Description=BirdnetPi++ location check (did the station move more than 100 km?)
+Wants=network-online.target
+After=network-online.target
+[Service]
+Type=oneshot
+User=$USER
+ExecStart=/usr/bin/python3 $HOME/BirdNET-Pi/scripts/location_check.py
+[Install]
+WantedBy=multi-user.target
+EOF
+  chown "$USER:$USER" "$HOME/BirdNET-Pi/templates/birdnet_location_check.service"
+  ln -sf "$HOME/BirdNET-Pi/templates/birdnet_location_check.service" /usr/lib/systemd/system
+  systemctl daemon-reload
+  systemctl enable birdnet_location_check.service
+fi
+
 # species table: look up, in the background, the labels missing from model/species_info.csv (a new model)
 sudo -u "$USER" -H "$HOME/BirdNET-Pi/scripts/update_species_info.sh" || true
 

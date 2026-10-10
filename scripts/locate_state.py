@@ -11,6 +11,7 @@ Prints the UF (e.g. SP) when the point is in Brazil, nothing otherwise; exit 0 e
 -v adds the method used on stderr.
 """
 import json
+import math
 import os
 import sys
 import urllib.request
@@ -52,7 +53,32 @@ def offline(lat, lon):
             # first ring = outline, the others = holes
             if inside_ring(lon, lat, polygon[0]) and not any(inside_ring(lon, lat, hole) for hole in polygon[1:]):
                 return feature['properties']['uf']
-    return ''
+    # the shipped outlines are simplified: a coastal point (Recife, -8.43/-34.98) can fall just outside the coastline;
+    # the nearest state counts when its outline is within ~30 km
+    best, best_km = '', NEAR_KM
+    for feature in features:
+        geometry = feature['geometry']
+        polygons = geometry['coordinates'] if geometry['type'] == 'MultiPolygon' else [geometry['coordinates']]
+        for polygon in polygons:
+            d = ring_km(lon, lat, polygon[0])
+            if d < best_km:
+                best, best_km = feature['properties']['uf'], d
+    return best
+
+
+NEAR_KM = 30
+
+
+def ring_km(x, y, ring):
+    # shortest distance (km, flat approximation, fine at this scale) from the point to the ring's edges
+    kx = 111.32 * math.cos(math.radians(y))
+    best = float('inf')
+    for (x1, y1), (x2, y2) in zip(ring, ring[1:] + ring[:1]):
+        ax, ay, bx, by = (x1 - x) * kx, (y1 - y) * 110.57, (x2 - x) * kx, (y2 - y) * 110.57
+        dx, dy = bx - ax, by - ay
+        t = max(0.0, min(1.0, -(ax * dx + ay * dy) / (dx * dx + dy * dy))) if dx or dy else 0.0
+        best = min(best, math.hypot(ax + t * dx, ay + t * dy))
+    return best
 
 
 def main():
