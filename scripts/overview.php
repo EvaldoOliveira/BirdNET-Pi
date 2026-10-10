@@ -71,7 +71,7 @@ if (isset($_GET['set_analysis'])) {
 // The station moved? (owner 2026-10-10) scripts/location_check.py compares the network position with the coordinates
 // at boot and writes location_check.json; the Now page asks. location=use: the detected coordinates (4 decimals), the
 // Brazilian state species list when the current filter is a state, the detected timezone; location=keep: remembered,
-// asked again only after another move of more than 100 km
+// asked again only after another move of more than LOCATION_MOVE_KM (default 100 km)
 if (isset($_GET['location'])) {
   ensure_authenticated('You must be authenticated to change the settings.');
   $f = $home . '/BirdNET-Pi/location_check.json';
@@ -575,19 +575,31 @@ function locAnswer(a) {
 <?php } ?>
 <div class="now-only nowtoday"><div id="todaystats" class="overview"></div>
   <!-- analysis settings, applied from the next recording (owner 2026-10-09) -->
-  <form class="nowanalysis" onsubmit="saveAnalysis(event)" title="Applied from the next recording (about <?php echo intval($config['RECORDING_LENGTH'] ?? 15); ?> s), no restart">
+  <!-- folded to one Param. button (owner 2026-10-10: the box takes too much room on a phone); open / closed is remembered
+       per browser — closed by default on a phone, open on a wider screen -->
+  <div class="nacontrols"><div class="nablock">
+  <button type="button" class="naopen" id="na_open" onclick="naShow(true)" title="Analysis settings (Min. Conf., Loc. Thresh., Sigm. Sens., Rec. Length, Overlap)">Param.</button>
+  <form class="nowanalysis" id="na_form" onsubmit="saveAnalysis(event)" title="Applied from the next recording (about <?php echo intval($config['RECORDING_LENGTH'] ?? 15); ?> s), no restart">
+    <!-- Default (owner 2026-10-10): the model generation's defaults in every field, then saved like Apply -->
+    <?php $is_v3 = strpos($config['MODEL'] ?? '', 'BirdNET-Plus') === 0;
+      $na_defaults = $is_v3 ? array('na_conf' => '0.35', 'na_sf' => '0.5', 'na_sens' => '1', 'na_len' => '15', 'na_over' => '1.2')
+                            : array('na_conf' => '0.7', 'na_sf' => '0.03', 'na_sens' => '1.25', 'na_len' => '15', 'na_over' => '0'); ?>
+    <button type="button" class="nadefault" onclick="naDefaults()" data-defaults="<?php echo htmlspecialchars(json_encode($na_defaults), ENT_QUOTES); ?>"
+      title="Back to the defaults of the model in use (<?php echo $is_v3 ? 'BirdNET+ V3: Min. Conf. 0.35, Loc. Thresh. 0.5, Sigm. Sens. 1, Rec. Length 15 s, Overlap 1.2' : 'BirdNET V2.4: Min. Conf. 0.7, Loc. Thresh. 0.03, Sigm. Sens. 1.25, Rec. Length 15 s, Overlap 0'; ?>) and save">Default</button>
     <!-- two groups (owner 2026-10-09): the thresholds, then the analysis settings -->
     <span class="nagroup" title="Thresholds">
-      <label title="Min. Conf. — minimum confidence (CONFIDENCE)&#10;Range 0.01 – 0.99 · default 0.35 with BirdNET+ V3, 0.70 with V2.4&#10;Lower: more detections, more of them wrong. Higher: fewer, more reliable; quiet or distant birds are missed.&#10;A species threshold (Sp. Override, Species Pages) replaces it for that species.">Min. Conf. <input type="number" id="na_conf" min="0.01" max="0.99" step="any" value="<?php echo htmlspecialchars($config['CONFIDENCE'] ?? ''); ?>"></label>
-      <label title="Loc. Thresh. — location threshold (SF_THRESH)&#10;Range 0.0005 – 0.99 · default 0.50 with V3, 0.03 with V2.4&#10;Species the location model expects here this week with a probability below it are left out.&#10;Lower: more species allowed (rare and vagrant ones too, more errors). Higher: only the species expected here; the Whitelist bypasses it.">Loc. Thresh. <input type="number" id="na_sf" min="0.0005" max="0.99" step="any" value="<?php echo htmlspecialchars($config['SF_THRESH'] ?? ''); ?>"></label>
+      <label title="Min. Conf. — the lowest score a detection needs to be kept (CONFIDENCE).&#10;Default BirdNET+ V3: 0.35&#10;Default BirdNET V2.4: 0.70&#10;Range: 0.01 – 0.99&#10;Higher: fewer detections, more reliable; quiet or distant birds are missed.&#10;Lower: more detections, more of them wrong (a species threshold, Sp. Override, replaces it for that species).">Min. Conf. <input type="number" id="na_conf" min="0.01" max="0.99" step="any" value="<?php echo htmlspecialchars($config['CONFIDENCE'] ?? ''); ?>"></label>
+      <label title="Loc. Thresh. — species the location model expects here this week below this probability are left out (SF_THRESH).&#10;Default BirdNET+ V3: 0.50&#10;Default BirdNET V2.4: 0.03&#10;Range: 0.0005 – 0.99&#10;Higher: only the species expected here (the Whitelist bypasses it).&#10;Lower: more species allowed — rare and vagrant ones too, with more errors.">Loc. Thresh. <input type="number" id="na_sf" min="0.0005" max="0.99" step="any" value="<?php echo htmlspecialchars($config['SF_THRESH'] ?? ''); ?>"></label>
     </span>
     <span class="nagroup" title="Analysis">
-      <label title="Sigm. Sens. — sigmoid sensitivity (SENSITIVITY)&#10;Range 0.5 – 1.5 · default 1.0 with V3, 1.25 with V2.4&#10;Bends the model's scores before Min. Conf. is applied.&#10;Higher: scores rise, more detections, more false ones. Lower: scores fall, fewer detections.">Sigm. Sens. <input type="number" id="na_sens" min="0.5" max="1.5" step="any" value="<?php echo htmlspecialchars($config['SENSITIVITY'] ?? ''); ?>"></label>
-      <label title="Rec. Length — recording length in seconds (RECORDING_LENGTH)&#10;Range 3 – 60 · default 15&#10;The length of each file recorded and analysed.&#10;Shorter: detections appear sooner, more files and a little more work per minute. Longer: fewer files, a detection shows up later.&#10;A change restarts the recording service; the extraction length is kept within it.">Rec. Length <input type="number" id="na_len" min="3" max="60" step="any" value="<?php echo htmlspecialchars($config['RECORDING_LENGTH'] ?? '15'); ?>"></label>
-      <label title="Overlap — seconds of overlap between the 3 s analysis windows (OVERLAP)&#10;Range 0 – 2.9 · default 1.2 with V3, 0 with V2.4&#10;Higher: more windows per recording, calls on a window edge are caught, more CPU and repeated detections of one call. 0: windows side by side, fastest.">Overlap <input type="number" id="na_over" min="0" max="2.9" step="any" value="<?php echo htmlspecialchars($config['OVERLAP'] ?? ''); ?>"></label>
+      <label title="Sigm. Sens. — bends the model&#x27;s scores before Min. Conf. is applied (SENSITIVITY).&#10;Default BirdNET+ V3: 1.0&#10;Default BirdNET V2.4: 1.25&#10;Range: 0.5 – 1.5&#10;Higher: scores rise — more detections, more false ones.&#10;Lower: scores fall — fewer detections.">Sigm. Sens. <input type="number" id="na_sens" min="0.5" max="1.5" step="any" value="<?php echo htmlspecialchars($config['SENSITIVITY'] ?? ''); ?>"></label>
+      <label title="Rec. Length — seconds of each recorded and analysed file (RECORDING_LENGTH); a change restarts the recording service.&#10;Default BirdNET+ V3: 15 s&#10;Default BirdNET V2.4: 15 s&#10;Range: 3 – 60 s&#10;Higher: fewer files; a detection shows up later.&#10;Lower: detections appear sooner; more files, a little more work per minute.">Rec. Length <input type="number" id="na_len" min="3" max="60" step="any" value="<?php echo htmlspecialchars($config['RECORDING_LENGTH'] ?? '15'); ?>"></label>
+      <label title="Overlap — seconds the 3 s analysis windows overlap (OVERLAP).&#10;Default BirdNET+ V3: 1.2 s&#10;Default BirdNET V2.4: 0 s&#10;Range: 0 – 2.9 s&#10;Higher: calls on a window edge are caught; more CPU and repeated detections of one call.&#10;Lower: fewer windows; 0 = side by side, the fastest.">Overlap <input type="number" id="na_over" min="0" max="2.9" step="any" value="<?php echo htmlspecialchars($config['OVERLAP'] ?? ''); ?>"></label>
     </span>
-    <button type="submit" id="na_apply">Apply</button>
+    <span class="nabuttons"><button type="button" class="naclose" onclick="naShow(false)" title="Fold the settings away">Close</button><button type="submit" id="na_apply">Apply</button></span>
   </form>
+  </div>
+  </div>
 </div>
 <!-- Now page (owner 2026-10-08): Currently Analyzing first, then the 30 most recent detections as cards. The most recent
      detection card is no longer shown; it is still loaded (hidden) because the page watches it to notice a new
@@ -607,8 +619,15 @@ echo "<img id=\"spectrogramimage\" src=\"spectrogram.png?nocache=$time\">";
   <span class="nowmodes"><button type="button" data-mode="spectrogram" onclick="nowMode('spectrogram')">Spectrogram</button><button type="button" data-mode="list" onclick="nowMode('list')">List</button>
   <button type="button" class="nowdefault" id="nowview_default" onclick="nowSetDefault()" title="Show this view first (Basic Settings › Spectrogram and colours)">Set as default</button></span>
   <span class="nowsearch"><span class="nowmodes nowfilters" title="Only the detections worth a look: confidence or location probability below the value">
-    <button type="button" data-filter="" onclick="nowFilter('')">All</button><button type="button" data-filter="lowconf" onclick="nowFilter('lowconf')">Low Conf</button><button type="button" data-filter="lowprob" onclick="nowFilter('lowprob')">Low Prob</button>
-    <select id="nowbelow" onchange="nowBelowChanged(this.value)" title="Below this value"><?php for ($v = 5; $v <= 95; $v += 5) echo '<option value="' . $v . '">&lt; ' . $v . '%</option>'; ?></select></span>
+    <span class="nowfilterlabel" title="Filter"><svg viewBox="0 0 24 24" width="18" height="18" aria-label="Filter" role="img"><path fill="currentColor" d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/></svg></span><button type="button" data-filter="" onclick="nowFilter('')">All</button><button type="button" data-filter="uncommon" onclick="nowFilter('uncommon')" title="Only species detected at most N times from yesterday 00:00 until now">Uncommon</button><button type="button" data-filter="lowconf" onclick="nowFilter('lowconf')">Low Conf</button><button type="button" data-filter="lowprob" onclick="nowFilter('lowprob')">Low Prob</button>
+    </span>
+    <?php // Uncommon picklist: from the largest species count since yesterday 00:00 down to 1, in round steps
+      $most = intval(get_db()->querySingle("SELECT MAX(n) FROM (SELECT COUNT(*) AS n FROM detections WHERE Date >= DATE('now', 'localtime', '-1 day') GROUP BY Sci_Name)"));
+      $steps = array();
+      foreach (array(1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 3000, 5000, 10000, 20000, 50000) as $v) if ($v < $most) $steps[] = $v;
+      if ($most > 0) $steps[] = $most;
+      rsort($steps); ?>
+    <script>var NOW_UNCOMMON_STEPS = <?php echo json_encode($steps ?: array(1)); ?>;</script>
     <input autocomplete="off" size="22" type="search" placeholder="Search detections..." id="searchterm"
     title="Common or scientific name, time, confidence; start with NOT to leave matches out" oninput="nowSearchTyped(this.value)"></span></h3>
 <div style="padding-bottom:10px;" id="detections_table"><h3>Loading...</h3></div>
@@ -742,6 +761,36 @@ var nowOffset = 0;
 var nowTerm = '';
 // any value is accepted while typing; leaving a field rounds it to its precision and keeps it inside its limits
 // (owner 2026-10-09: the browser refused 0.5 for Loc. Thresh., whose min 0.0005 + step 0.01 allowed only 0.0105, 0.0205...)
+// a field whose value is not the model's default turns light yellow (owner 2026-10-10)
+function naMarkDefaults() {
+  var b = document.querySelector('.nadefault');
+  if (!b) return;
+  var d = JSON.parse(b.dataset.defaults);
+  Object.keys(d).forEach(function (id) {
+    var inp = document.getElementById(id);
+    if (inp) inp.classList.toggle('nondefault', parseFloat(inp.value) !== parseFloat(d[id]));
+  });
+}
+document.addEventListener('DOMContentLoaded', function () {
+  naMarkDefaults();
+  ['na_conf', 'na_sf', 'na_sens', 'na_len', 'na_over'].forEach(function (id) { var inp = document.getElementById(id); if (inp) inp.addEventListener('input', naMarkDefaults); });
+});
+function naDefaults() {
+  var d = JSON.parse(document.querySelector('.nadefault').dataset.defaults);
+  Object.keys(d).forEach(function (id) { var inp = document.getElementById(id); if (inp) inp.value = d[id]; });
+  naMarkDefaults();
+  document.getElementById('na_form').requestSubmit();
+}
+function naShow(open) {
+  document.getElementById('na_form').style.display = open ? '' : 'none';
+  document.getElementById('na_open').style.display = open ? 'none' : '';
+  try { localStorage.setItem('now_params', open ? 'open' : 'closed'); } catch (e) {}
+}
+document.addEventListener('DOMContentLoaded', function () {
+  var saved = null;
+  try { saved = localStorage.getItem('now_params'); } catch (e) {}
+  naShow(saved ? saved === 'open' : window.innerWidth > 800);
+});
 var NA_DECIMALS = {na_conf: 2, na_sf: 4, na_sens: 2, na_over: 1, na_len: 0};
 function naRound(inp) {
   var v = parseFloat(String(inp.value).replace(',', '.'));
@@ -752,7 +801,7 @@ function naRound(inp) {
 document.addEventListener('DOMContentLoaded', function () {
   Object.keys(NA_DECIMALS).forEach(function (id) {
     var inp = document.getElementById(id);
-    if (inp) inp.addEventListener('change', function () { naRound(inp); });
+    if (inp) inp.addEventListener('change', function () { naRound(inp); naMarkDefaults(); });
   });
 });
 function saveAnalysis(e) {
@@ -774,29 +823,59 @@ function saveAnalysis(e) {
     + '&sf_thresh=' + encodeURIComponent(document.getElementById('na_sf').value) + '&recording_length=' + encodeURIComponent(document.getElementById('na_len').value), true);
   x.send();
 }
-// filters (owner 2026-10-09): All / Low Conf (confidence below N %) / Low Prob (location probability below N %), pages of
-// 30 like the full list; the filter and each one's value (picklist in steps of 5) are remembered in this browser
-var nowFilterKind = '';
+// filters (owner 2026-10-09/10): Uncommon (species detected at most N times since yesterday 00:00), Low Conf (confidence
+// below P %), Low Prob (location probability below P %) — each button switches its filter on/off, several apply together,
+// each active one keeps its picklist open beside its button; All switches them all off. Remembered in this browser.
+var nowFilters = {};
 function nowStore(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; }
-function nowBelow() { return nowStore('now_below_' + nowFilterKind) || '50'; }
-function nowFilterButtons() {
-  document.querySelectorAll('.nowfilters button').forEach(function (b) { b.classList.toggle('active', b.dataset.filter === nowFilterKind); });
-  var sel = document.getElementById('nowbelow');
-  sel.style.display = nowFilterKind ? '' : 'none';
-  // the value picklist sits right after the active filter's button
-  var on = document.querySelector('.nowfilters button[data-filter="' + nowFilterKind + '"]');
-  if (nowFilterKind && on) on.after(sel);
-  sel.value = nowBelow();
+function nowDefaultValue(kind) {
+  if (kind === 'uncommon') return String(NOW_UNCOMMON_STEPS.filter(function (x) { return x <= 10; })[0] || NOW_UNCOMMON_STEPS[NOW_UNCOMMON_STEPS.length - 1]);
+  return '50';
 }
-function nowFilter(kind) { nowFilterKind = kind; nowStore('now_filter', kind); nowFilterButtons(); nowOffset = 0; loadFiveMostRecentDetections(); }
-function nowBelowChanged(v) { nowStore('now_below_' + nowFilterKind, v); nowOffset = 0; loadFiveMostRecentDetections(); }
-document.addEventListener('DOMContentLoaded', function () {
-  var k = nowStore('now_filter');
-  nowFilterKind = (k === 'lowconf' || k === 'lowprob') ? k : '';
+function nowFilterOptions(kind) {
+  return kind === 'uncommon'
+    ? NOW_UNCOMMON_STEPS.map(function (v) { return [v, '\u2264 ' + v + ' since yesterday']; })
+    : Array.apply(null, Array(19)).map(function (_, i) { var v = (i + 1) * 5; return [v, '< ' + v + '%']; });
+}
+function nowFilterButtons() {
+  var any = Object.keys(nowFilters).length > 0;
+  document.querySelectorAll('.nowfilters button[data-filter]').forEach(function (b) {
+    var k = b.dataset.filter;
+    b.classList.toggle('active', k === '' ? !any : nowFilters[k] !== undefined);
+    if (k === '') return;
+    var sel = document.getElementById('nowbelow_' + k);
+    if (nowFilters[k] === undefined) { if (sel) sel.remove(); return; }
+    if (!sel) {
+      sel = document.createElement('select');
+      sel.id = 'nowbelow_' + k;
+      sel.className = 'nowbelow';
+      sel.innerHTML = nowFilterOptions(k).map(function (o) { return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('');
+      // the chosen value is kept as this filter's default: switched off and on again, it comes back with it
+      sel.onchange = function () { nowFilters[k] = sel.value; nowStore('now_below_' + k, sel.value); nowSaveFilters(); nowOffset = 0; loadFiveMostRecentDetections(); };
+      b.after(sel);
+    }
+    if (![].some.call(sel.options, function (o) { return o.value === String(nowFilters[k]); })) nowFilters[k] = nowDefaultValue(k);
+    sel.value = nowFilters[k];
+  });
+}
+function nowSaveFilters() { nowStore('now_filters', JSON.stringify(nowFilters)); }
+function nowFilter(kind) {
+  if (kind === '') nowFilters = {};
+  else if (nowFilters[kind] !== undefined) delete nowFilters[kind];
+  else nowFilters[kind] = nowStore('now_below_' + kind) || nowDefaultValue(kind);
   nowFilterButtons();
-  if (nowFilterKind) loadFiveMostRecentDetections();
+  Object.keys(nowFilters).forEach(function (k) { nowStore('now_below_' + k, nowFilters[k]); });
+  nowSaveFilters();
+  nowOffset = 0;
+  loadFiveMostRecentDetections();
+}
+document.addEventListener('DOMContentLoaded', function () {
+  try { nowFilters = JSON.parse(nowStore('now_filters') || '{}') || {}; } catch (e) { nowFilters = {}; }
+  Object.keys(nowFilters).forEach(function (k) { if (['uncommon', 'lowconf', 'lowprob'].indexOf(k) < 0) delete nowFilters[k]; });
+  nowFilterButtons();
+  if (Object.keys(nowFilters).length) loadFiveMostRecentDetections();
 });
-function nowFilterQuery() { return nowFilterKind ? '&filter=' + nowFilterKind + '&below=' + nowBelow() : ''; }
+function nowFilterQuery() { return Object.keys(nowFilters).map(function (k) { return '&' + k + '=' + encodeURIComponent(nowFilters[k]); }).join(''); }
 function nowSearch(v) { nowTerm = v.trim(); nowOffset = 0; loadFiveMostRecentDetections(); }
 // search as you type (owner 2026-10-09): 300 ms after the last key; an empty box shows every detection again
 var nowSearchTimer = null;
@@ -836,9 +915,14 @@ function nowPage(offset) {
   var h = document.querySelector('h3.now-cards');
   if (h) h.scrollIntoView({behavior: 'smooth'});
 }
+// only the answer to the latest request is shown (owner 2026-10-10): a filtered request is slower, and switching a filter
+// off quickly let its late answer overwrite the unfiltered list, so the filter looked still on
+var nowListRequest = 0;
 function loadFiveMostRecentDetections() {
   const xhttp = new XMLHttpRequest();
+  const mine = ++nowListRequest;
   xhttp.onload = function() {
+    if (mine !== nowListRequest) return;
     if(this.responseText.length > 0 && !this.responseText.includes("Database is busy")) {
       document.getElementById("detections_table").innerHTML= this.responseText;
       if (window.stdTables) stdTables(document.getElementById("detections_table"));

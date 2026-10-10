@@ -24,13 +24,12 @@ $size = (int)trim((string)shell_exec('du -sb ' . escapeshellarg(deleted_dir()) .
 .wipe button.restorebtn:hover { background: var(--accent,#2b5e22); color: #fff; }
 </style>
 <div class="wipe">
-  <h2>&#128465; Purge Removed</h2>
-  <p>"Remove detection" takes a detection out of the BirdNET folders and statistics and moves it to the Removed folder.
+  <p>"Remove detection" takes a detection out of the BirdNET folders and statistics and moves it to the Removed folder.<br>
     Nothing is deleted automatically: deleting is manual and happens only here.</p>
   <p><b><?php echo number_format($total); ?></b> removed detections (<?php echo round($size / 1048576, 1); ?> MB) in
     <code>~/BirdSongs/Extracted/Removed</code>
     <a class="folderbtn" target="_blank" href="scripts/filemanager/filemanager.php?p=<?php echo rawurlencode(basename(get_home()) . '/BirdSongs/Extracted/Removed'); ?>" title="Opens the File Manager in the Removed folder (new tab)">&#128194; Open the Removed folder</a></p>
-  <p>Restore puts them back where they were; Delete removes their audio, spectrogram and database line for good.</p>
+  <p>Restore puts them back where they were;<br>Delete removes their audio, spectrogram and database line for good.</p>
   <?php if (!$rows) { echo '<p>Nothing removed.</p>'; } else { ?>
   <p><button type="button" class="restorebtn" onclick="restoreRemoved('', this)">Restore all</button>
     <button type="button" class="wipebtn" onclick="wipeDeleted('', this)">Delete all removed detections</button></p>

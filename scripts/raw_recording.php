@@ -71,9 +71,8 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
 <div class="settings">
 <form method="POST" action="views.php?view=Raw%20Recording">
 <table class="settingstable"><tr><td>
-  <h2>Raw Recording</h2>
   <p>Long, unprocessed WAV recordings (e.g. the whole dawn chorus) from the station's microphone, made while the
-  analysis keeps running. Files: <code>~/BirdNET-Pi/raw-recording/YYYY-MM-DD-&lt;time&gt;-&lt;station&gt;.wav</code>
+  analysis keeps running.<br>Files: <code>~/BirdNET-Pi/raw-recording/YYYY-MM-DD-&lt;time&gt;-&lt;station&gt;.wav</code>
   (48 kHz, 16-bit) with a <code>.recording</code> session log.</p>
   <?php if ($message !== '') echo '<p><b>' . $h($message) . '</b></p>'; ?>
   <label><input type="checkbox" name="enabled" <?php echo $enabled ? 'checked' : ''; ?>> Scheduled recording on</label><br><br>
@@ -81,7 +80,7 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
   <?php foreach ($dow as $n => $label) {
     echo '<label style="margin-right:8px"><input type="checkbox" name="day_' . $n . '"' . (in_array((string)$n, $days, true) ? ' checked' : '') . '> ' . $label . '</label>';
   } ?><br>
-  <label><input type="checkbox" name="recurrent" <?php echo $recurrent ? 'checked' : ''; ?>> Recurrent (every chosen day; untick = only the next one, then off)</label><br><br>
+  <label><input type="checkbox" name="recurrent" <?php echo $recurrent ? 'checked' : ''; ?>> Recurrent (every chosen day;<br>untick = only the next one, then off)</label><br><br>
   <label>Start: <input type="time" step="1" name="start" value="<?php echo $h($start); ?>"></label>
   <label style="margin-left:12px">End: <input type="time" step="1" name="end" value="<?php echo $h($end); ?>"></label>
   <small>(an end earlier than the start ends the next day)</small><br><br>

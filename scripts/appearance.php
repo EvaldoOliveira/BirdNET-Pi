@@ -30,7 +30,7 @@ $card = function ($key, $name, $col) use ($current) {
   return '<button type="button" class="thcard' . ($key === $current ? ' on' : '') . '" data-theme="' . $key . '" data-colors="' . implode(',', $col) . '">'
     . '<span class="mock" style="background:' . $col[0] . '"><span class="mm" style="background:' . $col[1] . '"></span>'
     . '<span class="mp" style="background:' . $col[2] . '"><i style="background:' . $col[3] . '"></i><i style="background:' . $col[4] . '"></i></span></span>'
-    . '<b>' . htmlspecialchars($name) . '</b></button>';
+    . '<b>' . str_replace(' (', '<br>(', htmlspecialchars($name)) . '</b></button>';
 };
 ?>
 <style>
@@ -51,7 +51,6 @@ $card = function ($key, $name, $col) use ($current) {
 .app #thmsg { font-size: 13px; }
 </style>
 <div class="app">
-  <h2>Appearance</h2>
   <p class="note">Colours of the app. A click shows the theme at once; <b>Apply</b> keeps it for every browser.<?php
     if ($dark) echo ' <b>The dark colour scheme is on</b> (Basic Settings): themes change the light scheme only.'; ?></p>
   <div class="grid">

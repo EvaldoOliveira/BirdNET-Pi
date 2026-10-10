@@ -6,7 +6,7 @@
     if ($species_list=="include") {
         $title="Included";
         $label="Custom Species";
-        $message="Warning!<br>If this list contains ANY species, the system will ONLY recognize those species. Keep this list EMPTY unless you are ONLY interested in detecting specific species.";
+        $message="Warning!<br>If this list contains ANY species, the system will ONLY recognize those species.<br>Keep this list EMPTY unless you are ONLY interested in detecting specific species.";
         $selectedfilename = './scripts/include_species_list.txt';
     } elseif ($species_list=="exclude") {
         $title="Excluded";
@@ -133,7 +133,7 @@ if ($species_list == "include") {
 <div class="splist-note"><?php echo $message ?></div>
 <div class="splist-note splist-source">Groups (birds, mammals, amphibians, insects, domestic) and regions come from a formal reference:
   <a href="https://www.gbif.org" target="_blank">GBIF</a> (Global Biodiversity Information Facility) — the GBIF Backbone Taxonomy for the class of each label and
-  GBIF occurrence records for the continents (at least 3 % of the records; Global = four or more continents; Ocean = mostly records at sea). Table: model/species_info.csv.</div>
+  GBIF occurrence records for the continents (at least 3 % of the records;<br>Global = four or more continents;<br>Ocean = mostly records at sea).<br>Table: model/species_info.csv.</div>
 
 <?php if ($species_list == "include") { ?>
 <div class="splist-tools">

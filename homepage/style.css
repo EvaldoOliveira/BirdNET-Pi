@@ -1292,3 +1292,55 @@ h3.nowsec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margi
 .locmoved { margin: 6px 0 8px; padding: 8px 12px; border-radius: 8px; background: #fff3cd; color: #5d4300; font-size: 14px; text-align: left; }
 .locmoved button { width: auto; margin-left: 8px; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: var(--accent,#2b5e22); color: #fff; cursor: pointer; font-weight: 600; }
 .locmoved button.keep { background: #fff; color: var(--accent,#2b5e22); }
+.nowtoday .naopen { width: auto; align-self: flex-start; padding: 5px 14px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; margin-left: auto; }
+.nowanalysis .nabuttons { display: flex; flex-direction: column; gap: 4px; align-self: center; }
+.nowanalysis .nabuttons button { width: auto; min-width: 64px; }
+.nowanalysis .naclose { padding: 3px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; }
+.nowanalysis .nabuttons button, .nowanalysis #na_apply { min-width: 54px; padding: 3px 10px; font-size: 12px; }
+/* Live Audio looks like a button (owner 2026-10-10: as plain text it went unnoticed) */
+.banner .stream button { padding: 5px 14px !important; border-radius: 14px !important; border: 1px solid var(--accent,#2b5e22) !important; background: #fff !important; color: var(--accent,#2b5e22) !important; font-weight: 600; cursor: pointer; }
+.banner .stream button:hover { background: var(--accent,#2b5e22) !important; color: #fff !important; }
+.nowanalysis .nadefault { width: auto; align-self: center; padding: 3px 10px; font-size: 12px; border-radius: 12px; border: 1px dashed var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; }
+.nowtoday .nowanalysis { gap: 6px; padding: 5px 8px; } .nowtoday .nowanalysis input, .nowtoday .nowanalysis #na_conf { width: 52px; } .nowanalysis .nagroup { gap: 5px; padding: 3px 6px; }
+.nowanalysis input.nondefault { background: #fff8c4 !important; }
+.nowfilters .nowfilterlabel { font-size: 12px; font-weight: 600; margin: 0 2px 0 8px; }
+.nowfilters .nowfilterlabel { display: inline-flex; align-items: center; color: var(--accent,#2b5e22); margin: 0 4px 0 0; }
+button.autolocate { width: auto; padding: 4px 14px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; }
+button.autolocate:disabled { opacity: .5; cursor: wait; }
+.nowtoday .naopen + .nowanalysis + .nalive, .nowtoday .nalive { margin-left: 8px; align-self: flex-start; }
+.nowtoday .nalive.on { background: #c62828; border-color: #c62828; color: #fff; }
+.nowanalysis .nabuttons .nalive { margin-left: 0; padding: 2px 10px; font-size: 12px; border-radius: 12px; }
+#live_audio { height: 32px; width: 240px; max-width: 60vw; align-self: flex-start; margin-left: 6px; }
+.livevol { position: relative; align-self: flex-start; margin-left: 4px; }
+.livevol > button { width: auto; padding: 3px 8px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; cursor: pointer; font-size: 14px; line-height: 1.2; }
+.livevol .volpop { display: none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; padding: 8px 6px; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.25); z-index: 30; }
+.livevol .volpop.open { display: block; }
+.livevol .volpop input { writing-mode: vertical-lr; direction: rtl; width: 22px; height: 110px; margin: 0; cursor: pointer; }
+/* the Now live player keeps its time bar; its own speaker is hidden in favour of the speaker with the vertical slider */
+#live_audio::-webkit-media-controls-mute-button, #live_audio::-webkit-media-controls-volume-slider, #live_audio::-webkit-media-controls-volume-control-container { display: none !important; }
+/* Param. and Live are two blocks side by side (owner 2026-10-10), each opens on its own; together they wrap below the cards when there is no room */
+.nowtoday .nacontrols { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; margin-left: auto; justify-content: flex-end; }
+.nowtoday .nablock, .nowtoday .liveblock { display: flex; align-items: flex-start; gap: 4px; }
+.nowtoday .nacontrols .naopen, .nowtoday .nacontrols .nalive { margin-left: 0; }
+.hmhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hmsort { margin-left: auto; display: inline-flex; align-items: center; gap: 0; font-weight: normal; }
+.hmsort small { margin-right: 6px; font-size: 12px; }
+.hmsort button { width: auto; padding: 3px 12px; font-size: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); cursor: pointer; margin-left: -1px; }
+.hmsort button:first-of-type { border-radius: 12px 0 0 12px; } .hmsort button:last-of-type { border-radius: 0 12px 12px 0; }
+.hmsort button.on { background: var(--accent,#2b5e22); color: #fff; }
+.sea .top .right { gap: 10px; align-items: center; } .sea .hmsort { margin-left: 0; }
+.hmhead .hmfilter { padding: 4px 8px; font-size: 13px; width: 200px; max-width: 100%; font-weight: normal; }
+/* period navigation, one control for By Hour and By Week (owner 2026-10-10): All · ◀ · current period · ▶ */
+.periodnav { display: inline-flex; gap: 0; align-items: center; }
+.periodnav a { padding: 4px 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; text-decoration: none; margin-left: -1px; font-size: 13px; white-space: nowrap; }
+.periodnav a:first-child { border-radius: 12px 0 0 12px; margin-left: 0; } .periodnav a:last-child { border-radius: 0 12px 12px 0; }
+.periodnav a.on { background: var(--accent,#2b5e22); color: #fff; } .periodnav a.off { opacity: .35; pointer-events: none; }
+.yrange { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; margin: 0; }
+.yrange select { padding: 2px 4px; } .yrange button { width: auto; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: var(--accent,#2b5e22); color: #fff; font-weight: 600; cursor: pointer; }
+.dash .bar .periodnav { gap: 0; } .hmsort button { white-space: nowrap; }
+/* Live Audio in the header (owner 2026-10-10): button, the player's time bar and the speaker on one line */
+.banner .stream { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.banner .stream button.liveaudio.on { background: #c62828 !important; border-color: #c62828 !important; color: #fff !important; }
+.banner .stream .livevol { align-self: center; }
+.banner .stream .livevol > button { padding: 3px 8px !important; font-size: 14px; }
+.banner #live_audio { align-self: center; margin-left: 6px; }

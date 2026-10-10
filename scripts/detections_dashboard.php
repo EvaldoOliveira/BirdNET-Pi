@@ -94,9 +94,11 @@ $heatcell = function ($v, $max, $cls, $title) {
 <style>
 .dash { max-width: 1200px; margin: 0 auto; padding: 0 12px; text-align: left; }
 .dash .bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0 10px; font-size: 13px; }
+.dash .bar.top { justify-content: flex-start; gap: 8px 18px; } .dash .bar.top > .right { flex: 1 1 auto; display: flex; justify-content: flex-end; } .dash .bar .right input { width: 220px; max-width: 100%; }
+.dash table.hm .spcount { font-weight: normal; font-size: 14px; } .dash .bar span.hmsort { gap: 0; }
 .dash .bar span { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.dash .bar button, .dash .bar a.btn { width: auto; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; text-decoration: none; }
-.dash .bar a.btn.on, .dash .bar button.on { background: var(--accent,#2b5e22); color: #fff; }
+.dash .bar button:not(.hmsort button), .dash .bar a.btn { width: auto; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; text-decoration: none; }
+.dash .bar a.btn.on, .dash .bar button.on:not(.hmsort button) { background: var(--accent,#2b5e22); color: #fff; }
 .dash .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
 .dash .card { background: rgba(255,255,255,.65); border-radius: 12px; padding: 10px 14px 6px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
 .dash .card small.t { color: #555; } .dash .card b { display: block; font-size: 1.7em; line-height: 1.2; }
@@ -129,29 +131,44 @@ $heatcell = function ($v, $max, $cls, $title) {
 .dash svg .spl { fill: none; stroke: #1565c0; stroke-width: 1.6; } .dash svg .spd { fill: #1565c0; }
 </style>
 <div class="dash">
-  <form class="bar" method="GET" action="views.php">
-    <input type="hidden" name="view" value="Dashboard">
-    <span><a class="btn <?php echo $is_today ? 'on' : ''; ?>" href="<?php echo $base; ?>">Today</a>
-      <a class="btn <?php echo $is_all ? 'on' : ''; ?>" href="<?php echo $base . '&amp;from=' . $first_day . '&amp;to=' . $today; ?>">All</a>
-      <?php if ($sci !== '') { ?><a class="btn on" href="<?php echo $base . '&amp;from=' . $from . '&amp;to=' . $to; ?>" title="Show every species">&times; <?php echo $h($com_of[$sci] ?? $sci); ?></a><?php } ?></span>
-    <span>Date <input type="date" name="from" value="<?php echo $h($from); ?>" max="<?php echo $today; ?>">
-      to <input type="date" name="to" value="<?php echo $h($to); ?>" max="<?php echo $today; ?>">
-      <?php if ($sci !== '') { ?><input type="hidden" name="sci" value="<?php echo $h($sci); ?>"><?php } ?>
-      <button type="submit" class="on">Filter</button></span>
-  </form>
   <div class="cards">
     <div class="card"><small class="t">Detections</small><b><?php echo number_format(intval($cur[0])); ?></b><?php echo $delta($cur[0], $prev[0], $vs) . $sparkline($spark['n']); ?></div>
     <div class="card"><small class="t">Species</small><b><?php echo intval($cur[1]); ?></b><?php echo $delta($cur[1], $prev[1], $vs) . $sparkline($spark['sp']); ?></div>
     <div class="card"><small class="t">New species</small><b><?php echo intval($new); ?></b><small class="dl">never detected before this period</small></div>
     <div class="card"><small class="t">Best confidence</small><b><?php echo round(floatval($cur[2]) * 100); ?>%</b><?php echo $delta($cur[2], $prev[2], $vs) . $sparkline($spark['best']); ?></div>
   </div>
-  <div class="panel"><h3>The day by half hour — every species<?php echo $sci !== '' ? ' · ' . $h($com_of[$sci] ?? $sci) : ''; ?></h3>
+  <div class="bar top">
+    <?php // period navigation, the same control as By Week (owner 2026-10-10): All · ◀ · Today / the period · ▶ — the arrows
+      // move by the period's own length (a day, or the N days of a range); ▶ stops at today
+      $purl = function ($f, $t) use ($base, $sci) { return $base . '&amp;from=' . $f . '&amp;to=' . $t . ($sci !== '' ? '&amp;sci=' . rawurlencode($sci) : ''); };
+      $prev_f = date('Y-m-d', strtotime($from . " -$days days")); $prev_t = date('Y-m-d', strtotime($to . " -$days days"));
+      $next_f = date('Y-m-d', strtotime($from . " +$days days")); $next_t = date('Y-m-d', strtotime($to . " +$days days"));
+      $label = $is_today ? 'Today' : ($from === $to ? date('D d/m/Y', strtotime($from)) : date('d/m/Y', strtotime($from)) . ' – ' . date('d/m/Y', strtotime($to))); ?>
+    <span class="periodnav">
+      <a class="<?php echo $is_all ? 'on' : ''; ?>" href="<?php echo $purl($first_day, $today); ?>">All</a>
+      <a class="<?php echo ($is_all || $from <= $first_day) ? 'off' : ''; ?>" href="<?php echo $purl($prev_f, $prev_t); ?>" title="Previous <?php echo $days > 1 ? $days . ' days' : 'day'; ?>">&#9664;</a>
+      <a class="<?php echo $is_today ? 'on' : ''; ?>" href="<?php echo $purl($today, $today); ?>" title="Today"><?php echo $h($label); ?></a>
+      <a class="<?php echo ($is_all || $to >= $today) ? 'off' : ''; ?>" href="<?php echo $purl($next_f, min($today, $next_t)); ?>" title="Next <?php echo $days > 1 ? $days . ' days' : 'day'; ?>">&#9654;</a>
+    </span>
+    <span>
+      <?php if ($sci !== '') { ?><a class="btn on" href="<?php echo $base . '&amp;from=' . $from . '&amp;to=' . $to; ?>" title="Show every species">&times; <?php echo $h($com_of[$sci] ?? $sci); ?></a><?php } ?></span>
+    <form class="yrange" method="GET" action="views.php"><input type="hidden" name="view" value="Dashboard">
+      From <input type="date" name="from" value="<?php echo $h($from); ?>" max="<?php echo $today; ?>">
+      to <input type="date" name="to" value="<?php echo $h($to); ?>" max="<?php echo $today; ?>">
+      <?php if ($sci !== '') { ?><input type="hidden" name="sci" value="<?php echo $h($sci); ?>"><?php } ?>
+      <button type="submit" class="on">Filter</button></form>
+    <!-- species order (owner 2026-10-10): count (most detections first), taxonomy (eBird/Clements field-guide order), A–Z
+         (by the names shown); remembered in this browser. One top line, laid out as By Week -->
+    <span class="right"><span class="hmsort" data-table="hmday" data-store="byhour"><small>Sort:</small><button type="button" data-sort="n">Count</button><button type="button" data-sort="tax" title="Field-guide order (eBird/Clements taxonomy)">Taxonomy</button><button type="button" data-sort="az" title="Alphabetical, by the names shown">A–Z</button></span>
+      <input type="search" class="hmfilter spfilter" data-table="hmday" placeholder="Filter species..." title="Common, scientific or English name (accents ignored)"></span>
+  </div>
+  <div class="panel">
     <?php if (!$htot) { echo '<p class="note">No detections in this period.</p>'; } else { ?>
     <div class="hmwrap"><table class="hm" id="hmday">
-      <tr><th class="nm"><select class="namemode" title="Names shown"><option value="com">Common name</option><option value="sci">Scientific name</option><option value="en">English name</option></select></th><?php for ($hh = 0; $hh < 24; $hh++) echo '<th class="m" colspan="2">' . sprintf('%02d', $hh) . '</th>'; ?><th></th></tr>
+      <tr><th class="nm"><span class="spcount"><?php echo count($htot); ?> species</span><br><select class="namemode" title="Names shown"><option value="com">Common name</option><option value="sci">Scientific name</option><option value="en">English name</option></select></th><?php for ($hh = 0; $hh < 24; $hh++) echo '<th class="m" colspan="2">' . sprintf('%02d', $hh) . '</th>'; ?><th></th></tr>
       <?php foreach ($htot as $s => $n) {
         // the name opens the species page; a click on the cells drills down to this species in the dashboard
-        echo '<tr class="drill" data-drill="' . $base . '&amp;from=' . $from . '&amp;to=' . $to . '&amp;sci=' . rawurlencode($s) . '"><td class="nm"><a href="views.php?view=Bird&amp;sci=' . rawurlencode($s) . '" title="Species page" data-com="' . $h($com_of[$s] ?? $s) . '" data-sci="' . $h($s) . '" data-en="' . $h(get_english_name($s)) . '">' . $h($com_of[$s] ?? $s) . '</a></td>';
+        echo '<tr class="drill" data-n="' . intval($n) . '" data-tax="' . taxon_order($s) . '" data-q="' . $h(mb_strtolower(($com_of[$s] ?? $s) . ' ' . $s . ' ' . get_english_name($s))) . '" data-drill="' . $base . '&amp;from=' . $from . '&amp;to=' . $to . '&amp;sci=' . rawurlencode($s) . '"><td class="nm"><a href="views.php?view=Bird&amp;sci=' . rawurlencode($s) . '" title="Species page" data-com="' . $h($com_of[$s] ?? $s) . '" data-sci="' . $h($s) . '" data-en="' . $h(get_english_name($s)) . '">' . $h($com_of[$s] ?? $s) . '</a></td>';
         for ($b2 = 0; $b2 < 48; $b2++) echo $heatcell($hb[$s][$b2] ?? 0, $hmax, $b2 === $now_bin ? ' now' : '', $h(($com_of[$s] ?? $s) . ' · ' . sprintf('%02d:%02d', intdiv($b2, 2), ($b2 % 2) * 30) . ': ' . ($hb[$s][$b2] ?? 0)));
         echo '<td class="t">' . number_format($n) . '</td></tr>';
       } ?>
@@ -176,9 +193,11 @@ $heatcell = function ($v, $max, $cls, $title) {
     <div class="note">Detections and species per calendar week (KW, this week in orange). Every date recorded; hover for numbers. The species of each week are on <a href="views.php?view=Seasonality">Seasonality</a>.</div>
   </div>
 </div>
+<script src="static/species-sort.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/species-sort.js"); ?>"></script>
 <script src="static/name-mode.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/name-mode.js"); ?>"></script>
 <script>
 document.querySelectorAll('tr.drill').forEach(function (tr) {
   tr.addEventListener('click', function (e) { if (e.target.closest('td.c')) location.href = tr.dataset.drill.replace(/&amp;/g, '&'); });
 });
+
 </script>

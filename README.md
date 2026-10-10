@@ -85,7 +85,7 @@ The model's distribution, one of your own lists, or a **Brazilian state** built 
 <td valign="top">
 
 #### 🧭 Redesigned interface
-A side menu with one address per page (Now, Detections › By Hour / By Week, Species, Lists, Settings, System), the last 50 detections as cards or one standard sortable table, and six colour themes plus a custom one (*Settings › Appearance*).
+A side menu with one address per page (Now, Spectrogram, Detections › By Hour / By Week, Species, Lists, Scheduling, Settings, System), the last 50 detections as cards or one standard sortable table with combinable filters (**Uncommon** — species seldom heard since yesterday, **Low Conf**, **Low Prob**), the analysis settings one click away (fields that differ from the model default in yellow, a *Default* button), a **Live Audio** button in the header of every page to listen to the microphone in place (time bar, speaker with a volume slider; the page below keeps running), and six colour themes plus a custom one (*Settings › Appearance*).
 </td>
 </tr>
 <tr>
@@ -126,7 +126,7 @@ The best detections of every species and every confirmed one are **never deleted
 <td valign="top">
 
 #### 📊 By hour and by week
-Every species by half hour of the day and by calendar week of the year — heat tables with detections and species per slot, drill-down to a species and a week.
+Every species by half hour of the day and by calendar week of the year — heat tables with detections and species per slot, drill-down to a species and a week, sorted by count, **taxonomy** (field-guide order) or A–Z and filtered by name; one period control on both — All · ◀ · Today / This year · ▶ (previous / next day or year) and a From–To range; the same layout on both pages, with Detections and Species cards (change against the previous period, sparkline) above the table.
 </td>
 <td valign="top">
 
@@ -143,7 +143,7 @@ Custom Species, Excluded and Whitelisted show the species still available beside
 <td valign="top">
 
 #### 📍 Did the station move?
-At every boot the station compares its approximate network position with its coordinates; after a move of more than 100 km it notifies you and the *Now* page offers **Use this location** (coordinates, state species list, timezone) or **Not moved**. Nothing changes without your answer; it can be turned off in *Basic Settings*.
+At every boot the station compares its approximate network position with its coordinates; after a move of more than 100 km (the *Move distance* beside the coordinates in *Station Setup* and *Basic Settings*) it notifies you and the *Now* page offers **Use this location** (coordinates, state species list, timezone) or **Not moved**. Nothing changes without your answer; *Auto location: Enable* (on by default) switches it, and **Auto Locate Now** fills the coordinates from the network position on the spot.
 </td>
 <td valign="top">
 </td>
@@ -284,6 +284,7 @@ On a phone (the menu opens from the ☰ button):
 ### Data sources
 
 - **Species type and region** of the list filters: [GBIF.org](https://www.gbif.org) — the GBIF Backbone Taxonomy (class of each label) and GBIF occurrence records (share of records per continent; 'Global' = four or more continents, 'Ocean' = mostly records at sea), queried through the GBIF API on 2026-10-09 by `scripts/build_species_info.py`. Labels GBIF does not know under the model's name (recent genus changes) are looked up under the name of the other model, else typed from the BirdNET+ labels table. GBIF data is published under CC0 / CC BY licences by its data publishers.
+- **Field-guide (taxonomic) order** of the species tables: the [eBird/Clements taxonomy](https://www.birds.cornell.edu/clementschecklist/) (Cornell Lab of Ornithology) — its TAXON_ORDER sequence, order and family, downloaded on 2026-10-10 by `scripts/build_taxonomy_order.py` into `model/taxonomy_order.csv`; a bird missing under the model's name takes its genus' place, non-birds follow the birds.
 
 ### Licence and credits
 
@@ -362,7 +363,7 @@ The installation creates a log in `$HOME/installation-$(date "+%F").txt`.
 BirdnetPi++ can be accessed from any web browser on the same network:
 - http://birdnetpi.local OR your Pi's IP address
 - Default Basic Authentication Username: birdnet
-- Password is empty by default. Set this in "Settings" > "Advanced Settings"
+- Password is empty by default — the settings pages then open without a login box. Set one in "Settings" > "Advanced Settings" (or the Station Setup) to protect them; the login dialog names the user (birdnet)
 
 Please take a look at the [wiki](https://github.com/mcguirepr89/BirdNET-Pi/wiki) and [discussions](https://github.com/mcguirepr89/BirdNET-Pi/discussions) for information on
 - [BirdNET-Pi's Deep Convolutional Neural Network(s)](https://github.com/mcguirepr89/BirdNET-Pi/wiki/BirdNET-Pi:-some-theory-on-classification-&-some-practical-hints)

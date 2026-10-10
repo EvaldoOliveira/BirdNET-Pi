@@ -68,8 +68,10 @@ function get_service_mount_name() {
 
 function is_authenticated() {
   $ret = false;
+  $config = get_config();
+  // no web password set: the station is open, so do not show a login box that only needs Enter
+  if (($config['CADDY_PWD'] ?? '') === '') return true;
   if (isset($_SERVER['PHP_AUTH_USER'])) {
-    $config = get_config();
     $ret = ($_SERVER['PHP_AUTH_PW'] == $config['CADDY_PWD'] && $_SERVER['PHP_AUTH_USER'] == 'birdnet');
   }
   return $ret;
@@ -77,7 +79,7 @@ function is_authenticated() {
 
 function ensure_authenticated($error_message = 'You cannot edit the settings for this installation') {
   if (!is_authenticated()) {
-    header('WWW-Authenticate: Basic realm="My Realm"');
+    header('WWW-Authenticate: Basic realm="BirdnetPi++ - user name: birdnet"');
     header('HTTP/1.0 401 Unauthorized');
     echo '<table><tr><td>' . $error_message . '</td></tr></table>';
     exit;
@@ -707,6 +709,21 @@ function species_group($sci) {
     'domestic' => 'domestic', 'noise' => 'noise')[$t] ?? 'others';
 }
 
+// field-guide position of a species (model/taxonomy_order.csv, eBird/Clements TAXON_ORDER, scripts/build_taxonomy_order.py);
+// non-birds and unknown names after every bird
+function taxon_order($sci) {
+  static $t = null;
+  if ($t === null) {
+    $t = array();
+    if (($h = @fopen(get_home() . '/BirdNET-Pi/model/taxonomy_order.csv', 'r')) !== false) {
+      fgetcsv($h, 0, ';', '"', '');
+      while (($r = fgetcsv($h, 0, ';', '"', '')) !== false) if (isset($r[1])) $t[$r[0]] = floatval($r[1]);
+      fclose($h);
+    }
+  }
+  return $t[$sci] ?? 999999;
+}
+
 // location model probability (0..1) of a species in the week of a date (region_profile.json, 48 weeks: four per month,
 // as utils/classes.py week48); null when the species is not in the profile
 function location_probability($sci, $date) {
@@ -917,7 +934,7 @@ function get_color_scheme(){
 // APP_THEME = forest | ocean | sand | graphite | blossom | white | custom; APP_THEME_CUSTOM = "bg,menu,panel,accent,accent2".
 function theme_presets() {
   return array(
-    'forest' => array('Forest', '#77c487', '#9fe29b', '#dbffeb', '#2b5e22', '#04aa6d'),
+    'forest' => array('Forest (BirdNET Classic)', '#77c487', '#9fe29b', '#dbffeb', '#2b5e22', '#04aa6d'),
     'ocean' => array('Ocean', '#7fb3d5', '#a9cce3', '#e3f0fa', '#1f4e79', '#2e86c1'),
     'sand' => array('Sand', '#d6c7a7', '#e8dcc2', '#faf5ea', '#6b4f2a', '#b07d3a'),
     'graphite' => array('Graphite', '#9aa3ab', '#c3c9ce', '#eef1f3', '#2f3b45', '#4f6d7a'),

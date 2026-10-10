@@ -72,6 +72,10 @@ if (isset($_POST['wizard_save'])) {
   $pwd = $p['password'] ?? '';
   if ($pwd !== '' && !preg_match('/^[A-Za-z0-9]+$/', $pwd)) $errors[] = 'The password may only contain letters and digits';
   if ($pwd !== ($p['password2'] ?? '')) $errors[] = 'The two passwords differ';
+  // boot location check (owner 2026-10-10): on/off and the distance that counts as a move (default 100 km)
+  $loc_check = isset($p['location_check']) ? '1' : '0';
+  $move_km = (string)($p['location_move_km'] ?? ($config['LOCATION_MOVE_KM'] ?? '100')); // the field lives in Basic Settings only
+  if (!ctype_digit($move_km) || intval($move_km) < 1 || intval($move_km) > 5000) $errors[] = 'The move distance must be 1 – 5000 km';
   // app colours (System Appearance themes; the custom theme is set later in Settings › Appearance)
   $theme = strtolower($p['app_theme'] ?? 'forest');
   if (!isset(theme_presets()[$theme])) $errors[] = 'Unknown colour theme';
@@ -98,6 +102,8 @@ if (isset($_POST['wizard_save'])) {
     if (strpos($lang, 'pt') === 0 || $state !== '') $contents = wizard_set_key($contents, 'INFO_SITE', '"EBIRD"');
     $contents = wizard_set_key($contents, 'BIRDWEATHER_ID', $bw);
     $contents = wizard_set_key($contents, 'APP_THEME', "\"$theme\"");
+    $contents = wizard_set_key($contents, 'LOCATION_CHECK', $loc_check);
+    $contents = wizard_set_key($contents, 'LOCATION_MOVE_KM', intval($move_km));
     $update_caddy = false;
     if ($pwd !== '' && $pwd !== ($config['CADDY_PWD'] ?? '')) {
       $contents = wizard_set_key($contents, 'CADDY_PWD', "\"$pwd\"");
@@ -139,7 +145,6 @@ $cur_model = ($config['MODEL'] ?? '') === $model_v24 ? 'V2.4' : 'V3';
 $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
 ?>
 <div class="settings">
-  <div class="brbanner"><h1>Station setup</h1></div><br>
 <?php if ($saved) { ?>
   <table class="settingstable"><tr><td>
     <h2>Saved</h2>
@@ -157,12 +162,36 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
   <table class="settingstable"><tr><td>
     <h2>Station</h2>
     <label>Station name: <input name="site_name" type="text" value="<?php echo $h($config['SITE_NAME'] ?? ''); ?>"></label><br>
+    <span title="At every boot the station compares its approximate network position (public IP geolocation: ipapi.co / ip-api.com) with these coordinates; after a move of more than the move distance (Basic Settings, default 100 km) the Now page asks whether to use the new location (coordinates, Brazilian state species list, timezone). Nothing changes without your answer."><label>Auto location: <input type="checkbox" name="location_check" <?php echo ($config['LOCATION_CHECK'] ?? '1') !== '0' ? 'checked' : ''; ?>> Enable</label>
+    </span><br>
+    <button type="button" class="autolocate" onclick="autoLocateNow(this)" title="Find the station's network position now and put it in Latitude / Longitude">Auto Locate Now</button> <small id="autolocate_msg"></small><br>
+    <script>
+    // Auto Locate Now: the network position into the Latitude / Longitude fields of this form (save to keep it)
+    function autoLocateNow(btn) {
+      var msg = document.getElementById('autolocate_msg');
+      msg.textContent = 'Locating\u2026';
+      btn.disabled = true;
+      var x = new XMLHttpRequest();
+      x.onload = function () {
+        btn.disabled = false;
+        var r; try { r = JSON.parse(this.responseText); } catch (e) { r = {error: this.status === 401 ? 'log in first' : 'no answer'}; }
+        if (r.error) { msg.textContent = 'Not located: ' + r.error; return; }
+        var lat = document.querySelector('input[name=latitude]'), lon = document.querySelector('input[name=longitude]');
+        lat.value = Number(r.lat).toFixed(4); lon.value = Number(r.lon).toFixed(4);
+        [lat, lon].forEach(function (i) { i.style.background = '#fff8c4'; });
+        msg.textContent = r.where + ' \u2014 ' + r.distance_km + ' km from the saved coordinates; filled in above, save to keep it'
+          + (r.timezone ? ' (timezone there: ' + r.timezone + ')' : '');
+      };
+      x.open('GET', 'scripts/locate_now.php', true);
+      x.send();
+    }
+    </script>
+    <p><small>Get coordinates with <b>Auto Locate Now</b> or on <a href="https://latlong.net" target="_blank">latlong.net</a>; detections are stamped with the timezone below.</small></p>
     <label>Latitude: <input name="latitude" type="number" step="0.0001" min="-90" max="90" style="width:9em" value="<?php echo $h($config['LATITUDE'] ?? ''); ?>" required></label>
     <label>Longitude: <input name="longitude" type="number" step="0.0001" min="-180" max="180" style="width:9em" value="<?php echo $h($config['LONGITUDE'] ?? ''); ?>" required></label><br>
     <label>Timezone: <select name="timezone">
 <?php foreach ($timezones as $tz) { echo '<option' . ($tz === $current_tz ? ' selected' : '') . '>' . $h($tz) . '</option>'; } ?>
-    </select></label>
-    <p><small>Detections are stamped with this timezone. Get coordinates on <a href="https://latlong.net" target="_blank">latlong.net</a>.</small></p>
+    </select></label><br>
     <br>
     <label>BirdWeather ID (optional): <input name="birdweather_id" type="text" value="<?php echo $h($config['BIRDWEATHER_ID'] ?? ''); ?>"></label><br>
   </td></tr></table><br>
@@ -193,6 +222,13 @@ foreach ($langs as $l) {
   echo '<option value="' . $v . '"' . ($v === $preselect ? ' selected' : '') . '>' . $v . ($v === $detected_state ? ' (from the coordinates)' : '') . '</option>'; } ?>
       </optgroup>
     </select></label>
+    <!-- the same explanations as Basic Settings › Location (owner 2026-10-10) -->
+    <p><small>
+            <b>None</b> — every species the model's location filter allows for this place and week; use it outside Brazil or to detect species not yet registered in your area.<br>
+            <b>Station list</b> — only the species of that list; edit, save and load lists in Lists › Custom Species.<br>
+            <b>Brazilian state</b> — only the birds with WikiAves records in the state (CBRO names) plus the model's non-bird classes; built once, then kept as a station list you can edit.<br>
+            <b>Detect the Brazilian state</b> — the state of the latitude / longitude above (OpenStreetMap online, the IBGE boundaries offline).
+    </small></p>
   </td></tr></table><br>
   <table class="settingstable"><tr><td>
     <h2>Appearance</h2>
@@ -201,7 +237,7 @@ foreach ($langs as $l) {
   foreach (theme_presets() as $k => $t) {
     echo '<label class="wiztheme"><input type="radio" name="app_theme" value="' . $k . '"' . ($k === $cur_theme ? ' checked' : '') . ' data-colors="' . implode(',', array_slice($t, 1)) . '">'
       . '<span class="mock" style="background:' . $t[1] . '"><span class="mm" style="background:' . $t[2] . '"></span><span class="mp" style="background:' . $t[3] . '"><i style="background:' . $t[4] . '"></i><i style="background:' . $t[5] . '"></i></span></span>'
-      . '<b>' . $h($t[0]) . '</b></label>';
+      . '<b>' . str_replace(' (', '<br>(', $h($t[0])) . '</b></label>';
   } ?>
     </div>
     <small>Colours of the app, shown at once; a custom theme can be made later in Settings › Appearance.</small>
@@ -228,10 +264,10 @@ foreach ($langs as $l) {
     });
   </script>
   <table class="settingstable"><tr><td>
-    <h2>Web Access</h2>
-    <label>Web password (letters and digits; empty = keep <?php echo empty($config['CADDY_PWD']) ? 'no password' : 'the current one'; ?>):
-      <input name="password" type="password" autocomplete="new-password" pattern="[A-Za-z0-9]*"></label><br>
-    <label>Repeat the password: <input name="password2" type="password" autocomplete="new-password" pattern="[A-Za-z0-9]*"></label><br>
+    <h2>Web Access Password</h2>
+    <p><small>Letters and digits only (no spaces or symbols). The user name is always <b>birdnet</b>. Leave both empty to keep <?php echo empty($config['CADDY_PWD']) ? 'the station without a password' : 'the current password'; ?>.</small></p>
+    <label>Password: <input name="password" type="password" autocomplete="new-password" pattern="[A-Za-z0-9]*"></label><br>
+    <label>Repeat: <input name="password2" type="password" autocomplete="new-password" pattern="[A-Za-z0-9]*"></label><br>
   </td></tr></table><br>
   <button type="submit" name="wizard_save" value="1">Save and start</button>
   </form>

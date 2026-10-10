@@ -180,11 +180,19 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
       $g_limit = intval($_GET['hard_limit']) + (isset($_GET['gallery']) ? 1 : 0);
       // Now filters (owner 2026-10-09): lowconf = confidence below N %, lowprob = location model probability below N %
       // (or not in the location profile); the probability is not in the database, so lowprob filters while reading
-      $g_filter = in_array($_GET['filter'] ?? '', array('lowconf', 'lowprob'), true) ? $_GET['filter'] : '';
-      $g_below = max(5, min(95, intval($_GET['below'] ?? 50))) / 100;
-      if ($g_filter === 'lowconf') $searchquery .= ' AND Confidence < ' . $g_below;
+      // uncommon (owner 2026-10-10) = species detected at most N times from yesterday 00:00 until now (species not heard
+      // in that time count as 0)
+      // several filters at once (owner 2026-10-10): &uncommon=N &lowconf=P &lowprob=P, every one present applies
+      $g_conf = isset($_GET['lowconf']) && is_numeric($_GET['lowconf']) ? max(5, min(95, intval($_GET['lowconf']))) / 100 : null;
+      $g_prob = isset($_GET['lowprob']) && is_numeric($_GET['lowprob']) ? max(5, min(95, intval($_GET['lowprob']))) / 100 : null;
+      $g_most = isset($_GET['uncommon']) && is_numeric($_GET['uncommon']) ? max(1, intval($_GET['uncommon'])) : null;
+      $g_filter = ($g_conf !== null || $g_prob !== null || $g_most !== null) ? 'on' : '';
+      if ($g_conf !== null) $searchquery .= ' AND Confidence < ' . $g_conf;
+      if ($g_most !== null) {
+        $searchquery .= " AND Sci_Name NOT IN (SELECT Sci_Name FROM detections WHERE Date >= DATE('now', 'localtime', '-1 day') GROUP BY Sci_Name HAVING COUNT(*) > $g_most)";
+      }
       $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, Cutoff, Sens, Overlap, Loc_Thresh, Rec_Length, Sp_Override, File_Name FROM detections WHERE 1 '.$searchquery.' ORDER BY Date DESC, Time DESC'
-        . ($g_filter === 'lowprob' ? '' : ' LIMIT '.$g_limit.' OFFSET '.$g_offset));
+        . ($g_prob !== null ? '' : ' LIMIT '.$g_limit.' OFFSET '.$g_offset));
     } else {
       $statement0 = $db->prepare('SELECT Date, Time, Com_Name, Sci_Name, Confidence, File_Name FROM detections WHERE Date == Date(\'now\', \'localtime\') '.$searchquery.' ORDER BY Time DESC');
     }
@@ -206,9 +214,9 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
     $more = false;
     $skip = 0;
     while ($g = $result0->fetchArray(SQLITE3_ASSOC)) {
-      if (($g_filter ?? '') === 'lowprob') {
+      if (($g_prob ?? null) !== null) {
         $pr = location_probability($g['Sci_Name'], $g['Date']);
-        if ($pr !== null && $pr >= $g_below) continue;
+        if ($pr !== null && $pr >= $g_prob) continue;
         if ($skip++ < $g_offset) continue;
       }
       if ($n >= $page) { $more = true; break; }
@@ -226,7 +234,7 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
         . '<img class="gspec" loading="lazy" src="' . htmlspecialchars($clip) . '.png" alt="spectrogram" title="Listen and review" onclick="reviewDetection(this)"></div></div>';
     }
     echo $as_list ? detection_review_table($list_rows) : '</div>';
-    if ($n == 0) echo '<h3>' . (($g_filter ?? '') !== '' ? 'No detections below ' . round($g_below * 100) . '%.' : 'No detections yet.') . '</h3>';
+    if ($n == 0) echo '<h3>' . (($g_filter ?? '') !== '' ? 'No detections match the filters.' : 'No detections yet.') . '</h3>';
     // newer / older pages of 50
     if ($g_offset > 0 || $more) {
       echo '<div class="nowpager">'

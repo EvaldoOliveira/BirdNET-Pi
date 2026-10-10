@@ -13,6 +13,16 @@ $config = get_config();
 $color_scheme = get_color_scheme();
 set_timezone();
 
+// Pages that need the login ask for it HERE, before any output (owner 2026-10-10): checked further down, after the menu
+// was printed, the 401 header could no longer be sent, so a browser that had not logged in yet only saw "You cannot
+// edit the settings" instead of the password dialog. The checks below stay as the second line of defence.
+$protected_views = array('System Controls', 'Services', 'Tools', 'Included', 'Excluded', 'Whitelisted', 'Webterm', 'Wipe', 'Doctor');
+$view_now = $_GET['view'] ?? '';
+if (in_array($view_now, $protected_views, true) || isset($_GET['submit'])
+    || ($view_now === 'Setup' && !(file_exists($home . '/BirdNET-Pi/firstrun_pending') && empty($config['CADDY_PWD'])))) {
+  ensure_authenticated();
+}
+
 $restore = "cat $home/BirdSongs/restore.log";
 
 if(is_authenticated() && (!isset($_SESSION['behind']) || !isset($_SESSION['behind_time']) || time() > $_SESSION['behind_time'] + 86400)) {
@@ -84,8 +94,8 @@ $menu = array(
   // order and names set by the owner (2026-10-09); Species Pages and Species Management are one page (view=Bird)
   array('Detections', array('Dashboard' => 'By Hour', 'Seasonality' => 'By Week')),
   array('Species', array('Bird' => 'Species Pages', 'Curation' => 'Curation', 'Wipe' => 'Purge Removed')),
-  array('Scheduling', array('Raw Recording' => 'Raw Recording')),
   array('Lists', array('Included' => 'Custom Species', 'Excluded' => 'Excluded', 'Whitelisted' => 'Whitelisted')),
+  array('Scheduling', array('Raw Recording' => 'Raw Recording')),
   // Station Setup only while the first-run questions are unanswered; afterwards everything is in Settings
   array('Settings', array('Appearance' => 'Appearance', 'Settings' => 'Basic Settings', 'Advanced' => 'Advanced Settings')
                     + (file_exists($home . '/BirdNET-Pi/firstrun_pending') ? array('Setup' => 'Station Setup') : array())),
@@ -165,7 +175,7 @@ window.onload = function() {
 try {
   if (window.top !== window && window.top.location.host === window.location.host) {
     window.top.history.replaceState(null, '', '/?view=' + encodeURIComponent(<?php echo json_encode($current_view); ?>)
-      + <?php echo json_encode(implode('', array_map(function ($k) { return isset($_GET[$k]) ? '&' . $k . '=' . rawurlencode(html_entity_decode($_GET[$k], ENT_QUOTES)) : ''; }, array('sci', 'from', 'to', 'year', 'scope')))); ?>);
+      + <?php echo json_encode(implode('', array_map(function ($k) { return isset($_GET[$k]) ? '&' . $k . '=' . rawurlencode(html_entity_decode($_GET[$k], ENT_QUOTES)) : ''; }, array('sci', 'from', 'to', 'year', 'scope', 'yfrom', 'yto')))); ?>);
   }
 } catch (e) {}
 function copyOutput(elem) {

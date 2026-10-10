@@ -219,7 +219,9 @@ window.onload = function(){
   } else {
     document.getElementById("spectrogramimage").remove();
 
-  var audioelement =  window.parent.document.getElementsByTagName("audio")[0];
+  // the header's Live Audio player (owner 2026-10-10) is always in the page and has its own life (it starts and stops on
+  // its own button): the spectrogram no longer borrows it and always plays its own stream
+  var audioelement = undefined;
   if (typeof(audioelement) != 'undefined') {
 
     document.getElementById('player').remove();
@@ -641,40 +643,27 @@ h1 {
 <audio style="display:none" controls="" crossorigin="anonymous" id='player' preload="none"><source id="playersrc" src="stream"></audio>
 <h1 id="loading-h1">Loading...</h1>
 <canvas></canvas>
-<!-- below the spectrogram, one control per line: palette, floor, range, contrast (owner 2026-10-08) -->
-<div id="specopts" style="text-align:left;padding:4px 8px;font-size:12px;">
-  <div class="specrow">
-  <label for="palette_select">Palette: </label>
+<!-- below the spectrogram, every control on one line (owner 2026-10-10): Palette, Contrast, Floor, Range, Compression,
+     Freq shift -->
+<div id="specopts" style="text-align:left;padding:4px 8px;font-size:12px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;">
+  <span><label for="palette_select">Palette: </label>
   <select id="palette_select" class="testbtn">
     <?php foreach ($SPECTROGRAM_PALETTES as $key => $label) {
       echo '<option value="' . $key . '"' . ($key == $SPECTROGRAM_PALETTE ? ' selected="selected"' : '') . '>' . $label . '</option>';
     } ?>
-  </select>
-  </div>
-  <div class="specrow">
-  <label for="floor_input" title="Signal at or below this level takes the darkest colour">Floor </label>
-  <input id="floor_input" type="range" min="-120" max="-40" step="5" style="width:110px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_FLOOR_DB; ?>">
-  <span id="floor_value" style="display:inline-block;width:4em;"><?php echo $SPECTROGRAM_FLOOR_DB; ?> dB</span>
-  </div>
-  <div class="specrow">
-  <label for="range_input" title="Width of the colour scale above the floor">Range </label>
-  <input id="range_input" type="range" min="30" max="120" step="5" style="width:110px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_RANGE_DB; ?>">
-  <span id="range_value" style="display:inline-block;width:4em;"><?php echo $SPECTROGRAM_RANGE_DB; ?> dB</span>
-  </div>
-  <div class="specrow">
-  <label for="contrast_input" title="Gamma of the colour ramp: below 1 lifts faint sounds, above 1 keeps only the strong ones">Contrast </label>
-  <input id="contrast_input" type="range" min="0.5" max="2" step="0.1" style="width:110px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_CONTRAST; ?>">
-  <span id="contrast_value" style="display:inline-block;width:2.5em;"><?php echo $SPECTROGRAM_CONTRAST; ?></span>
-  <span id="specopts_status" style="margin-left:6px;color:#9f9;"></span>
-  </div>
-  <div class="specrow">
-  <div style="display:inline" id="comp" >
-    <label>Compression: </label>
-    <input name="compression" type="checkbox" id="compression" disabled>
-  </div>
-  &nbsp;
-  <div style="display:inline" id="fshift" >
-    <label>Freq shift: </label>
+  </select></span>
+  <span><label for="contrast_input" title="Gamma of the colour ramp: below 1 lifts faint sounds, above 1 keeps only the strong ones">Contrast </label>
+  <input id="contrast_input" type="range" min="0.5" max="2" step="0.1" style="width:90px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_CONTRAST; ?>">
+  <span id="contrast_value" style="display:inline-block;width:2.5em;"><?php echo $SPECTROGRAM_CONTRAST; ?></span></span>
+  <span><label for="floor_input" title="Signal at or below this level takes the darkest colour">Floor </label>
+  <input id="floor_input" type="range" min="-120" max="-40" step="5" style="width:90px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_FLOOR_DB; ?>">
+  <span id="floor_value" style="display:inline-block;width:4em;"><?php echo $SPECTROGRAM_FLOOR_DB; ?> dB</span></span>
+  <span><label for="range_input" title="Width of the colour scale above the floor">Range </label>
+  <input id="range_input" type="range" min="30" max="120" step="5" style="width:90px;vertical-align:middle;" value="<?php echo $SPECTROGRAM_RANGE_DB; ?>">
+  <span id="range_value" style="display:inline-block;width:4em;"><?php echo $SPECTROGRAM_RANGE_DB; ?> dB</span></span>
+  <span id="comp"><label>Compression: </label>
+    <input name="compression" type="checkbox" id="compression" disabled></span>
+  <span id="fshift"><label>Freq shift: </label>
     <?php 
         if ($config['ACTIVATE_FREQSHIFT_IN_LIVESTREAM'] == "true") {
           $freqshift_state = "checked";
@@ -682,10 +671,10 @@ h1 {
           $freqshift_state = "";
         }
     ?>
+
     <input name="freqshift" type="checkbox" id="freqshift" <?php echo($freqshift_state); ?>  disabled>
-    <img id="livestream_freqshift_spinner" src=images/spinner.gif style="height: 25px; vertical-align: top; display: none">
-  </div>
-  </div>
+    <img id="livestream_freqshift_spinner" src=images/spinner.gif style="height: 25px; vertical-align: top; display: none"></span>
+  <span id="specopts_status" style="color:#9f9;"></span>
 </div>
 
 <script>

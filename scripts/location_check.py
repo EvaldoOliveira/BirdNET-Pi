@@ -2,12 +2,13 @@
 """Has the station moved? (owner 2026-10-10) Run at every boot by birdnet_location_check.service.
 
 The Pi has no GPS: the network gives an approximate position (geolocation of the public IP: ipapi.co, then
-ip-api.com — city level, enough for the 100 km threshold). When it is more than 100 km from LATITUDE/LONGITUDE
+ip-api.com — city level, enough for the 100 km threshold). When it is farther than LOCATION_MOVE_KM (default 100 km) from LATITUDE/LONGITUDE
 the station changes nothing by itself: it records the finding in ~/BirdNET-Pi/location_check.json, notifies
 through Apprise once, and the Now page offers "Use this location" (coordinates, Brazilian state species list,
-timezone) or "Not moved" (remembered; asked again only after another move of more than 100 km).
+timezone) or "Not moved" (remembered; asked again only after another move of that distance).
 LOCATION_CHECK=0 in birdnet.conf (Basic Settings) turns it off — the check sends the public IP to those services.
-Standard library only. Usage: location_check.py [--force]
+Standard library only. Usage: location_check.py [--force] [--json]
+  --force  run even with LOCATION_CHECK=0;  --json  print the result as JSON (the Auto Locate Now button)
 """
 import json
 import math
@@ -19,7 +20,7 @@ import urllib.request
 
 HOME = os.path.expanduser('~/BirdNET-Pi')
 STATE = os.path.join(HOME, 'location_check.json')
-LIMIT_KM = 100
+LIMIT_KM = 100  # default of LOCATION_MOVE_KM (Station Setup / Basic Settings)
 UA = {'User-Agent': 'BirdnetPi++ location check (github.com/EvaldoOliveira/BirdnetPiPlusPlus)'}
 
 
@@ -71,6 +72,11 @@ def main():
     c = conf()
     if c.get('LOCATION_CHECK', '1') == '0' and '--force' not in sys.argv:
         return
+    global LIMIT_KM
+    try:
+        LIMIT_KM = max(1, int(float(c.get('LOCATION_MOVE_KM') or 100)))
+    except ValueError:
+        LIMIT_KM = 100
     try:
         lat, lon = float(c['LATITUDE']), float(c['LONGITUDE'])
     except (KeyError, ValueError):
@@ -83,7 +89,7 @@ def main():
         except Exception:
             time.sleep(10)
     if pos is None:
-        print('location check: no network position')
+        print(json.dumps({'error': 'no network position'}) if '--json' in sys.argv else 'location check: no network position')
         return
     try:
         with open(STATE, encoding='utf-8') as f:
@@ -106,7 +112,10 @@ def main():
         json.dump(state, f, ensure_ascii=False, indent=1)
     os.chmod(tmp, 0o664)  # the web pages (caddy, in the station user's group) record the answer in it
     os.replace(tmp, STATE)
-    print(f"location check: {where} ({pos['source']}), {dist} km from the configured location, moved={moved}")
+    if '--json' in sys.argv:
+        print(json.dumps(dict(pos, distance_km=dist, moved=moved, where=where, limit_km=LIMIT_KM), ensure_ascii=False))
+    else:
+        print(f"location check: {where} ({pos['source']}), {dist} km from the configured location, moved={moved}")
 
 
 if __name__ == '__main__':

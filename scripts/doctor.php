@@ -204,7 +204,6 @@ $icon = array('ok' => '✅', 'warn' => '⚠️', 'fail' => '❌', 'info' => 'ℹ
 .doctor .summary.ok { background: rgba(46,125,50,.15); } .doctor .summary.warn { background: rgba(217,122,0,.18); } .doctor .summary.fail { background: rgba(198,40,40,.18); }
 </style>
 <div class="doctor">
-  <h2>Station Doctor</h2>
   <div class="summary <?php echo $worst; ?>"><?php echo $icon[$worst] . ' ' . ($worst === 'ok' ? 'Everything looks healthy.' : ($worst === 'warn' ? 'The station works, with warnings below.' : 'Something needs attention — see the red lines.')); ?>
     <small style="float:right"><?php echo date('Y-m-d H:i:s'); ?> · <a href="views.php?view=Doctor">check again</a> · <a href="scripts/doctor.php?format=json" target="_blank">JSON</a></small></div>
   <table>

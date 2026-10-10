@@ -15,7 +15,6 @@ $config = get_config();
 $site_name = get_sitename();
 $color_scheme = get_color_scheme();
 set_timezone();
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -41,34 +40,27 @@ echo "<a href=\"https://github.com/EvaldoOliveira/BirdnetPiPlusPlus\" target=\"_
 <?php
 // Compact header (owner 2026-09-17): station name beside the small logo on the
 // left, BirdnetPi++ logo centred, Live Audio on the right — one line, no h3 below.
-if(isset($_GET['stream'])){
-  ensure_authenticated('You cannot listen to the live audio stream');
-      // starts only when Live Audio was just clicked: going Back to this page, or the browser restoring it, must not
-      // start the live sound again by itself (owner 2026-10-09)
-      echo "
-  <audio controls id=\"livestream\" preload=\"none\"><source src=\"/stream\"></audio>
-  <script>(function () { var n = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
-    if (!n || n.type === 'navigate') document.getElementById('livestream').play().catch(function () {});
-    window.addEventListener('pageshow', function (e) { if (e.persisted) document.getElementById('livestream').pause(); }); })();</script>";
-} else {
-    echo "
-  <form action=\"index.php\" method=\"GET\">
-    <button type=\"submit\" name=\"stream\" value=\"play\">Live Audio</button>
-  </form>";
-}
+// Live Audio (owner 2026-10-10) plays in place (static/live-audio.js, the player first made for Now): no reload, so the
+// page below keeps running; the time bar and a speaker with a vertical volume slider appear while it plays.
+echo "
+  <button type=\"button\" class=\"liveaudio\" id=\"live_btn\" onclick=\"liveAudio()\" title=\"Listen to the station's microphone live\">&#9654; Live Audio</button>
+  <audio id=\"live_audio\" preload=\"none\" controls controlslist=\"nodownload noplaybackrate\" style=\"display:none\"></audio>
+  <span class=\"livevol\" id=\"live_vol\" style=\"display:none\"><button type=\"button\" id=\"live_volbtn\" onclick=\"liveVolumeToggle()\" title=\"Volume\">&#128266;</button>
+    <span class=\"volpop\" id=\"live_volpop\"><input type=\"range\" id=\"live_volrange\" min=\"0\" max=\"1\" step=\"0.05\" orient=\"vertical\" oninput=\"liveVolume(this.value)\"></span></span>
+  <script src=\"static/live-audio.js?v=" . @filemtime(__DIR__ . '/static/live-audio.js') . "\"></script>";
 echo "
   </div>
 </div>";
 if(isset($_GET['filename'])) {
   $filename = $_GET['filename'];
 echo "
-<iframe src=\"views.php?view=Recordings&filename=$filename\"></iframe>";
+<iframe allow=\"autoplay\" src=\"views.php?view=Recordings&filename=$filename\"></iframe>";
 } elseif(isset($_GET['view'])) {
   // a page's own address (/?view=...): the side menu links and the address bar point here
   echo "
-<iframe src=\"views.php?view=" . rawurlencode($_GET['view'])
-  . implode('', array_map(function ($k) { return isset($_GET[$k]) ? '&' . $k . '=' . rawurlencode($_GET[$k]) : ''; }, array('sci', 'from', 'to', 'year', 'scope'))) . "\"></iframe>";
+<iframe allow=\"autoplay\" src=\"views.php?view=" . rawurlencode($_GET['view'])
+  . implode('', array_map(function ($k) { return isset($_GET[$k]) ? '&' . $k . '=' . rawurlencode($_GET[$k]) : ''; }, array('sci', 'from', 'to', 'year', 'scope', 'yfrom', 'yto'))) . "\"></iframe>";
 } else {
   echo "
-<iframe src=\"views.php\"></iframe>";
+<iframe allow=\"autoplay\" src=\"views.php\"></iframe>";
 }

@@ -286,6 +286,12 @@ RECORDING_LENGTH=15
 ## LOCATION_CHECK: 1 = at boot, compare the network position (public IP geolocation) with LATITUDE/LONGITUDE and ask
 ## on the Now page when the station moved more than 100 km; 0 = off
 LOCATION_CHECK=1
+## LOCATION_MOVE_KM: distance (km) from the coordinates that counts as a move (default 100)
+LOCATION_MOVE_KM=100
+
+## APP_THEME: colours of the app (Settings › Appearance): forest = BirdNET Classic (default), ocean, sand, graphite,
+## blossom, white or custom
+APP_THEME=forest
 
 ## EXTRACTION_LENGTH sets the length of the audio extractions that will be made
 ## from each BirdNET-Lite detection. An empty value will use the default of 6

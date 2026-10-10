@@ -97,6 +97,7 @@ if(isset($_GET["latitude"])){
   // Now page: the most recent detections as spectrogram cards or as a list (owner 2026-10-09)
   $now_view = isset($_GET['now_view']) && in_array($_GET['now_view'], array('spectrogram', 'list'), true) ? $_GET['now_view'] : null;
   // boot check of the network position (owner 2026-10-10, scripts/location_check.py): 1 = on (default), 0 = off
+  $location_move_km = isset($_GET['location_move_km']) && ctype_digit((string)$_GET['location_move_km']) ? max(1, min(5000, intval($_GET['location_move_km']))) : null;
   $location_check = isset($_GET['submit']) && ($_GET['submit'] ?? '') === 'settings' ? (isset($_GET['location_check']) ? '1' : '0') : null;
   $now_analyzing = isset($_GET['now_analyzing']) && in_array($_GET['now_analyzing'], array('show', 'hide'), true) ? $_GET['now_analyzing'] : null;
   $spectrogram_palette = isset($_GET['spectrogram_palette']) && in_array($_GET['spectrogram_palette'], array('birdnet','viridis','inferno','ocean','grayscale','soxheat'), true) ? $_GET['spectrogram_palette'] : null;
@@ -325,6 +326,10 @@ if(isset($_GET["latitude"])){
       // Config written before this setting existed - append the new key
       $contents .= "\nNOTIFICATION_EMAIL=\"$notification_email\"\n";
     }
+  }
+  if(isset($location_move_km)) {
+    $contents = preg_match('/^LOCATION_MOVE_KM=/m', $contents) ? preg_replace('/^LOCATION_MOVE_KM=.*/m', "LOCATION_MOVE_KM=$location_move_km", $contents)
+      : $contents . "\n## LOCATION_MOVE_KM: distance (km) from the coordinates that counts as a move for the boot location check\nLOCATION_MOVE_KM=$location_move_km\n";
   }
   if(isset($location_check)) {
     $contents = preg_match('/^LOCATION_CHECK=/m', $contents) ? preg_replace('/^LOCATION_CHECK=.*/m', "LOCATION_CHECK=$location_check", $contents)
@@ -678,6 +683,23 @@ function runProcess() {
           <td><input name="site_name" type="text" value="<?php print($config['SITE_NAME']);?>"/></td>
           <td>(Optional)</td>
         </tr>
+        <!-- boot location check (owner 2026-10-10): beside the coordinates it compares with -->
+        <tr title="At every boot the station compares its approximate network position (public IP geolocation: ipapi.co / ip-api.com) with these coordinates; after a move of more than the move distance the Now page asks whether to use the new location (coordinates, Brazilian state species list, timezone). Nothing changes without your answer.">
+          <td><label for="location_check">Auto location:</label></td>
+          <td><label><input type="checkbox" name="location_check" id="location_check" <?php echo ($config['LOCATION_CHECK'] ?? '1') !== '0' ? 'checked' : ''; ?>> Enable</label></td>
+          <td><small>at every boot, compare the network position with these coordinates and ask when the station moved</small></td>
+        </tr>
+        <tr title="At every boot the station compares its approximate network position (public IP geolocation: ipapi.co / ip-api.com) with these coordinates; after a move of more than the move distance the Now page asks whether to use the new location (coordinates, Brazilian state species list, timezone). Nothing changes without your answer.">
+          <td><label for="location_move_km">Move distance:</label></td>
+          <td><input type="number" name="location_move_km" id="location_move_km" min="1" max="5000" step="1" style="width:6em" value="<?php echo intval($config['LOCATION_MOVE_KM'] ?? 100); ?>"> km</td>
+          <td><small>farther than this counts as a move (default 100)</small></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td colspan="2"><button type="button" class="autolocate" onclick="autoLocateNow(this)" title="Find the station's network position now and put it in Latitude / Longitude (save to keep it)">Auto Locate Now</button>
+            <small id="autolocate_msg"></small></td>
+        </tr>
+        <tr><td colspan="3"><small>Get coordinates with <b>Auto Locate Now</b> or on <a href="https://latlong.net" target="_blank">latlong.net</a> (4 decimal places); detections are stamped with the timezone below.</small></td></tr>
         <tr>
           <td><label for="latitude">Latitude:</label></td>
           <td><input name="latitude" type="number" style="width:6em;" max="90" min="-90" step="0.0001" value="<?php print($config['LATITUDE']);?>" required/></td>
@@ -686,6 +708,15 @@ function runProcess() {
           <td><label for="longitude">Longitude: </label></td>
           <td><input name="longitude" type="number" style="width:6em;" max="180" min="-180" step="0.0001" value="<?php print($config['LONGITUDE']);?>" required/></td>
           <td></td>
+        </tr>
+        <tr>
+          <td><label for="timezone">Timezone:</label></td>
+          <td colspan="2"><select name="timezone" id="timezone" class="testbtn">
+            <?php $current_timezone = trim((string)shell_exec("timedatectl show --value --property=Timezone"));
+              foreach (DateTimeZone::listIdentifiers(DateTimeZone::ALL) as $tzid) {
+                echo '<option value="' . $tzid . '"' . ($tzid === $current_timezone ? ' selected="selected"' : '') . '>' . $tzid . '</option>';
+              } ?>
+          </select></td>
         </tr>
         <tr><td colspan="3" style="height:12px"></td></tr>
         <tr>
@@ -726,14 +757,32 @@ function runProcess() {
           <td></td>
           <td colspan="2"><small>
             <b>None</b> — every species the model's location filter allows for this place and week; use it outside Brazil or to detect species not yet registered in your area.<br>
-            <b>Station list</b> — only the species of that list; edit, save and load lists in Tools › Custom Species List.<br>
+            <b>Station list</b> — only the species of that list; edit, save and load lists in Lists › Custom Species.<br>
             <b>Brazilian state</b> — only the birds with WikiAves records in the state (CBRO names) plus the model's non-bird classes; built once, then kept as a station list you can edit.
           </small></td>
         </tr>
       </table>
-      <p>Set your Latitude and Longitude to 4 decimal places. Get your coordinates <a href="https://latlong.net" target="_blank">here</a>.</p>
-      <label title="At every boot the station compares its approximate network position (geolocation of the public IP: ipapi.co / ip-api.com) with these coordinates; when it moved more than 100 km the Now page asks whether to use the new location (coordinates, Brazilian state species list, timezone). Nothing changes without your answer.">
-        <input type="checkbox" name="location_check" <?php echo ($config['LOCATION_CHECK'] ?? '1') !== '0' ? 'checked' : ''; ?>> Check at boot whether the station moved (more than 100 km, network position)</label>
+<script>
+// Auto Locate Now: the network position into the Latitude / Longitude fields of this form (save to keep it)
+function autoLocateNow(btn) {
+  var msg = document.getElementById('autolocate_msg');
+  msg.textContent = 'Locating\u2026';
+  btn.disabled = true;
+  var x = new XMLHttpRequest();
+  x.onload = function () {
+    btn.disabled = false;
+    var r; try { r = JSON.parse(this.responseText); } catch (e) { r = {error: this.status === 401 ? 'log in first' : 'no answer'}; }
+    if (r.error) { msg.textContent = 'Not located: ' + r.error; return; }
+    var lat = document.querySelector('input[name=latitude]'), lon = document.querySelector('input[name=longitude]');
+    lat.value = Number(r.lat).toFixed(4); lon.value = Number(r.lon).toFixed(4);
+    [lat, lon].forEach(function (i) { i.style.background = '#fff8c4'; });
+    msg.textContent = r.where + ' \u2014 ' + r.distance_km + ' km from the saved coordinates; filled in above, save to keep it'
+      + (r.timezone ? ' (timezone there: ' + r.timezone + ')' : '');
+  };
+  x.open('GET', 'scripts/locate_now.php', true);
+  x.send();
+}
+</script>
       </td></tr></table><br>
       <table class="settingstable" style="width:100%"><tr><td>
       <h2>Notifications - Global</h2>
@@ -1081,25 +1130,6 @@ mailto://{user}:{password}@gmail.com
       <input onclick="this.showPicker()" type="date" id="date" name="date" value="<?php echo $date->format('Y-m-d') ?>" <?php echo $disabledvalue; ?>>
       <input onclick="this.showPicker()" type="time" id="time" name="time" value="<?php echo $date->format('H:i'); ?>" <?php echo $disabledvalue; ?>><br>
       <br>
-      <label for="timezone">Select a Timezone: </label>
-      <select name="timezone" class="testbtn">
-      <option disabled selected>
-        Select a timezone
-      </option>
-      <?php
-      $current_timezone = trim(shell_exec("timedatectl show --value --property=Timezone"));
-      $timezone_identifiers = DateTimeZone::listIdentifiers(DateTimeZone::ALL);
-        
-      $n = 425;
-      for($i = 0; $i < $n; $i++) {
-          $isSelected = "";
-          if($timezone_identifiers[$i] == $current_timezone) {
-            $isSelected = 'selected="selected"';
-          }
-          echo "<option $isSelected value='".$timezone_identifiers[$i]."'>".$timezone_identifiers[$i]."</option>";
-      }
-      ?>
-      </select>
       </td></tr></table><br>
 
       <br><br>

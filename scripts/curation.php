@@ -52,7 +52,6 @@ uasort($rows, function ($a, $b) { return $a['n'] - $b['n']; });
 .cur h3 { margin: 18px 0 8px; }
 </style>
 <div class="cur">
-  <h2><img src="images/species-page.svg" style="width:28px;height:28px;vertical-align:middle" alt=""> Curation</h2>
   <div class="kpis">
     <div class="kpi"><small>Detections</small><b><?php echo number_format($total); ?></b></div>
     <div class="kpi"><small>Reviewed</small><b><?php echo number_format($rev); ?> <small>(<?php echo $total ? number_format(100 * $rev / $total, 2) : 0; ?>%)</small></b></div>
@@ -64,14 +63,14 @@ uasort($rows, function ($a, $b) { return $a['n'] - $b['n']; });
   <?php if ($reasons) { ?>
     <div><b>Causes of "not this bird":</b> <?php echo $h(implode(' · ', array_map(function ($r) { return $r['r'] . ' ' . $r['c']; }, $reasons))); ?></div>
   <?php } ?>
-  <h3>By species</h3>
+  <h3 class="hmhead">By species <span class="hmsort" data-table="curtable" data-store="curation"><small>Sort:</small><button type="button" data-sort="n">Count</button><button type="button" data-sort="tax" title="Field-guide order (eBird/Clements taxonomy)">Taxonomy</button><button type="button" data-sort="az" title="Alphabetical, by the names shown">A–Z</button></span><input type="search" class="hmfilter spfilter" data-table="curtable" placeholder="Filter species..." title="Common, scientific or English name (accents ignored)"></h3>
   <table id="curtable" class="stdtable" data-nosort>
     <tr><th><select class="namemode" title="Names shown"><option value="com">Common name</option><option value="sci">Scientific name</option><option value="en">English name</option></select></th><th class="num">Detections</th><th class="num">Reviewed</th><th class="num">Yes</th><th class="num">Not</th>
       <th class="num">Can't tell</th><th class="num">Right</th><th class="num">Threshold</th><th>Last review</th></tr>
     <?php foreach ($rows as $sci => $r) {
       $rv = $r['yes'] + $r['no'] + $r['unsure'];
       $pct = $r['n'] ? 100 * $rv / $r['n'] : 0;
-      echo '<tr><td>' . '<a href="views.php?view=Bird&amp;sci=' . rawurlencode($sci) . '" data-com="' . $h($r['com']) . '" data-sci="' . $h($sci) . '" data-en="' . $h(get_english_name($sci)) . '">' . $h($r['com']) . '</a>' . '</td>'
+      echo '<tr data-n="' . intval($r['n']) . '" data-tax="' . taxon_order($sci) . '" data-q="' . $h(mb_strtolower($r['com'] . ' ' . $sci . ' ' . get_english_name($sci))) . '"><td>' . '<a href="views.php?view=Bird&amp;sci=' . rawurlencode($sci) . '" data-com="' . $h($r['com']) . '" data-sci="' . $h($sci) . '" data-en="' . $h(get_english_name($sci)) . '">' . $h($r['com']) . '</a>' . '</td>'
         . '<td class="num">' . number_format($r['n']) . '</td>'
         . '<td class="num" data-v="' . $pct . '"><span class="bar"><span style="width:' . min(100, max($rv ? 3 : 0, $pct)) . '%"></span></span>' . $rv . ' (' . ($pct >= 10 ? round($pct) : number_format($pct, 1)) . '%)</td>'
         . '<td class="num">' . $r['yes'] . '</td><td class="num">' . $r['no'] . '</td><td class="num">' . $r['unsure'] . '</td>'
@@ -94,6 +93,7 @@ uasort($rows, function ($a, $b) { return $a['n'] - $b['n']; });
   </table>
   <?php } ?>
 </div>
+<script src="static/species-sort.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/species-sort.js"); ?>"></script>
 <script src="static/std-table.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/std-table.js"); ?>"></script>
 <script src="static/name-mode.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/name-mode.js"); ?>"></script>
 <script>

@@ -257,6 +257,7 @@ uasort($rows, fn($a, $b) => ($b['Count'] <=> $a['Count']) ?: strcmp($a['Com_Name
   .toolbar .right{display:flex;gap:8px;align-items:center}
   .toolbar input[type="text"]{padding:5px 8px;width:260px;max-width:100%;font-size:14px}
   .toolbar .nowmodes button{padding:4px 12px;font-size:12px;border-radius:12px;height:auto;line-height:normal;margin:0}
+  .toolbar .hmsort button{padding:3px 12px;font-size:12px;height:auto;line-height:normal}
   #speciesTable td{white-space:nowrap}
   .spnew{font-size:11px;background:#d97a00;color:#fff;border-radius:8px;padding:0 6px;margin-left:4px}
 </style>
@@ -264,7 +265,7 @@ uasort($rows, fn($a, $b) => ($b['Count'] <=> $a['Count']) ?: strcmp($a['Com_Name
 <div class="centered"><div class="spm">
   <div class="toolbar">
     <span class="nowmodes"><button type="button" class="<?php echo $scope === 'detected' ? 'active' : ''; ?>" onclick="location.href='views.php?view=Bird'" title="Species with detections">Detected</button><button type="button" class="<?php echo $scope === 'all' ? 'active' : ''; ?>" onclick="location.href='views.php?view=Bird&amp;scope=all'" title="Every species the station can detect: the model's species, limited to the Custom Species List when it has species, without the Excluded Species; the location threshold is ignored">All</button></span>
-    <span class="right"><small id="matchCount"></small><input id="q" type="text" placeholder="Filter species… (common, scientific or English name)" title="Type to filter; persists across reloads"></span>
+    <span class="right"><span class="hmsort" data-table="speciesTable" data-store="speciespages"><small>Sort:</small><button type="button" data-sort="n">Count</button><button type="button" data-sort="tax" title="Field-guide order (eBird/Clements taxonomy)">Taxonomy</button><button type="button" data-sort="az" title="Alphabetical, by the names shown">A–Z</button></span><small id="matchCount"></small><input id="q" type="text" placeholder="Filter species… (common, scientific or English name)" title="Type to filter; persists across reloads"></span>
   </div>
 
   <table id="speciesTable" class="stdtable">
@@ -343,7 +344,7 @@ uasort($rows, fn($a, $b) => ($b['Count'] <=> $a['Count']) ?: strcmp($a['Com_Name
   $prob = location_probability($scient, date('Y-m-d'));
   $prob_cell = $prob === null ? "<td class='r' data-sort='-1'>—</td>"
     : "<td class='r' data-sort='" . sprintf('%.4f', $prob) . "' style='color:" . ($prob >= $sf_thresh ? 'green' : 'red') . "'>" . sprintf('%.4f', $prob) . "</td>";
-  echo "<tr data-comname=\"{$common}\" data-sciname=\"{$scient}\" data-q=\"" . htmlspecialchars(mb_strtolower($common . ' ' . $scient . ' ' . $english), ENT_QUOTES) . "\">"
+  echo "<tr data-n=\"{$count}\" data-tax=\"" . taxon_order($scient) . "\" data-comname=\"{$common}\" data-sciname=\"{$scient}\" data-q=\"" . htmlspecialchars(mb_strtolower($common . ' ' . $scient . ' ' . $english), ENT_QUOTES) . "\">"
      . "<td style='white-space:nowrap'>{$common_link}" . (($row['FirstSeen'] ?? '') === date('Y-m-d') ? "<span class='spnew'>new today</span>" : '') . "</td>"
      . "<td class='r'>{$count}</td>"
      . "<td class='r'>" . (int)($row['Days'] ?? 0) . "</td>"
@@ -363,6 +364,7 @@ uasort($rows, fn($a, $b) => ($b['Count'] <=> $a['Count']) ?: strcmp($a['Com_Name
     </tbody>
   </table>
 </div></div>
+<script src="static/species-sort.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/species-sort.js"); ?>"></script>
 <script src="static/std-table.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/std-table.js"); ?>"></script>
 <script src="static/name-mode.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/name-mode.js"); ?>"></script>
 <script src="static/species-modal.js"></script>

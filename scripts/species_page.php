@@ -2,7 +2,7 @@
 /* Species page (owner 2026-10-08): everything about one bird in one place — names and links, totals, the last
  * year as a calendar, months and hours of activity, the location model's expected season (V3 geo model,
  * region_profile.json), the best clips, the latest detections, the review verdicts with a suggested species
- * threshold, and the station settings for the species (threshold, notification tier, lists).
+ * threshold, and the Species Settings (editable threshold, notification tier, lists).
  * Opened as views.php?view=Bird&sci=<scientific name>. */
 require_once __DIR__ . '/common.php';
 $home = get_home();
@@ -40,9 +40,10 @@ $per_day = array();
 foreach ($q("SELECT Date, COUNT(*) AS n FROM detections WHERE Sci_Name = :sci AND Date >= date('now', 'localtime', '-370 days') $nr GROUP BY Date") as $r) {
   $per_day[$r['Date']] = intval($r['n']);
 }
-$months = array_fill(1, 12, 0);
-foreach ($q("SELECT CAST(strftime('%m', Date) AS INT) AS m, COUNT(*) AS n FROM detections WHERE Sci_Name = :sci $nr GROUP BY m") as $r) {
-  $months[intval($r['m'])] = intval($r['n']);
+// detections per BirdNET week (48: four per month, as the location model's profile below), every year together
+$weeks = array_fill(1, 48, 0);
+foreach ($q("SELECT CAST(strftime('%m', Date) AS INT) AS m, CAST(strftime('%d', Date) AS INT) AS d, COUNT(*) AS n FROM detections WHERE Sci_Name = :sci $nr GROUP BY m, d") as $r) {
+  $weeks[min(48, (intval($r['m']) - 1) * 4 + min(4, intdiv(intval($r['d']) - 1, 7) + 1))] += intval($r['n']);
 }
 $hours = array_fill(0, 24, 0);
 foreach ($q("SELECT CAST(substr(Time, 1, 2) AS INT) AS hh, COUNT(*) AS n FROM detections WHERE Sci_Name = :sci $nr GROUP BY hh") as $r) {
@@ -152,9 +153,10 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
 .sp .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
 @media (max-width: 700px) { .sp .charts { grid-template-columns: 1fr; } }
 .sp h3.section { font-size: 1.3em; margin: 22px 0 12px; }
-.sp .lists { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; padding: 10px 12px; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; margin: 18px 0 4px; }
-.sp .lists label { font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-.sp .lists input { width: 18px; height: 18px; cursor: pointer; }
+.sp .spset label { display: flex; align-items: center; gap: 6px; margin: 5px 0; cursor: pointer; }
+.sp .spset input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; margin: 0; }
+.sp .spset #sp_threshold { width: 5em; padding: 2px 5px; }
+.sp .spset .spdel { margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(128,128,128,.3); }
 .sp .card { min-width: 0; flex: 1 1 280px; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; padding: 10px 12px; }
 .sp .card h3 { margin: 0 0 8px; font-size: 1em; }
 .sp-bars { display: flex; align-items: flex-end; gap: 2px; height: 70px; }
@@ -212,8 +214,9 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
         }
       ?></div>
     </div>
-    <div class="card"><h3>Months (all years)</h3>
-      <?php echo $bar($months, array_combine(range(1, 12), array('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')), 'detections per month', intval(date('n'))); ?>
+    <!-- by week, on the same 48 weeks as "Expected here" (owner 2026-10-10: it used to be by month) -->
+    <div class="card"><h3>Weeks (all years)</h3>
+      <?php echo $bar($weeks, array_combine(range(1, 48), array_map(function ($w) { return 'week ' . $w; }, range(1, 48))), 'detections per week', $week48); ?>
       <div class="sp-axis"><span>Jan</span><span>Apr</span><span>Jul</span><span>Oct</span><span>Dec</span></div>
     </div>
     <div class="card"><h3>Time of day</h3>
@@ -222,13 +225,25 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
     </div>
   </div>
   <div class="grid">
-    <div class="card"><h3>Station settings</h3>
-      Species threshold: <b><?php echo $threshold !== null ? round(floatval($threshold) * 100) . '%' : 'global (' . round(floatval($config['CONFIDENCE'] ?? 0.7) * 100) . '%)'; ?></b><br>
-      Notifications: <select onchange="spTier(this, <?php echo $h(json_encode($sci)); ?>)" data-was="<?php echo $h($tier); ?>">
+    <!-- Species Settings (owner 2026-10-10): threshold (editable), notifications and the lists, one per line -->
+    <div class="card spset"><h3>Species Settings</h3>
+      <label title="Minimum confidence for this species; empty = the global Min. Conf. (<?php echo round(floatval($config['CONFIDENCE'] ?? 0.7) * 100); ?>%). Saved at once (species_confidence.txt).">Species threshold:
+        <input type="number" id="sp_threshold" min="0.01" max="0.99" step="0.01" placeholder="<?php echo $h(sprintf('%.2f', floatval($config['CONFIDENCE'] ?? 0.7))); ?>"
+          value="<?php echo $threshold !== null ? $h(sprintf('%.2f', floatval($threshold))) : ''; ?>" onchange="spThreshold(this, <?php echo $h(json_encode($sci)); ?>)">
+        <small>empty = global</small></label>
+      <label>Notifications: <select onchange="spTier(this, <?php echo $h(json_encode($sci)); ?>)" data-was="<?php echo $h($tier); ?>">
         <?php foreach (array('muted' => 'Muted', 'normal' => 'Normal', 'rare' => 'Prio') as $tv => $tl) {
           echo '<option value="' . $tv . '"' . ($tier === $tv ? ' selected' : '') . '>' . $tl . ($tv === $default_tier ? ' (default)' : '') . '</option>';
         } ?>
-      </select><br>
+      </select></label>
+      <label title="A curation marker: you have checked that the species occurs here"><input type="checkbox" <?php echo $in_confirmed ? 'checked' : ''; ?> onchange="spList(this, 'confirmed', <?php echo $h(json_encode($sci)); ?>)"> Confirmed</label>
+      <label title="Accepted even when the location filter does not expect it here and now"><input type="checkbox" <?php echo $in_whitelist ? 'checked' : ''; ?> onchange="spList(this, 'whitelist', <?php echo $h(json_encode($identifier)); ?>)"> Whitelist</label>
+      <label title="Never detected again"><input type="checkbox" <?php echo $in_exclude ? 'checked' : ''; ?> onchange="spList(this, 'exclude', <?php echo $h(json_encode($identifier)); ?>)"> Exclude</label>
+      <?php $ndel = deleted_count($sci); if ($ndel) { ?>
+        <div class="spdel">Removed detections: <b><?php echo $ndel; ?></b>
+          <button type="button" class="restorebtn" onclick="restoreRemoved(<?php echo $h(json_encode($sci)); ?>, this)">Restore</button>
+          <button type="button" class="wipebtn" onclick="wipeDeleted(<?php echo $h(json_encode($sci)); ?>, this)">Purge removed</button></div>
+      <?php } ?>
     </div>
     <div class="card"><h3>Reviews</h3>
       Yes <b><?php echo $reviews['yes']; ?></b> · Not this bird <b><?php echo $reviews['no']; ?></b> · Can't tell <b><?php echo $reviews['unsure']; ?></b><br>
@@ -258,17 +273,6 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
         } ?></div>
       <?php } ?>
     </div>
-  </div>
-  <div class="lists">
-    <span>Lists:</span>
-    <label title="A curation marker: you have checked that the species occurs here"><input type="checkbox" <?php echo $in_confirmed ? 'checked' : ''; ?> onchange="spList(this, 'confirmed', <?php echo $h(json_encode($sci)); ?>)"> Confirmed</label>
-    <label title="Accepted even when the location filter does not expect it here and now"><input type="checkbox" <?php echo $in_whitelist ? 'checked' : ''; ?> onchange="spList(this, 'whitelist', <?php echo $h(json_encode($identifier)); ?>)"> Whitelist</label>
-    <label title="Never detected again"><input type="checkbox" <?php echo $in_exclude ? 'checked' : ''; ?> onchange="spList(this, 'exclude', <?php echo $h(json_encode($identifier)); ?>)"> Exclude</label>
-    <?php $ndel = deleted_count($sci); if ($ndel) { ?>
-      <span style="margin-left:auto">Removed detections: <b><?php echo $ndel; ?></b>
-        <button type="button" class="restorebtn" onclick="restoreRemoved(<?php echo $h(json_encode($sci)); ?>, this)">Restore</button>
-        <button type="button" class="wipebtn" onclick="wipeDeleted(<?php echo $h(json_encode($sci)); ?>, this)">Purge removed</button></span>
-    <?php } ?>
   </div>
   <h3 class="section">Best detections</h3>
   <div class="clips" data-review-list="1">
@@ -312,11 +316,25 @@ function spList(box, list, species) {
     x.send();
   });
 }
+// species threshold typed in Species Settings: saved at once (empty = back to the global Min. Conf.)
+function spThreshold(inp, sci) {
+  var v = inp.value.trim();
+  if (v !== '') { v = Math.min(0.99, Math.max(0.01, parseFloat(v.replace(',', '.')))); if (isNaN(v)) { inp.value = ''; return; } v = v.toFixed(2); inp.value = v; }
+  var x = new XMLHttpRequest();
+  x.onload = function () {
+    var ok = this.status === 200 && this.responseText.trim() === 'OK';
+    inp.style.outline = ok ? '2px solid #2e7d32' : '2px solid #c62828';
+    setTimeout(function () { inp.style.outline = ''; }, 1500);
+    if (!ok) alert('Not saved: ' + (this.status === 401 ? 'log in first' : this.responseText));
+  };
+  x.open('GET', 'scripts/species_tools.php?setconf=1&species=' + encodeURIComponent(sci) + '&value=' + encodeURIComponent(v), true);
+  x.send();
+}
 // calibrated threshold: saved as the species threshold (same endpoint as the Species Pages list)
 function applyThreshold(sci, value, btn) {
   var x = new XMLHttpRequest();
   x.onload = function () {
-    if (this.status === 200 && this.responseText.trim() === 'OK') { btn.textContent = 'Applied'; btn.disabled = true; }
+    if (this.status === 200 && this.responseText.trim() === 'OK') { btn.textContent = 'Applied'; btn.disabled = true; var i = document.getElementById('sp_threshold'); if (i) i.value = Number(value).toFixed(2); }
     else alert('Not saved: ' + (this.status === 401 ? 'log in first' : this.responseText));
   };
   x.open('GET', 'scripts/species_tools.php?setconf=1&species=' + encodeURIComponent(sci) + '&value=' + value, true);
