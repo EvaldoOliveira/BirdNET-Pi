@@ -21,7 +21,7 @@ GEOJSON = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'model'
 def online(lat, lon):
     url = ('https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=5&addressdetails=1'
            f'&lat={lat}&lon={lon}')
-    req = urllib.request.Request(url, headers={'User-Agent': 'BirdNET-Pi installer (github.com/EvaldoOliveira/BirdNET-Pi)',
+    req = urllib.request.Request(url, headers={'User-Agent': 'BirdNET-Pi installer (github.com/EvaldoOliveira/BirdnetPiPlusPlus)',
                                                'Accept-Language': 'en'})
     with urllib.request.urlopen(req, timeout=5) as r:
         address = json.load(r).get('address', {})

@@ -30,9 +30,9 @@ set_timezone();
 <?php if(isset($_GET['logo'])) {
 // Station logo (owner 2026-09-22): BirdNetBr.png, the edition's own mark; the link goes to the fork.
 // The BirdnetPi++ wordmark is centred (birdnetpi-plus.png, owner 2026-10-09: the project is BirdnetPi++).
-echo "<a href=\"https://github.com/EvaldoOliveira/BirdNET-Pi\" target=\"_blank\"><img style=\"width:60;height:60;\" src=\"images/BirdNetBr.png\"></a>";
+echo "<a href=\"https://github.com/EvaldoOliveira/BirdnetPiPlusPlus\" target=\"_blank\"><img style=\"width:60;height:60;\" src=\"images/BirdNetBr.png\"></a>";
 } else {
-echo "<a href=\"https://github.com/EvaldoOliveira/BirdNET-Pi\" target=\"_blank\"><img src=\"images/BirdNetBr.png\"></a>";
+echo "<a href=\"https://github.com/EvaldoOliveira/BirdnetPiPlusPlus\" target=\"_blank\"><img src=\"images/BirdNetBr.png\"></a>";
 }?>
   </div>
   <div class="sitename"><?php echo $site_name; ?></div>

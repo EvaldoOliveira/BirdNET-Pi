@@ -66,7 +66,7 @@ fi
 # pilot first). BIRDNET_BRANCH=main installs the development line instead (owner 2026-10-07, US-51e).
 branch=${BIRDNET_BRANCH:-stable}
 export BIRDNET_BRANCH=$branch  # install_config.sh writes it as UPDATE_BRANCH
-git clone -b $branch --depth=1 https://github.com/EvaldoOliveira/BirdNET-Pi.git ${HOME}/BirdNET-Pi &&
+git clone -b $branch --depth=1 https://github.com/EvaldoOliveira/BirdnetPiPlusPlus.git ${HOME}/BirdNET-Pi &&
 
 $HOME/BirdNET-Pi/scripts/install_birdnet.sh
 if [ ${PIPESTATUS[0]} -eq 0 ];then

@@ -3,7 +3,7 @@
 get_tf_whl () {
   # this edition hosts the wheels in its own release (identical to upstream's v0.1 assets),
   # upstream stays as the fallback; SHA256SUMS of the release is checked when reachable
-  BASE_URL=https://github.com/EvaldoOliveira/BirdNET-Pi/releases/download/wheels-1/
+  BASE_URL=https://github.com/EvaldoOliveira/BirdnetPiPlusPlus/releases/download/wheels-1/
   FALLBACK_URL=https://github.com/Nachtzuster/BirdNET-Pi/releases/download/v0.1/
 
   ARCH=$(uname -m)

@@ -5,7 +5,7 @@
 <p align="center"><i>The long-term monitoring edition of BirdNET-Pi</i></p>
 <p align="center"><b>Turn a Raspberry Pi into a 24/7 bird observatory that listens, identifies, records and tells you what matters.</b></p>
 <p align="center">
-  <a href="https://github.com/EvaldoOliveira/BirdNET-Pi/releases"><img alt="Release" src="https://img.shields.io/github/v/release/EvaldoOliveira/BirdNET-Pi?include_prereleases&label=release&color=4a8f3c"></a>
+  <a href="https://github.com/EvaldoOliveira/BirdnetPiPlusPlus/releases"><img alt="Release" src="https://img.shields.io/github/v/release/EvaldoOliveira/BirdnetPiPlusPlus?include_prereleases&label=release&color=4a8f3c"></a>
   <img alt="Raspberry Pi" src="https://img.shields.io/badge/Raspberry%20Pi-5%20%7C%204B%20%7C%20400%20%7C%203B%2B%20%7C%20Zero%202W-c51a4a">
   <img alt="Models" src="https://img.shields.io/badge/models-BirdNET%2B%20V3%20%7C%20V2.4-2b5e22">
   <a href="LICENSE"><img alt="Licence" src="https://img.shields.io/badge/licence-CC%20BY--NC--SA%204.0-lightgrey"></a>
@@ -14,7 +14,7 @@
   <a href="#how-to-get-birdnetpi"><b>Installation guide</b></a> ·
   <a href="#features"><b>Features</b></a> ·
   <a href="#screenshots"><b>Screenshots</b></a> ·
-  <a href="https://github.com/EvaldoOliveira/BirdNET-Pi/releases"><b>Releases</b></a> ·
+  <a href="https://github.com/EvaldoOliveira/BirdnetPiPlusPlus/releases"><b>Releases</b></a> ·
   <a href="#reporting-issues"><b>Help</b></a>
 </p>
 <p align="center">
@@ -136,7 +136,7 @@ Min. confidence, species override, location threshold, sensitivity, recording le
 <td valign="top">
 
 #### 🗂️ Species lists by type and region
-Custom Species, Excluded and Whitelisted show the species still available beside the list, filtered by group (birds, mammals, amphibians, insects, domestic) and by continent — from a GBIF-built table of every model label.
+Custom Species, Excluded and Whitelisted show the species still available beside the list, filtered by group (birds, mammals, amphibians, insects, domestic) and by continent. Both come from a formal reference, [GBIF](https://www.gbif.org) (Global Biodiversity Information Facility): its taxonomic backbone gives each model label its class and its occurrence records give the continents (`model/species_info.csv`).
 </td>
 </tr>
 </table>
@@ -178,7 +178,7 @@ Wait until the desktop appears (the first start takes a few minutes).
 **3. Install.** Open the **Terminal** (the black window icon at the top, or menu › *Accessories* › *Terminal*),
 type this command exactly as shown and press **Enter**:
 ```
-curl -fsSL https://raw.githubusercontent.com/EvaldoOliveira/BirdNET-Pi/stable/newinstaller.sh | bash
+curl -fsSL https://raw.githubusercontent.com/EvaldoOliveira/BirdnetPiPlusPlus/stable/newinstaller.sh | bash
 ```
 
 The installer asks your password once, then a few questions. Press **Enter** to accept each suggested answer:
@@ -197,7 +197,7 @@ a few minutes.
 the **Services** tab, and do step 3 from another computer on the same network with `ssh <username>@birdnetpi.local`.
 
 *To prepare several stations without typing:* copy
-[`docs/birdnet-setup.conf.example`](https://raw.githubusercontent.com/EvaldoOliveira/BirdNET-Pi/main/docs/birdnet-setup.conf.example)
+[`docs/birdnet-setup.conf.example`](https://raw.githubusercontent.com/EvaldoOliveira/BirdnetPiPlusPlus/main/docs/birdnet-setup.conf.example)
 to the card's *bootfs* drive as `birdnet-setup.conf`, fill in the answers, then do steps 2–4.
 
 ---
@@ -208,7 +208,7 @@ to the card's *bootfs* drive as `birdnet-setup.conf`, fill in the answers, then 
 2. Connect to the station (`ssh <username>@<station address>`) and run:
    ```
    cd ~/BirdNET-Pi
-   git remote set-url origin https://github.com/EvaldoOliveira/BirdNET-Pi.git
+   git remote set-url origin https://github.com/EvaldoOliveira/BirdnetPiPlusPlus.git
    ./scripts/update_birdnet.sh -b stable
    ```
 3. Open the station in the browser. Your detections and settings are kept. From now on
@@ -264,11 +264,15 @@ On a phone (the menu opens from the ☰ button):
 ### Reporting issues
 
 - Matters specific to **BirdnetPi++** (the stories above, the upgrade package): please open an
-  [issue in this repository](https://github.com/EvaldoOliveira/BirdNET-Pi/issues/new/choose) — user story, defect or epic.
+  [issue in this repository](https://github.com/EvaldoOliveira/BirdnetPiPlusPlus/issues/new/choose) — user story, defect or epic.
 - Behaviour that also occurs on a standard installation belongs to
   [Nachtzuster's tracker](https://github.com/Nachtzuster/BirdNET-Pi/issues).
 - Neither project adjudicates detections: questions about the classification performance of the BirdNET models
   should be addressed to the [BirdNET team](https://github.com/birdnet-team).
+
+### Data sources
+
+- **Species type and region** of the list filters: [GBIF.org](https://www.gbif.org) — the GBIF Backbone Taxonomy (class of each label) and GBIF occurrence records (share of records per continent; 'Global' = four or more continents, 'Ocean' = mostly records at sea), queried through the GBIF API on 2026-10-09 by `scripts/build_species_info.py`. Labels GBIF does not know under the model's name (recent genus changes) are looked up under the name of the other model, else typed from the BirdNET+ labels table. GBIF data is published under CC0 / CC BY licences by its data publishers.
 
 ### Licence and credits
 

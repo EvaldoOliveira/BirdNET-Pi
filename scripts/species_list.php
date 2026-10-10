@@ -66,6 +66,7 @@
   .splist-tools { margin-top: 14px; display: grid; grid-template-columns: max-content max-content; justify-content: start; gap: 8px 10px; align-items: center; }
   .splist-tools button { padding: 6px 12px; text-align: left; }
   .splist .smaller { display: none; }
+  .splist-source { font-size: 12px; opacity: .8; }
   .splist-groups { margin: 4px 0 8px; display: flex; gap: 6px; flex-wrap: wrap; }
   .splist .splist-groups button { padding: 4px 12px; background: #fff; }
   .splist .splist-groups select { padding: 3px 6px; border-radius: 10px; font-size: 13px; width: auto; height: auto; }
@@ -130,6 +131,9 @@ if ($species_list == "include") {
 </div>
 
 <div class="splist-note"><?php echo $message ?></div>
+<div class="splist-note splist-source">Groups (birds, mammals, amphibians, insects, domestic) and regions come from a formal reference:
+  <a href="https://www.gbif.org" target="_blank">GBIF</a> (Global Biodiversity Information Facility) — the GBIF Backbone Taxonomy for the class of each label and
+  GBIF occurrence records for the continents (at least 3 % of the records; Global = four or more continents; Ocean = mostly records at sea). Table: model/species_info.csv.</div>
 
 <?php if ($species_list == "include") { ?>
 <div class="splist-tools">
