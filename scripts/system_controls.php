@@ -23,6 +23,24 @@ if (stripos($str, "Your branch is up to date") !== false) {
 $_SESSION['behind'] = $num_commits_behind;
 $_SESSION['behind_time'] = time();
 
+// version line and Update label (owner 2026-10-10): the release this station runs (the newest vX.Y.Z tag it contains,
+// plus the commits after it on a development checkout) and the release Update would bring
+$git = "sudo -u" . $user . " git -C " . $home . "/BirdNET-Pi ";
+$installed = trim((string)shell_exec($git . "describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null"));
+$ahead = $installed !== '' ? intval(trim((string)shell_exec($git . "rev-list --count " . escapeshellarg($installed) . "..HEAD 2>/dev/null"))) : 0;
+$latest = '';
+foreach (explode("\n", (string)shell_exec($git . "tag -l 'v*' 2>/dev/null")) as $t) {
+  if (preg_match('~^v\d+\.\d+\.\d+$~', trim($t)) && ($latest === '' || version_compare(substr(trim($t), 1), substr($latest, 1), '>'))) $latest = trim($t);
+}
+$update_branch = get_config()['UPDATE_BRANCH'] ?? 'stable';
+$_SESSION['release_installed'] = $installed;
+$_SESSION['release_new'] = ($latest !== '' && $installed !== '' && version_compare(substr($latest, 1), substr($installed, 1), '>')) ? $latest : '';
+if ($update_branch === 'stable') {
+  $update_label = $_SESSION['release_new'] !== '' ? 'Update to ' . $_SESSION['release_new'] : 'Update';
+} else {
+  $update_label = 'Update to the latest ' . $update_branch;
+}
+
 $restore = "cat $home/BirdSongs/restore.log";
 $max_upload_size = floor(disk_free_space("$home/BirdNET-Pi/") / 1.001);
 
@@ -42,6 +60,8 @@ function update() {
 }
 </script>
 <div class="systemcontrols">
+<p class="sysversion" style="text-align:center;font-size:15px;margin:0 0 10px">BirdnetPi++ <b><?php echo htmlspecialchars($installed !== '' ? $installed : 'unknown'); ?></b><?php
+  if ($ahead > 0) echo ' + ' . $ahead . ' commit' . ($ahead > 1 ? 's' : '') . ' (' . htmlspecialchars($update_branch) . ')'; ?></p>
 <form action="views.php" method="GET">
   <div>
     <button type="submit" name="submit" value="sudo reboot" onclick="return confirm('Are you sure you want to reboot?')">Reboot</button>
@@ -52,7 +72,7 @@ function update() {
     <a href="https://github.com/EvaldoOliveira/BirdnetPiPlusPlus/releases/tag/<?php echo rawurlencode($_SESSION['release_new']); ?>" target="_blank">What's new</a> —
     Update installs the <?php echo htmlspecialchars(get_config()['UPDATE_BRANCH'] ?? 'stable'); ?> branch.</p>
     <?php } ?>
-    <button type="submit" name="submit" id="updatebtn" value="update_birdnet.sh" onclick="return update();">Update <?php if(isset($_SESSION['behind']) && $_SESSION['behind'] != "0" && $_SESSION['behind'] != "with"){?><div class="updatenumber"><?php echo $_SESSION['behind']; ?></div><?php } ?></button>
+    <button type="submit" name="submit" id="updatebtn" value="update_birdnet.sh" onclick="return update();"><?php echo htmlspecialchars($update_label); ?> <?php if(isset($_SESSION['behind']) && $_SESSION['behind'] != "0" && $_SESSION['behind'] != "with"){?><div class="updatenumber"><?php echo $_SESSION['behind']; ?></div><?php } ?></button>
   </div>
   <div>
     <button type="submit" name="submit" value="sudo shutdown now" onclick="return confirm('Are you sure you want to shutdown?')">Shutdown</button>

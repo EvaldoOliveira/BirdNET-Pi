@@ -203,7 +203,7 @@ From a phone, tablet or computer on the same network, use **`http://birdnetpi.lo
 If the installer did not ask the questions, a setup page asks them now. Detections appear on the *Now* page within
 a few minutes.
 
-**Updates:** *System › System Controls › Update* installs new released versions.
+**Updates:** *System › System Controls* shows the version running (e.g. v0.11.4); when a newer one is out the button reads *Update to vX.Y.Z* and installs it.
 
 *Without keyboard and monitor:* choose *Raspberry Pi OS (64-bit) Lite* in step 1, also turn on **Enable SSH** in
 the **Services** tab, and do step 3 from another computer on the same network with `ssh <username>@birdnetpi.local`.
