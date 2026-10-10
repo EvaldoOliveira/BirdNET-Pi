@@ -139,6 +139,17 @@ Min. confidence, species override, location threshold, sensitivity, recording le
 Custom Species, Excluded and Whitelisted show the species still available beside the list, filtered by group (birds, mammals, amphibians, insects, domestic) and by continent. Both come from a formal reference, [GBIF](https://www.gbif.org) (Global Biodiversity Information Facility): its taxonomic backbone gives each model label its class and its occurrence records give the continents (`model/species_info.csv`).
 </td>
 </tr>
+<tr>
+<td valign="top">
+
+#### 📍 Did the station move?
+At every boot the station compares its approximate network position with its coordinates; after a move of more than 100 km it notifies you and the *Now* page offers **Use this location** (coordinates, state species list, timezone) or **Not moved**. Nothing changes without your answer; it can be turned off in *Basic Settings*.
+</td>
+<td valign="top">
+</td>
+<td valign="top">
+</td>
+</tr>
 </table>
 
 ### How to get BirdnetPi++
